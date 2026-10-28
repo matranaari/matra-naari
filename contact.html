@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <link rel="icon" type="image/png" href="favicon.png"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous"/>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Kalam:wght@300;400;700&family=Karla:wght@400;500;600&display=swap"/>
+  <link rel="stylesheet" href="assets/styles.css"/>
+  <title>Contact — Naari</title>
+  <meta name="description" content="Reach Naari on WhatsApp, email or Instagram."/>
+  <meta property="og:type" content="website"/>
+  <meta property="og:title" content="Contact — Naari"/>
+  <meta property="og:description" content="Reach Naari on WhatsApp, email or Instagram."/>
+  <meta name="twitter:card" content="summary_large_image"/>
+  <meta name="twitter:title" content="Contact — Naari"/>
+  <meta name="twitter:description" content="Reach Naari on WhatsApp, email or Instagram."/>
+  <style>
+    body {
+      background-image: url('images/paper.jpg'), url('/images/paper.jpg');
+      background-size: 700px;
+    }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <header class="sticky top-0 z-30 border-b border-border/60 bg-background/85 backdrop-blur">
+    <div class="mx-auto flex max-w-6xl items-center justify-between px-5 py-2">
+      <a aria-label="Naari home" href="index.html">
+        <img src="images/naari-logo.png" alt="Naari" class="h-11 w-auto sm:h-14 mix-blend-multiply"/>
+      </a>
+      <nav class="flex gap-5 font-hand text-lg sm:gap-8">
+        <a class="hidden text-foreground/80 hover:text-primary sm:inline" href="index.html">Home</a>
+        <a class="hidden text-foreground/80 hover:text-primary sm:inline" href="shop.html">Shop</a>
+        <a class="hidden text-foreground/80 hover:text-primary sm:inline" href="story.html">Our Story</a>
+        <a class="hidden text-foreground/80 hover:text-primary sm:inline !inline text-primary" href="contact.html" data-status="active" aria-current="page">Contact</a>
+        <a class="text-primary" href="cart.html">Bag (<span class="bag-count-badge">0</span>)</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Main Contact Content -->
+  <main>
+    <section class="mx-auto max-w-3xl px-5 py-16 text-center">
+      <p class="font-hand text-lg text-primary">say namaste</p>
+      <h1 class="text-5xl font-semibold">Get in touch</h1>
+      <p class="mt-4 font-hand text-xl text-muted-foreground">For orders, sizing help or custom requests — we'd love to hear from you.</p>
+
+      <div class="mt-12 grid gap-4 sm:grid-cols-2">
+        <a href="https://wa.me/918849366915?text=Hi%20Naari!%20I'd%20like%20to%20enquire%20about%20your%20kurtis." target="_blank" rel="noreferrer" class="bg-card/70 p-6 ring-1 ring-border hover:ring-primary transition text-left block">
+          <p class="text-xs uppercase tracking-widest text-muted-foreground">WhatsApp</p>
+          <p class="mt-2 font-display text-2xl text-primary">+91 88493 66915</p>
+        </a>
+
+        <a href="mailto:hello@naari.in" target="_blank" rel="noreferrer" class="bg-card/70 p-6 ring-1 ring-border hover:ring-primary transition text-left block">
+          <p class="text-xs uppercase tracking-widest text-muted-foreground">Email</p>
+          <p class="mt-2 font-display text-2xl text-primary">hello@naari.in</p>
+        </a>
+
+        <a href="https://instagram.com" target="_blank" rel="noreferrer" class="bg-card/70 p-6 ring-1 ring-border hover:ring-primary transition text-left block">
+          <p class="text-xs uppercase tracking-widest text-muted-foreground">Instagram</p>
+          <p class="mt-2 font-display text-2xl text-primary">@naari</p>
+        </a>
+
+        <div class="bg-card/70 p-6 ring-1 ring-border hover:ring-primary transition text-left block">
+          <p class="text-xs uppercase tracking-widest text-muted-foreground">Studio</p>
+          <p class="mt-2 font-display text-2xl text-primary">Your address, City, India</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer class="mt-24 border-t border-border/60">
+    <div class="mx-auto grid max-w-6xl gap-8 px-5 py-12 sm:grid-cols-3">
+      <div>
+        <img src="images/naari-logo.png" alt="Naari" class="h-16 w-auto mix-blend-multiply"/>
+        <p class="mt-2 font-hand text-muted-foreground">Modern kurtis, woven with heritage.</p>
+      </div>
+      <div class="font-hand text-lg">
+        <a class="block hover:text-primary" href="index.html">Home</a>
+        <a class="block hover:text-primary" href="shop.html">Shop</a>
+        <a class="block hover:text-primary" href="story.html">Our Story</a>
+        <a class="block hover:text-primary active text-primary" href="contact.html" data-status="active" aria-current="page">Contact</a>
+      </div>
+      <div class="text-sm text-muted-foreground">
+        <p>hello@naari.in</p>
+        <p><a href="https://wa.me/918849366915?text=Hi%20Naari!%20I'd%20like%20to%20enquire%20about%20your%20kurtis." target="_blank" class="hover:text-primary transition">+91 88493 66915</a></p>
+        <p class="mt-4">© 2026 Naari</p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="assets/app.js"></script>
+</body>
+</html>

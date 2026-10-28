@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/png" href="favicon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
+  <link rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Kalam:wght@300;400;700&family=Karla:wght@400;500;600&display=swap" />
+  <link rel="stylesheet" href="assets/styles.css" />
+  <title>Order Confirmed — Naari</title>
+  <meta name="description" content="Thank you for your order with Naari." />
+  <style>
+    body {
+      background-image: url('images/paper.jpg'), url('/images/paper.jpg');
+      background-size: 700px;
+    }
+  </style>
+</head>
+
+<body>
+  <!-- Header -->
+  <header class="sticky top-0 z-30 border-b border-border/60 bg-background/85 backdrop-blur">
+    <div class="mx-auto flex max-w-6xl items-center justify-between px-5 py-2">
+      <a aria-label="Naari home" href="index.html">
+        <img src="images/naari-logo.png" alt="Naari" class="h-11 w-auto sm:h-14 mix-blend-multiply" />
+      </a>
+      <nav class="flex gap-5 font-hand text-lg sm:gap-8">
+        <a class="hidden text-foreground/80 hover:text-primary sm:inline" href="index.html">Home</a>
+        <a class="hidden text-foreground/80 hover:text-primary sm:inline" href="shop.html">Shop</a>
+        <a class="hidden text-foreground/80 hover:text-primary sm:inline" href="story.html">Our Story</a>
+        <a class="hidden text-foreground/80 hover:text-primary sm:inline" href="contact.html">Contact</a>
+        <a class="text-primary" href="cart.html">Bag (<span class="bag-count-badge">0</span>)</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Main Order Confirmation Content -->
+  <main>
+    <section class="mx-auto max-w-3xl px-4 py-12 sm:px-5">
+      <!-- Loading State -->
+      <div id="confirmation-loading" class="text-center py-16">
+        <p class="font-hand text-2xl text-primary animate-pulse">✿ Retrieving your order details…</p>
+      </div>
+
+      <!-- Error State -->
+      <div id="confirmation-error" class="hidden text-center py-16">
+        <p class="font-hand text-2xl text-destructive">Order not found.</p>
+        <p class="mt-2 text-sm text-muted-foreground">Please check your order link or contact our studio.</p>
+        <a href="shop.html"
+          class="mt-6 inline-block bg-primary px-7 py-3 text-sm uppercase tracking-[0.2em] text-primary-foreground hover:opacity-90 transition">
+          Return to Shop
+        </a>
+      </div>
+
+      <!-- Populated Confirmation Content -->
+      <div id="confirmation-content" class="hidden space-y-8">
+        <!-- Success Banner -->
+        <div class="text-center bg-card/80 p-6 ring-1 ring-border sm:p-8">
+          <div
+            class="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 text-primary text-2xl">
+            ✓
+          </div>
+          <p class="font-hand text-lg text-primary">handcrafted with love ✿</p>
+          <h1 class="text-3xl font-semibold sm:text-4xl">Order Confirmed!</h1>
+          <p class="mt-2 text-muted-foreground text-sm max-w-md mx-auto">
+            Thank you for supporting authentic craft. We have received your order and are preparing your kurtis.
+          </p>
+          <div class="mt-4 inline-block bg-background px-4 py-2 border border-border text-xs tracking-wider">
+            ORDER ID: <strong id="order-ref-id" class="text-primary select-all"></strong>
+          </div>
+        </div>
+
+        <!-- Order Information Cards Grid -->
+        <div class="grid gap-6 sm:grid-cols-2">
+          <!-- Delivery Details Card -->
+          <div class="bg-card/70 p-5 ring-1 ring-border">
+            <h2 class="font-display text-lg font-semibold border-b border-border pb-2 text-primary">
+              Delivery Address
+            </h2>
+            <div class="mt-3 text-sm space-y-1 text-foreground/90">
+              <p id="order-customer-name" class="font-semibold"></p>
+              <p id="order-address-line1"></p>
+              <p id="order-address-line2" class="text-muted-foreground"></p>
+              <p><span id="order-city"></span>, <span id="order-state"></span> — <span id="order-pincode"
+                  class="font-medium"></span></p>
+              <p class="pt-2 text-xs text-muted-foreground">📱 Phone: <span id="order-phone"
+                  class="text-foreground"></span></p>
+              <p class="text-xs text-muted-foreground">✉ Email: <span id="order-email" class="text-foreground"></span>
+              </p>
+            </div>
+          </div>
+
+          <!-- Payment Details Card -->
+          <div class="bg-card/70 p-5 ring-1 ring-border">
+            <h2 class="font-display text-lg font-semibold border-b border-border pb-2 text-primary">
+              Payment & Status
+            </h2>
+            <div class="mt-3 text-sm space-y-2">
+              <div class="flex justify-between">
+                <span class="text-muted-foreground">Payment Method:</span>
+                <span id="order-payment-method" class="font-semibold uppercase text-xs tracking-wider"></span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-muted-foreground">Payment Status:</span>
+                <span id="order-payment-status" class="font-medium text-xs px-2 py-0.5 rounded"></span>
+              </div>
+              <div id="payment-id-row" class="hidden flex justify-between text-xs">
+                <span class="text-muted-foreground">Payment ID:</span>
+                <span id="order-payment-id" class="font-mono text-[11px] text-foreground"></span>
+              </div>
+              <div id="cod-note-box"
+                class="hidden mt-3 p-2.5 bg-primary/5 border border-dashed border-primary/40 rounded text-xs text-foreground/80">
+                💵 <strong>Cash on Delivery:</strong> Please keep exact cash ready upon delivery.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Items Ordered Card -->
+        <div class="bg-card/70 p-5 ring-1 ring-border sm:p-6">
+          <h2 class="font-display text-xl font-semibold border-b border-border pb-3">Items in your Order</h2>
+          <ul id="order-items-list" class="divide-y divide-border/60"></ul>
+
+          <div class="mt-4 space-y-2 border-t border-border pt-4 text-sm">
+            <div class="flex justify-between text-muted-foreground">
+              <span>Subtotal</span>
+              <span id="order-subtotal" class="font-display text-foreground"></span>
+            </div>
+            <div class="flex justify-between text-muted-foreground">
+              <span>Delivery</span>
+              <span class="text-primary font-medium">FREE ✿</span>
+            </div>
+            <div class="flex justify-between items-baseline border-t border-border pt-3 text-base">
+              <span class="font-semibold text-foreground">Total Paid / Payable</span>
+              <span id="order-total-amount" class="font-display text-2xl font-semibold text-primary"></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Customer Support Block -->
+        <div class="bg-card/70 p-5 ring-1 ring-border text-center">
+          <p class="font-hand text-lg text-primary">Need assistance with this order?</p>
+          <p class="mt-1 text-xs text-muted-foreground">
+            Our team is here to assist with sizing adjustments, delivery queries, or gift notes.
+          </p>
+          <div class="mt-4 flex flex-wrap justify-center gap-3">
+            <a id="order-support-whatsapp" href="https://wa.me/918849366915" target="_blank"
+              class="border border-primary px-4 py-2 text-xs uppercase tracking-wider text-primary hover:bg-primary/5 transition font-medium">
+              WhatsApp Support (+91 88493 66915)
+            </a>
+            <a href="mailto:hello@naari.in"
+              class="border border-border px-4 py-2 text-xs uppercase tracking-wider text-foreground hover:border-primary transition font-medium">
+              Email hello@naari.in
+            </a>
+          </div>
+        </div>
+
+        <!-- Return to Shop Button -->
+        <div class="text-center pt-4">
+          <a href="shop.html"
+            class="inline-block bg-primary px-8 py-3.5 text-sm uppercase tracking-[0.2em] text-primary-foreground hover:opacity-90 transition font-medium shadow">
+            Continue Shopping
+          </a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer class="mt-24 border-t border-border/60">
+    <div class="mx-auto grid max-w-6xl gap-8 px-5 py-12 sm:grid-cols-3">
+      <div>
+        <img src="images/naari-logo.png" alt="Naari" class="h-16 w-auto mix-blend-multiply" />
+        <p class="mt-2 font-hand text-muted-foreground">Modern kurtis, woven with heritage.</p>
+      </div>
+      <div class="font-hand text-lg">
+        <a class="block hover:text-primary" href="index.html">Home</a>
+        <a class="block hover:text-primary" href="shop.html">Shop</a>
+        <a class="block hover:text-primary" href="story.html">Our Story</a>
+        <a class="block hover:text-primary" href="contact.html">Contact</a>
+      </div>
+      <div class="text-sm text-muted-foreground">
+        <p>hello@naari.in</p>
+        <p><a href="https://wa.me/918849366915?text=Hi%20Naari!%20I'd%20like%20to%20enquire%20about%20your%20kurtis."
+            target="_blank" class="hover:text-primary transition">+91 88493 66915</a></p>
+        <p class="mt-4">© 2026 Naari</p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="assets/app.js"></script>
+  <script>
+    function getApiBaseUrl() {
+      if (typeof window !== 'undefined') {
+        if (window.__NAARI_API_URL__) return window.__NAARI_API_URL__.replace(/\/+$/, '');
+        if (window.NAARI_API_URL) return window.NAARI_API_URL.replace(/\/+$/, '');
+        const metaTag = document.querySelector('meta[name="naari-api-url"]');
+        if (metaTag && metaTag.content && !metaTag.content.startsWith('__')) {
+          return metaTag.content.replace(/\/+$/, '');
+        }
+        try {
+          const stored = localStorage.getItem('naari_api_url');
+          if (stored) return stored.replace(/\/+$/, '');
+        } catch (e) {}
+      }
+      return '';
+    }
+
+    function getApiUrl(endpoint) {
+      const cleanPath = endpoint.startsWith('/') ? endpoint : '/' + endpoint;
+      const configuredBase = getApiBaseUrl();
+      if (configuredBase) {
+        return configuredBase + cleanPath;
+      }
+      // In production HTTP/HTTPS, relative paths work seamlessly on the same origin
+      if (window.location.protocol.startsWith('http')) {
+        return cleanPath;
+      }
+      return 'http://localhost:8000' + cleanPath;
+    }
+
+    async function safeFetchJson(endpoint, options = {}) {
+      const url = getApiUrl(endpoint);
+      let res;
+      try {
+        res = await fetch(url, options);
+      } catch (netErr) {
+        throw new Error('Unable to connect to Naari API server. Please check your network connection or verify that the server is online.');
+      }
+
+      const rawText = await res.text();
+      const trimmed = (rawText || '').trim();
+
+      if (trimmed.startsWith('<') || trimmed.toLowerCase().startsWith('<!doctype')) {
+        throw new Error(`Server returned an unexpected HTML response (${res.status} ${res.statusText}) instead of API data. Please verify the API server is online.`);
+      }
+
+      let data = null;
+      if (trimmed) {
+        try {
+          data = JSON.parse(trimmed);
+        } catch (jsonErr) {
+          throw new Error('Server returned invalid JSON response.');
+        }
+      }
+
+      return { res, data };
+    }
+
+    async function loadOrderConfirmation() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const orderId = urlParams.get('order_id');
+      const loadingEl = document.getElementById('confirmation-loading');
+      const errorEl = document.getElementById('confirmation-error');
+      const contentEl = document.getElementById('confirmation-content');
+
+      if (!orderId) {
+        loadingEl.classList.add('hidden');
+        errorEl.classList.remove('hidden');
+        return;
+      }
+
+      try {
+        const { res, data } = await safeFetchJson(`/api/order-details?order_id=${encodeURIComponent(orderId)}`);
+
+        if (!res.ok || !data || !data.ok || !data.order) {
+          throw new Error(data?.error || 'Order details could not be found.');
+        }
+
+        const order = data.order;
+        document.getElementById('order-ref-id').textContent = order.id;
+
+        // Customer & Delivery Address
+        document.getElementById('order-customer-name').textContent = order.customer_name;
+        document.getElementById('order-address-line1').textContent = order.address_line1;
+        const line2 = document.getElementById('order-address-line2');
+        if (order.address_line2) {
+          line2.textContent = order.address_line2;
+          line2.classList.remove('hidden');
+        } else {
+          line2.classList.add('hidden');
+        }
+        document.getElementById('order-city').textContent = order.city;
+        document.getElementById('order-state').textContent = order.state;
+        document.getElementById('order-pincode').textContent = order.pincode;
+        document.getElementById('order-phone').textContent = order.customer_phone;
+        document.getElementById('order-email').textContent = order.customer_email;
+
+        // Payment Details
+        const methodEl = document.getElementById('order-payment-method');
+        const statusEl = document.getElementById('order-payment-status');
+        const codNote = document.getElementById('cod-note-box');
+        const paymentIdRow = document.getElementById('payment-id-row');
+
+        if (order.payment_method === 'cod') {
+          methodEl.textContent = 'Cash on Delivery (COD)';
+          statusEl.textContent = 'Confirmed (Pay on Delivery)';
+          statusEl.className = 'font-medium text-xs px-2 py-0.5 rounded bg-primary/10 text-primary';
+          codNote.classList.remove('hidden');
+          paymentIdRow.classList.add('hidden');
+        } else {
+          methodEl.textContent = 'Online Payment (Razorpay)';
+          statusEl.textContent = order.payment_status === 'paid' ? 'Paid Successfully ✓' : order.payment_status;
+          statusEl.className = order.payment_status === 'paid'
+            ? 'font-medium text-xs px-2 py-0.5 rounded bg-green-950 text-green-200'
+            : 'font-medium text-xs px-2 py-0.5 rounded bg-amber-950 text-amber-200';
+          codNote.classList.add('hidden');
+          if (order.razorpay_payment_id) {
+            document.getElementById('order-payment-id').textContent = order.razorpay_payment_id;
+            paymentIdRow.classList.remove('hidden');
+          }
+        }
+
+        // Items List
+        const itemsList = document.getElementById('order-items-list');
+        itemsList.innerHTML = order.items.map(item => `
+          <li class="py-3 flex gap-3 items-center">
+            <img src="${item.image}" alt="${item.name}" class="h-16 w-12 object-cover rounded-sm ring-1 ring-border/50 shrink-0"/>
+            <div class="min-w-0 flex-1 text-xs">
+              <p class="font-semibold text-foreground truncate text-sm">${item.name}</p>
+              <p class="text-muted-foreground">${item.color} · Size ${item.size}</p>
+              <p class="text-muted-foreground">Qty: ${item.qty} × ${formatPrice(item.price)}</p>
+            </div>
+            <span class="font-display text-sm font-semibold text-primary shrink-0">
+              ${formatPrice(item.subtotal || item.price * item.qty)}
+            </span>
+          </li>
+        `).join('');
+
+        document.getElementById('order-subtotal').textContent = formatPrice(order.subtotal);
+        document.getElementById('order-total-amount').textContent = formatPrice(order.total_amount);
+
+        // Update WhatsApp support link with order ID prefilled
+        const waLink = document.getElementById('order-support-whatsapp');
+        if (waLink) {
+          waLink.href = `https://wa.me/918849366915?text=Hi%20Naari!%20I%20have%20a%20question%20regarding%20my%20order%20${encodeURIComponent(order.id)}.`;
+        }
+
+        loadingEl.classList.add('hidden');
+        contentEl.classList.remove('hidden');
+      } catch (err) {
+        console.warn('Could not fetch from server, checking local order backup:', err);
+        try {
+          const cachedRaw = localStorage.getItem('naari_last_order');
+          if (cachedRaw) {
+            const cachedOrder = JSON.parse(cachedRaw);
+            if (cachedOrder && (cachedOrder.id === orderId || cachedOrder.order_id === orderId)) {
+              renderOrderFromData(cachedOrder);
+              return;
+            }
+          }
+        } catch (storageErr) {}
+
+        loadingEl.classList.add('hidden');
+        errorEl.classList.remove('hidden');
+      }
+    }
+
+    function renderOrderFromData(order) {
+      const loadingEl = document.getElementById('confirmation-loading');
+      const errorEl = document.getElementById('confirmation-error');
+      const contentEl = document.getElementById('confirmation-content');
+
+      document.getElementById('order-ref-id').textContent = order.id || order.order_id;
+
+      // Customer & Delivery Address
+      document.getElementById('order-customer-name').textContent = order.customer_name || 'Customer';
+      document.getElementById('order-address-line1').textContent = order.address_line1 || '';
+      const line2 = document.getElementById('order-address-line2');
+      if (order.address_line2) {
+        line2.textContent = order.address_line2;
+        line2.classList.remove('hidden');
+      } else {
+        line2.classList.add('hidden');
+      }
+      document.getElementById('order-city').textContent = order.city || '';
+      document.getElementById('order-state').textContent = order.state || '';
+      document.getElementById('order-pincode').textContent = order.pincode || '';
+      document.getElementById('order-phone').textContent = order.customer_phone || '';
+      document.getElementById('order-email').textContent = order.customer_email || '';
+
+      // Payment Details
+      const methodEl = document.getElementById('order-payment-method');
+      const statusEl = document.getElementById('order-payment-status');
+      const codNote = document.getElementById('cod-note-box');
+      const paymentIdRow = document.getElementById('payment-id-row');
+
+      if (order.payment_method === 'cod') {
+        methodEl.textContent = 'Cash on Delivery (COD)';
+        statusEl.textContent = 'Confirmed (Pay on Delivery)';
+        statusEl.className = 'font-medium text-xs px-2 py-0.5 rounded bg-primary/10 text-primary';
+        codNote.classList.remove('hidden');
+        paymentIdRow.classList.add('hidden');
+      } else {
+        methodEl.textContent = 'Online Payment (Razorpay)';
+        statusEl.textContent = order.payment_status === 'paid' ? 'Paid Successfully ✓' : order.payment_status;
+        statusEl.className = order.payment_status === 'paid'
+          ? 'font-medium text-xs px-2 py-0.5 rounded bg-green-950 text-green-200'
+          : 'font-medium text-xs px-2 py-0.5 rounded bg-amber-950 text-amber-200';
+        codNote.classList.add('hidden');
+        if (order.razorpay_payment_id) {
+          document.getElementById('order-payment-id').textContent = order.razorpay_payment_id;
+          paymentIdRow.classList.remove('hidden');
+        }
+      }
+
+      // Items List
+      const itemsList = document.getElementById('order-items-list');
+      const items = Array.isArray(order.items) ? order.items : [];
+      itemsList.innerHTML = items.map(item => `
+        <li class="py-3 flex gap-3 items-center">
+          <img src="${(item.image || 'assets/hero.jpg').replace(/^\//, '')}" alt="${item.name}" class="h-16 w-12 object-cover rounded-sm ring-1 ring-border/50 shrink-0"/>
+          <div class="min-w-0 flex-1 text-xs">
+            <p class="font-semibold text-foreground truncate text-sm">${item.name}</p>
+            <p class="text-muted-foreground">${item.color || 'Standard'} · Size ${item.size || 'M'}</p>
+            <p class="text-muted-foreground">Qty: ${item.qty || 1} × ${formatPrice(item.price || 0)}</p>
+          </div>
+          <span class="font-display text-sm font-semibold text-primary shrink-0">
+            ${formatPrice(item.subtotal || (item.price || 0) * (item.qty || 1))}
+          </span>
+        </li>
+      `).join('');
+
+      document.getElementById('order-subtotal').textContent = formatPrice(order.subtotal || order.total_amount || 0);
+      document.getElementById('order-total-amount').textContent = formatPrice(order.total_amount || 0);
+
+      // Update WhatsApp support link with order ID prefilled
+      const waLink = document.getElementById('order-support-whatsapp');
+      if (waLink) {
+        waLink.href = `https://wa.me/918849366915?text=Hi%20Naari!%20I%20have%20a%20question%20regarding%20my%20order%20${encodeURIComponent(order.id || order.order_id)}.`;
+      }
+
+      loadingEl.classList.add('hidden');
+      errorEl.classList.add('hidden');
+      contentEl.classList.remove('hidden');
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      loadOrderConfirmation();
+    });
+  </script>
+</body>
+
+</html>

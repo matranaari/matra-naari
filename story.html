@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/png" href="favicon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
+  <link rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Kalam:wght@300;400;700&family=Karla:wght@400;500;600&display=swap" />
+  <link rel="stylesheet" href="assets/styles.css" />
+  <title>Our Story — Naari</title>
+  <meta name="description" content="How Naari began and what every kurti stands for." />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Our Story — Naari" />
+  <meta property="og:description" content="Two languages, one legacy — the story behind Naari." />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Our Story — Naari" />
+  <meta name="twitter:description" content="Two languages, one legacy — the story behind Naari." />
+  <style>
+    body {
+      background-image: url('images/paper.jpg'), url('/images/paper.jpg');
+      background-size: 700px;
+    }
+  </style>
+</head>
+
+<body>
+  <!-- Header -->
+  <header class="sticky top-0 z-30 border-b border-border/60 bg-background/85 backdrop-blur">
+    <div class="mx-auto flex max-w-6xl items-center justify-between px-5 py-2">
+      <a aria-label="Naari home" href="index.html">
+        <img src="images/naari-logo.png" alt="Naari" class="h-11 w-auto sm:h-14 mix-blend-multiply" />
+      </a>
+      <nav class="flex gap-5 font-hand text-lg sm:gap-8">
+        <a class="hidden text-foreground/80 hover:text-primary sm:inline" href="index.html">Home</a>
+        <a class="hidden text-foreground/80 hover:text-primary sm:inline" href="shop.html">Shop</a>
+        <a class="hidden text-foreground/80 hover:text-primary sm:inline !inline text-primary" href="story.html"
+          data-status="active" aria-current="page">Our Story</a>
+        <a class="hidden text-foreground/80 hover:text-primary sm:inline" href="contact.html">Contact</a>
+        <a class="text-primary" href="cart.html">Bag (<span class="bag-count-badge">0</span>)</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Main Story Content -->
+  <main>
+    <section class="mx-auto max-w-5xl px-5 py-16">
+      <div class="text-center">
+        <p class="font-hand text-lg text-primary">our story</p>
+        <h1 class="text-5xl font-semibold">Woven with meaning</h1>
+      </div>
+
+      <!-- 3-Column Editorial Grid -->
+      <div class="relative mt-14 grid items-center gap-10 md:grid-cols-[1fr_auto_1fr]">
+        <!-- Left Column -->
+        <div class="space-y-12 text-center md:text-right">
+          <div class="font-hand">
+            <p class="text-xl font-bold text-primary">The name</p>
+            <p class="mt-1 text-lg text-muted-foreground">Naari means woman — strong, graceful, and endlessly herself.
+            </p>
+          </div>
+          <div class="font-hand">
+            <p class="text-xl font-bold text-primary">Two scripts, one soul</p>
+            <p class="mt-1 text-lg text-muted-foreground">Devanagari and Roman letters meet in our logo, just as
+              tradition meets today in our designs.</p>
+          </div>
+        </div>
+
+        <!-- Center Logo Artwork -->
+        <img src="images/naari-logo.png" alt="Naari logo" class="mx-auto w-64 mix-blend-multiply md:w-80" />
+
+        <!-- Right Column -->
+        <div class="space-y-12 text-center md:text-left">
+          <div class="font-hand">
+            <p class="text-xl font-bold text-primary">The craft</p>
+            <p class="mt-1 text-lg text-muted-foreground">Every kurti is cut for comfort and finished with care, by
+              hands that love what they make.</p>
+          </div>
+          <div class="font-hand">
+            <p class="text-xl font-bold text-primary">For you</p>
+            <p class="mt-1 text-lg text-muted-foreground">Made for the office, the festival, the café and everything in
+              between.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Narrative Section -->
+      <div class="mx-auto mt-20 max-w-2xl space-y-5 font-hand text-xl leading-relaxed">
+        <div class="dotted-rule mx-auto mb-10 w-24"></div>
+        <p>Naari was born from a wardrobe full of kurtis we loved — and a longing for ones that felt modern without
+          losing their roots.</p>
+        <p>So we started making them ourselves: clean silhouettes, breathable fabrics, and little details that whisper
+          of home. Today, every Naari kurti carries that same promise.</p>
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer class="mt-24 border-t border-border/60">
+    <div class="mx-auto grid max-w-6xl gap-8 px-5 py-12 sm:grid-cols-3">
+      <div>
+        <img src="images/naari-logo.png" alt="Naari" class="h-16 w-auto mix-blend-multiply" />
+        <p class="mt-2 font-hand text-muted-foreground">Modern kurtis, woven with heritage.</p>
+      </div>
+      <div class="font-hand text-lg">
+        <a class="block hover:text-primary" href="index.html">Home</a>
+        <a class="block hover:text-primary" href="shop.html">Shop</a>
+        <a class="block hover:text-primary active text-primary" href="story.html" data-status="active"
+          aria-current="page">Our Story</a>
+        <a class="block hover:text-primary" href="contact.html">Contact</a>
+      </div>
+      <div class="text-sm text-muted-foreground">
+        <p>hello@naari.in</p>
+        <p><a href="https://wa.me/918849366915?text=Hi%20Naari!%20I'd%20like%20to%20enquire%20about%20your%20kurtis."
+            target="_blank" class="hover:text-primary transition">+91 88493 66915</a></p>
+        <p class="mt-4">© 2026 Naari</p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="assets/app.js"></script>
+</body>
+
+</html>

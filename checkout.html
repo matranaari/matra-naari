@@ -1,0 +1,860 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <link rel="icon" type="image/png" href="favicon.png"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous"/>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Kalam:wght@300;400;700&family=Karla:wght@400;500;600&display=swap"/>
+  <link rel="stylesheet" href="assets/styles.css"/>
+  <title>Checkout — Naari</title>
+  <meta name="description" content="Secure checkout for your Naari order."/>
+  <style>
+    body {
+      background-image: url('images/paper.jpg'), url('/images/paper.jpg');
+      background-size: 700px;
+    }
+    .payment-option-label {
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    .payment-option-label input[type="radio"] {
+      accent-color: #6B2D31;
+    }
+    .payment-option-label:focus-within {
+      outline: 2px solid #6B2D31;
+      outline-offset: 2px;
+    }
+  </style>
+  <!-- Razorpay Standard Checkout SDK -->
+  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+</head>
+<body>
+  <!-- Header -->
+  <header class="sticky top-0 z-30 border-b border-border/60 bg-background/85 backdrop-blur">
+    <div class="mx-auto flex max-w-6xl items-center justify-between px-5 py-2">
+      <a aria-label="Naari home" href="index.html">
+        <img src="images/naari-logo.png" alt="Naari" class="h-11 w-auto sm:h-14 mix-blend-multiply"/>
+      </a>
+      <nav class="flex gap-5 font-hand text-lg sm:gap-8">
+        <a class="hidden text-foreground/80 hover:text-primary sm:inline" href="index.html">Home</a>
+        <a class="hidden text-foreground/80 hover:text-primary sm:inline" href="shop.html">Shop</a>
+        <a class="hidden text-foreground/80 hover:text-primary sm:inline" href="story.html">Our Story</a>
+        <a class="hidden text-foreground/80 hover:text-primary sm:inline" href="contact.html">Contact</a>
+        <a class="text-primary active !inline" href="cart.html">Bag (<span class="bag-count-badge">0</span>)</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Main Checkout Content -->
+  <main>
+    <section class="mx-auto max-w-6xl px-4 py-10 sm:px-5 sm:py-14">
+      <!-- Breadcrumb / Header -->
+      <div class="mb-8 text-center sm:mb-12">
+        <p class="font-hand text-lg text-primary">seamless & secure</p>
+        <h1 class="text-4xl font-semibold sm:text-5xl">Checkout</h1>
+        <div class="mt-3 flex items-center justify-center gap-2 text-xs uppercase tracking-widest text-muted-foreground">
+          <a href="cart.html" class="hover:text-primary">Bag</a>
+          <span>→</span>
+          <span class="text-primary font-medium">Delivery & Payment</span>
+          <span>→</span>
+          <span>Confirmation</span>
+        </div>
+      </div>
+
+      <!-- Empty Cart Guard (hidden if cart has items) -->
+      <div id="checkout-empty-state" class="hidden text-center py-12">
+        <p class="font-hand text-2xl text-muted-foreground">Your bag is currently empty.</p>
+        <a href="shop.html" class="mt-6 inline-block bg-primary px-7 py-3 text-sm uppercase tracking-[0.2em] text-primary-foreground hover:opacity-90 transition">
+          Explore Kurtis
+        </a>
+      </div>
+
+      <!-- Two-Column Checkout Layout -->
+      <div id="checkout-main-grid" class="grid gap-10 lg:grid-cols-[1fr_400px]">
+        <!-- Left: Form -->
+        <div class="space-y-8">
+          <!-- Step 1: Customer & Delivery Details -->
+          <div class="bg-card/70 p-5 ring-1 ring-border sm:p-7">
+            <h2 class="font-display text-2xl font-semibold text-foreground flex items-center gap-2">
+              <span class="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground font-sans">1</span>
+              Delivery Address
+            </h2>
+
+            <form id="checkout-form" class="mt-6 space-y-4">
+              <div class="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <label for="cust-name" class="block text-xs uppercase tracking-wider text-muted-foreground mb-1">Full Name *</label>
+                  <input
+                    id="cust-name"
+                    name="name"
+                    type="text"
+                    required
+                    placeholder="e.g. Ananya Sharma"
+                    class="w-full border border-border bg-background px-3 py-2.5 text-sm outline-none focus:border-primary"
+                  />
+                </div>
+                <div>
+                  <label for="cust-phone" class="block text-xs uppercase tracking-wider text-muted-foreground mb-1">Mobile Phone (10 digits) *</label>
+                  <input
+                    id="cust-phone"
+                    name="phone"
+                    type="tel"
+                    required
+                    maxlength="10"
+                    placeholder="e.g. 9876543210"
+                    class="w-full border border-border bg-background px-3 py-2.5 text-sm outline-none focus:border-primary"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label for="cust-email" class="block text-xs uppercase tracking-wider text-muted-foreground mb-1">Email Address *</label>
+                <input
+                  id="cust-email"
+                  name="email"
+                  type="email"
+                  required
+                  placeholder="ananya@example.com"
+                  class="w-full border border-border bg-background px-3 py-2.5 text-sm outline-none focus:border-primary"
+                />
+                <p class="mt-1 text-[11px] text-muted-foreground">We will send your order receipt and tracking updates here.</p>
+              </div>
+
+              <div>
+                <label for="cust-address1" class="block text-xs uppercase tracking-wider text-muted-foreground mb-1">Street Address / House No. *</label>
+                <input
+                  id="cust-address1"
+                  name="address_line1"
+                  type="text"
+                  required
+                  placeholder="Flat / House No., Apartment name, Street"
+                  class="w-full border border-border bg-background px-3 py-2.5 text-sm outline-none focus:border-primary"
+                />
+              </div>
+
+              <div>
+                <label for="cust-address2" class="block text-xs uppercase tracking-wider text-muted-foreground mb-1">Landmark / Locality (Optional)</label>
+                <input
+                  id="cust-address2"
+                  name="address_line2"
+                  type="text"
+                  placeholder="Near temple, Opposite park, etc."
+                  class="w-full border border-border bg-background px-3 py-2.5 text-sm outline-none focus:border-primary"
+                />
+              </div>
+
+              <div class="grid gap-4 sm:grid-cols-3">
+                <div>
+                  <label for="cust-city" class="block text-xs uppercase tracking-wider text-muted-foreground mb-1">City *</label>
+                  <input
+                    id="cust-city"
+                    name="city"
+                    type="text"
+                    required
+                    placeholder="Jaipur"
+                    class="w-full border border-border bg-background px-3 py-2.5 text-sm outline-none focus:border-primary"
+                  />
+                </div>
+                <div>
+                  <label for="cust-state" class="block text-xs uppercase tracking-wider text-muted-foreground mb-1">State *</label>
+                  <select
+                    id="cust-state"
+                    name="state"
+                    required
+                    class="w-full border border-border bg-background px-3 py-2.5 text-sm outline-none focus:border-primary cursor-pointer"
+                  >
+                    <option value="">Select State</option>
+                    <option value="Andhra Pradesh">Andhra Pradesh</option>
+                    <option value="Assam">Assam</option>
+                    <option value="Bihar">Bihar</option>
+                    <option value="Delhi">Delhi NCR</option>
+                    <option value="Gujarat">Gujarat</option>
+                    <option value="Haryana">Haryana</option>
+                    <option value="Karnataka">Karnataka</option>
+                    <option value="Kerala">Kerala</option>
+                    <option value="Madhya Pradesh">Madhya Pradesh</option>
+                    <option value="Maharashtra">Maharashtra</option>
+                    <option value="Punjab">Punjab</option>
+                    <option value="Rajasthan" selected>Rajasthan</option>
+                    <option value="Tamil Nadu">Tamil Nadu</option>
+                    <option value="Telangana">Telangana</option>
+                    <option value="Uttar Pradesh">Uttar Pradesh</option>
+                    <option value="West Bengal">West Bengal</option>
+                    <option value="Other">Other States & UTs</option>
+                  </select>
+                </div>
+                <div>
+                  <label for="cust-pincode" class="block text-xs uppercase tracking-wider text-muted-foreground mb-1">PIN Code *</label>
+                  <input
+                    id="cust-pincode"
+                    name="pincode"
+                    type="text"
+                    required
+                    maxlength="6"
+                    placeholder="302001"
+                    class="w-full border border-border bg-background px-3 py-2.5 text-sm outline-none focus:border-primary"
+                  />
+                </div>
+              </div>
+            </form>
+          </div>
+
+          <!-- Step 2: Payment Method -->
+          <div class="bg-card/70 p-5 ring-1 ring-border sm:p-7">
+            <h2 class="font-display text-2xl font-semibold text-foreground flex items-center gap-2">
+              <span class="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground font-sans">2</span>
+              Payment Method
+            </h2>
+
+            <div class="mt-6 space-y-4" role="radiogroup" aria-label="Payment Method">
+              <!-- Online Payment via Razorpay -->
+              <label
+                data-method="razorpay"
+                role="radio"
+                aria-checked="true"
+                tabindex="0"
+                class="payment-option-label relative flex cursor-pointer items-start gap-3 border border-primary bg-primary/5 p-4 transition rounded-sm ring-1 ring-primary/40"
+              >
+                <input
+                  type="radio"
+                  id="payment-method-razorpay"
+                  name="payment_method"
+                  value="razorpay"
+                  checked
+                  class="mt-1 h-4 w-4 cursor-pointer accent-[#6B2D31]"
+                />
+                <div class="flex-1">
+                  <div class="flex flex-wrap items-center justify-between gap-2">
+                    <span class="font-semibold text-foreground text-sm">Pay Online (UPI, Cards, NetBanking, Wallets)</span>
+                    <span class="rounded bg-primary/10 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-primary">Recommended</span>
+                  </div>
+                  <p class="mt-1 text-xs text-muted-foreground">
+                    Instant & secure checkout powered by <strong>Razorpay</strong>.
+                  </p>
+                  <!-- Payment Mode Badges -->
+                  <div class="mt-3 flex flex-wrap items-center gap-2 text-[11px] text-foreground/80">
+                    <span class="rounded border border-border bg-background px-2 py-1">UPI (GPay, PhonePe, Paytm)</span>
+                    <span class="rounded border border-border bg-background px-2 py-1">Credit & Debit Cards</span>
+                    <span class="rounded border border-border bg-background px-2 py-1">Net Banking</span>
+                    <span class="rounded border border-border bg-background px-2 py-1">Wallets</span>
+                  </div>
+                </div>
+              </label>
+
+              <!-- Cash on Delivery (COD) -->
+              <label
+                data-method="cod"
+                role="radio"
+                aria-checked="false"
+                tabindex="0"
+                class="payment-option-label relative flex cursor-pointer items-start gap-3 border border-border p-4 transition hover:border-primary/60 rounded-sm"
+              >
+                <input
+                  type="radio"
+                  id="payment-method-cod"
+                  name="payment_method"
+                  value="cod"
+                  class="mt-1 h-4 w-4 cursor-pointer accent-[#6B2D31]"
+                />
+                <div class="flex-1">
+                  <div class="flex items-center justify-between">
+                    <span class="font-semibold text-foreground text-sm">Cash on Delivery (COD)</span>
+                    <span class="text-xs text-muted-foreground">Pay at doorstep</span>
+                  </div>
+                  <p class="mt-1 text-xs text-muted-foreground">
+                    Pay in cash when your courier arrives. Please keep exact change ready.
+                  </p>
+                </div>
+              </label>
+            </div>
+
+            <!-- Error Banner -->
+            <div id="checkout-error-banner" class="mt-4 hidden p-3 bg-[#2A1810] text-[#FFB4AB] border border-[#93000A]/40 text-xs rounded"></div>
+
+            <!-- Place Order CTA Button -->
+            <button
+              id="place-order-btn"
+              type="button"
+              class="mt-6 w-full bg-primary py-4 text-sm uppercase tracking-[0.2em] text-primary-foreground hover:opacity-90 transition font-medium cursor-pointer shadow flex items-center justify-center gap-2"
+            >
+              <span id="place-order-text">Pay with Razorpay</span>
+              <span id="place-order-spinner" class="hidden animate-spin">⏳</span>
+            </button>
+
+            <!-- Customer Support Note -->
+            <div class="mt-4 text-center text-xs text-muted-foreground">
+              <p>🔒 256-Bit SSL Encrypted & Cryptographically Verified</p>
+              <p class="mt-1">
+                Have questions before ordering?
+                <a href="https://wa.me/918849366915?text=Hi%20Naari!%20I%20have%20a%20question%20before%20placing%20my%20order." target="_blank" class="text-primary underline font-medium">
+                  WhatsApp Support (+91 88493 66915)
+                </a>
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Order Summary Sidebar -->
+        <div>
+          <div class="bg-card/70 p-5 ring-1 ring-border sm:p-6 sticky top-24">
+            <div class="flex items-center justify-between border-b border-border pb-3">
+              <h3 class="font-display text-xl font-semibold">Order Summary</h3>
+              <a href="cart.html" class="text-xs font-hand text-primary underline">Edit Bag</a>
+            </div>
+
+            <!-- Items List -->
+            <ul id="summary-items-list" class="divide-y divide-border/60 max-h-[360px] overflow-y-auto">
+              <!-- Populated by JS -->
+            </ul>
+
+            <!-- Totals -->
+            <div class="mt-4 space-y-2 border-t border-border pt-4 text-sm">
+              <div class="flex justify-between text-muted-foreground">
+                <span>Subtotal</span>
+                <span id="summary-subtotal" class="font-display text-foreground">₹0</span>
+              </div>
+              <div class="flex justify-between text-muted-foreground">
+                <span>Delivery across India</span>
+                <span class="text-primary font-medium">FREE ✿</span>
+              </div>
+              <div class="flex justify-between items-baseline border-t border-border pt-3 text-base">
+                <span class="font-semibold text-foreground">Total Amount</span>
+                <span id="summary-total" class="font-display text-2xl text-primary font-semibold">₹0</span>
+              </div>
+            </div>
+
+            <div class="mt-6 rounded border border-dashed border-primary/40 bg-primary/5 p-3 text-xs text-foreground/80">
+              <p class="font-medium text-primary">✿ Naari Craft Promise</p>
+              <p class="mt-0.5">Every kurti is hand-finished with care and packed with eco-conscious materials.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer class="mt-24 border-t border-border/60">
+    <div class="mx-auto grid max-w-6xl gap-8 px-5 py-12 sm:grid-cols-3">
+      <div>
+        <img src="images/naari-logo.png" alt="Naari" class="h-16 w-auto mix-blend-multiply"/>
+        <p class="mt-2 font-hand text-muted-foreground">Modern kurtis, woven with heritage.</p>
+      </div>
+      <div class="font-hand text-lg">
+        <a class="block hover:text-primary" href="index.html">Home</a>
+        <a class="block hover:text-primary" href="shop.html">Shop</a>
+        <a class="block hover:text-primary" href="story.html">Our Story</a>
+        <a class="block hover:text-primary" href="contact.html">Contact</a>
+      </div>
+      <div class="text-sm text-muted-foreground">
+        <p>hello@naari.in</p>
+        <p><a href="https://wa.me/918849366915?text=Hi%20Naari!%20I'd%20like%20to%20enquire%20about%20your%20kurtis." target="_blank" class="hover:text-primary transition">+91 88493 66915</a></p>
+        <p class="mt-4">© 2026 Naari</p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="assets/app.js"></script>
+  <script>
+    let serverConfig = null;
+    let selectedPaymentMethod = 'razorpay';
+
+    function getApiBaseUrl() {
+      if (typeof window !== 'undefined') {
+        if (window.__NAARI_API_URL__) return window.__NAARI_API_URL__.replace(/\/+$/, '');
+        if (window.NAARI_API_URL) return window.NAARI_API_URL.replace(/\/+$/, '');
+        const metaTag = document.querySelector('meta[name="naari-api-url"]');
+        if (metaTag && metaTag.content && !metaTag.content.startsWith('__')) {
+          return metaTag.content.replace(/\/+$/, '');
+        }
+        try {
+          const stored = localStorage.getItem('naari_api_url');
+          if (stored) return stored.replace(/\/+$/, '');
+        } catch (e) {}
+      }
+      return '';
+    }
+
+    function getApiUrl(endpoint) {
+      const cleanPath = endpoint.startsWith('/') ? endpoint : '/' + endpoint;
+      const configuredBase = getApiBaseUrl();
+      if (configuredBase) {
+        return configuredBase + cleanPath;
+      }
+      // In production HTTP/HTTPS, relative paths work seamlessly on the same origin
+      if (window.location.protocol.startsWith('http')) {
+        return cleanPath;
+      }
+      // Fallback when opened as file:// locally
+      return 'http://localhost:8000' + cleanPath;
+    }
+
+    async function safeFetchJson(endpoint, options = {}) {
+      const url = getApiUrl(endpoint);
+      let res;
+      try {
+        res = await fetch(url, options);
+      } catch (netErr) {
+        throw new Error('Unable to connect to Naari API server. Please check your network connection or verify that the server is online.');
+      }
+
+      // Read text first so that HTML responses (404/500 from static servers or proxies) are never passed to JSON.parse
+      const rawText = await res.text();
+      const trimmed = (rawText || '').trim();
+
+      // Check for HTML response
+      if (trimmed.startsWith('<') || trimmed.toLowerCase().startsWith('<!doctype')) {
+        throw new Error(`Server returned an unexpected HTML response (${res.status} ${res.statusText}) instead of API data. Please verify the API server is online.`);
+      }
+
+      let data = null;
+      if (trimmed) {
+        try {
+          data = JSON.parse(trimmed);
+        } catch (jsonErr) {
+          throw new Error('Server returned invalid JSON response: ' + trimmed.slice(0, 80));
+        }
+      }
+
+      return { res, data };
+    }
+
+    async function loadServerConfig() {
+      try {
+        const { res, data } = await safeFetchJson('/api/config');
+        if (res.ok && data && data.ok) {
+          serverConfig = data;
+        }
+      } catch (e) {
+        console.warn('Could not load /api/config', e);
+      }
+    }
+
+    function renderOrderSummary() {
+      const cart = getCart();
+      const emptyState = document.getElementById('checkout-empty-state');
+      const mainGrid = document.getElementById('checkout-main-grid');
+      const itemsList = document.getElementById('summary-items-list');
+      const subtotalEl = document.getElementById('summary-subtotal');
+      const totalEl = document.getElementById('summary-total');
+
+      if (!cart || cart.length === 0) {
+        emptyState.classList.remove('hidden');
+        mainGrid.classList.add('hidden');
+        return;
+      }
+
+      emptyState.classList.add('hidden');
+      mainGrid.classList.remove('hidden');
+
+      const total = getCartTotal();
+      subtotalEl.textContent = formatPrice(total);
+      totalEl.textContent = formatPrice(total);
+
+      if (itemsList) {
+        itemsList.innerHTML = cart.map(item => {
+          const imgSrc = (item.image || 'assets/hero.jpg').replace(/^\//, '');
+          return `
+            <li class="py-3 flex gap-3 items-center">
+              <img src="${imgSrc}" alt="${item.name || 'Kurti'}" class="h-16 w-12 object-cover rounded-sm ring-1 ring-border/50 shrink-0"/>
+              <div class="min-w-0 flex-1 text-xs">
+                <p class="font-semibold text-foreground truncate text-sm">${item.name || 'Naari Kurti'}</p>
+                <p class="text-muted-foreground">${item.color || 'Standard'} · Size ${item.size || 'M'}</p>
+                <p class="text-muted-foreground">Qty: ${item.qty || 1} × ${formatPrice(item.price || 0)}</p>
+              </div>
+              <span class="font-display text-sm font-semibold text-primary shrink-0">
+                ${formatPrice((item.price || 0) * (item.qty || 1))}
+              </span>
+            </li>
+          `;
+        }).join('');
+      }
+
+      updateButtonText();
+    }
+
+    function setPaymentMethod(method) {
+      if (method !== 'razorpay' && method !== 'cod') return;
+      selectedPaymentMethod = method;
+
+      // Update native radio inputs
+      document.querySelectorAll('input[name="payment_method"]').forEach(r => {
+        r.checked = (r.value === method);
+      });
+
+      // Update visual styles on card labels
+      document.querySelectorAll('.payment-option-label').forEach(label => {
+        const isMatch = (label.getAttribute('data-method') === method);
+        label.setAttribute('aria-checked', isMatch ? 'true' : 'false');
+        if (isMatch) {
+          label.classList.add('border-primary', 'bg-primary/5', 'ring-1', 'ring-primary/40');
+          label.classList.remove('border-border');
+        } else {
+          label.classList.remove('border-primary', 'bg-primary/5', 'ring-1', 'ring-primary/40');
+          label.classList.add('border-border');
+        }
+      });
+
+      updateButtonText();
+    }
+
+    function getSelectedPaymentMethod() {
+      const radio = document.querySelector('input[name="payment_method"]:checked');
+      return radio ? radio.value : selectedPaymentMethod;
+    }
+
+    function updateButtonText() {
+      const method = getSelectedPaymentMethod();
+      const total = getCartTotal();
+      const textEl = document.getElementById('place-order-text');
+      if (!textEl) return;
+
+      if (method === 'cod') {
+        textEl.textContent = total > 0
+          ? `Place Cash on Delivery Order (${formatPrice(total)})`
+          : 'Place Cash on Delivery Order';
+      } else {
+        textEl.textContent = total > 0
+          ? `Pay ${formatPrice(total)} via Razorpay`
+          : 'Pay via Razorpay';
+      }
+    }
+
+    function setupPaymentMethodRadios() {
+      // 1. Radio change listener (handles native radio clicks, keyboard arrow navigation)
+      document.querySelectorAll('input[name="payment_method"]').forEach(radio => {
+        radio.addEventListener('change', () => {
+          if (radio.checked) {
+            setPaymentMethod(radio.value);
+          }
+        });
+      });
+
+      // 2. Click on the entire option card (handles mouse clicks on container without double-firing)
+      document.querySelectorAll('.payment-option-label').forEach(label => {
+        label.addEventListener('click', (e) => {
+          // If clicked directly on the input, let native radio behavior handle it
+          if (e.target.tagName === 'INPUT') return;
+          const method = label.getAttribute('data-method');
+          if (method) {
+            setPaymentMethod(method);
+          }
+        });
+
+        label.addEventListener('keydown', (e) => {
+          if (e.key === ' ' || e.key === 'Enter') {
+            e.preventDefault();
+            const method = label.getAttribute('data-method');
+            if (method) {
+              setPaymentMethod(method);
+            }
+          }
+        });
+      });
+
+      // 3. Initial sync
+      setPaymentMethod('razorpay');
+    }
+
+    function getCustomerFormData() {
+      const form = document.getElementById('checkout-form');
+      const formData = new FormData(form);
+      return {
+        name: (formData.get('name') || '').trim(),
+        phone: (formData.get('phone') || '').trim(),
+        email: (formData.get('email') || '').trim(),
+        address_line1: (formData.get('address_line1') || '').trim(),
+        address_line2: (formData.get('address_line2') || '').trim(),
+        city: (formData.get('city') || '').trim(),
+        state: (formData.get('state') || '').trim(),
+        pincode: (formData.get('pincode') || '').trim()
+      };
+    }
+
+    function validateCustomerForm(data) {
+      if (!data.name || data.name.length < 2) return 'Please enter your full name.';
+      if (!data.phone || !/^\d{10}$/.test(data.phone.replace(/[\s\-\+]/g, '').slice(-10))) return 'Please enter a valid 10-digit mobile number.';
+      if (!data.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) return 'Please enter a valid email address.';
+      if (!data.address_line1 || data.address_line1.length < 5) return 'Please enter your delivery street address.';
+      if (!data.city || data.city.length < 2) return 'Please enter your city.';
+      if (!data.state) return 'Please select your state.';
+      if (!data.pincode || !/^\d{6}$/.test(data.pincode.replace(/\s/g, ''))) return 'Please enter a valid 6-digit PIN code.';
+      return null;
+    }
+
+    function showError(msg) {
+      const banner = document.getElementById('checkout-error-banner');
+      banner.textContent = msg;
+      banner.classList.remove('hidden');
+      banner.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      getToast().error(msg);
+    }
+
+    function hideError() {
+      const banner = document.getElementById('checkout-error-banner');
+      banner.classList.add('hidden');
+    }
+
+    function setSubmitting(isSubmitting) {
+      const btn = document.getElementById('place-order-btn');
+      const spinner = document.getElementById('place-order-spinner');
+      btn.disabled = isSubmitting;
+      if (isSubmitting) {
+        btn.classList.add('opacity-75', 'cursor-not-allowed');
+        spinner.classList.remove('hidden');
+      } else {
+        btn.classList.remove('opacity-75', 'cursor-not-allowed');
+        spinner.classList.add('hidden');
+        updateButtonText();
+      }
+    }
+
+    async function handlePlaceOrder() {
+      hideError();
+      const cart = getCart();
+      if (!cart || cart.length === 0) {
+        showError('Your bag is empty.');
+        return;
+      }
+
+      const customerData = getCustomerFormData();
+      const validationError = validateCustomerForm(customerData);
+      if (validationError) {
+        showError(validationError);
+        return;
+      }
+
+      const paymentMethod = getSelectedPaymentMethod();
+      setSubmitting(true);
+
+      if (paymentMethod === 'cod') {
+        // Cash on Delivery Order Flow
+        try {
+          let orderId = null;
+          let orderTotal = getCartTotal();
+
+          const { res, data } = await safeFetchJson('/api/create-cod-order', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              customer: customerData,
+              items: cart
+            })
+          });
+
+          if (!res.ok || !data || !data.ok || !data.order_id) {
+            throw new Error(data?.error || 'Failed to place COD order on server.');
+          }
+
+          orderId = data.order_id;
+          orderTotal = data.total_amount || orderTotal;
+
+          // Cache order details for confirmation page
+          const confirmedOrder = {
+            id: orderId,
+            customer_name: customerData.name,
+            customer_phone: customerData.phone,
+            customer_email: customerData.email,
+            address_line1: customerData.address_line1,
+            address_line2: customerData.address_line2,
+            city: customerData.city,
+            state: customerData.state,
+            pincode: customerData.pincode,
+            payment_method: 'cod',
+            payment_status: 'cod_confirmed',
+            subtotal: orderTotal,
+            shipping: 0,
+            total_amount: orderTotal,
+            items: cart,
+            created_at: new Date().toISOString()
+          };
+          try {
+            localStorage.setItem('naari_last_order', JSON.stringify(confirmedOrder));
+          } catch (e) {}
+
+          // Clear cart on confirmed order
+          localStorage.removeItem('naari_cart_v1');
+          updateHeaderBagCount();
+          window.location.href = `order-confirmation.html?order_id=${encodeURIComponent(orderId)}`;
+        } catch (err) {
+          showError(err.message || 'Something went wrong while placing your order.');
+          setSubmitting(false);
+        }
+      } else {
+        // Online Payment Flow
+        try {
+          const { res: createRes, data: createData } = await safeFetchJson('/api/create-order', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              customer: customerData,
+              items: cart
+            })
+          });
+
+          if (!createRes.ok || !createData || !createData.ok) {
+            throw new Error(createData?.error || 'Could not initiate online payment.');
+          }
+
+          // If keys are placeholder, handle simulated test mode smoothly
+          if (createData.is_simulated) {
+            const { res: verifyRes, data: verifyData } = await safeFetchJson('/api/verify-payment', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                order_id: createData.order_id,
+                razorpay_order_id: createData.razorpay_order_id,
+                razorpay_payment_id: 'pay_test_' + Date.now().toString(36),
+                razorpay_signature: 'simulated_test_signature',
+                is_simulated: true
+              })
+            });
+
+            if (!verifyRes.ok || !verifyData || !verifyData.ok) {
+              throw new Error(verifyData?.error || 'Payment verification failed.');
+            }
+
+            const confirmedOrder = {
+              id: createData.order_id,
+              customer_name: customerData.name,
+              customer_phone: customerData.phone,
+              customer_email: customerData.email,
+              address_line1: customerData.address_line1,
+              address_line2: customerData.address_line2,
+              city: customerData.city,
+              state: customerData.state,
+              pincode: customerData.pincode,
+              payment_method: 'razorpay',
+              payment_status: 'paid',
+              razorpay_payment_id: 'pay_test_' + Date.now().toString(36),
+              subtotal: getCartTotal(),
+              shipping: 0,
+              total_amount: getCartTotal(),
+              items: cart,
+              created_at: new Date().toISOString()
+            };
+            try {
+              localStorage.setItem('naari_last_order', JSON.stringify(confirmedOrder));
+            } catch (e) {}
+
+            localStorage.removeItem('naari_cart_v1');
+            updateHeaderBagCount();
+            window.location.href = `order-confirmation.html?order_id=${encodeURIComponent(createData.order_id)}`;
+            return;
+          }
+
+          if (typeof Razorpay === 'undefined') {
+            throw new Error('Razorpay payment gateway failed to load. Please check your internet connection or select Cash on Delivery.');
+          }
+
+          const options = {
+            key: createData.key_id,
+            amount: createData.amount,
+            currency: createData.currency || 'INR',
+            name: 'Naari',
+            description: 'Modern Kurtis Rooted in Craft',
+            image: 'images/naari-logo.png',
+            order_id: createData.razorpay_order_id,
+            prefill: {
+              name: customerData.name,
+              email: customerData.email,
+              contact: customerData.phone
+            },
+            notes: {
+              order_id: createData.order_id
+            },
+            theme: {
+              color: '#6B2D31'
+            },
+            modal: {
+              ondismiss: function() {
+                setSubmitting(false);
+                getToast().show('Payment was cancelled. You can retry anytime or select Cash on Delivery.', 'info');
+              }
+            },
+            handler: async function(response) {
+              try {
+                const { res: verifyRes, data: verifyData } = await safeFetchJson('/api/verify-payment', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    order_id: createData.order_id,
+                    razorpay_order_id: response.razorpay_order_id,
+                    razorpay_payment_id: response.razorpay_payment_id,
+                    razorpay_signature: response.razorpay_signature
+                  })
+                });
+
+                if (!verifyRes.ok || !verifyData || !verifyData.ok) {
+                  throw new Error(verifyData?.error || 'Payment signature verification failed.');
+                }
+
+                const confirmedOrder = {
+                  id: createData.order_id,
+                  customer_name: customerData.name,
+                  customer_phone: customerData.phone,
+                  customer_email: customerData.email,
+                  address_line1: customerData.address_line1,
+                  address_line2: customerData.address_line2,
+                  city: customerData.city,
+                  state: customerData.state,
+                  pincode: customerData.pincode,
+                  payment_method: 'razorpay',
+                  payment_status: 'paid',
+                  razorpay_payment_id: response.razorpay_payment_id,
+                  subtotal: getCartTotal(),
+                  shipping: 0,
+                  total_amount: getCartTotal(),
+                  items: cart,
+                  created_at: new Date().toISOString()
+                };
+                try {
+                  localStorage.setItem('naari_last_order', JSON.stringify(confirmedOrder));
+                } catch (e) {}
+
+                localStorage.removeItem('naari_cart_v1');
+                updateHeaderBagCount();
+                window.location.href = `order-confirmation.html?order_id=${encodeURIComponent(createData.order_id)}`;
+              } catch (verifyErr) {
+                showError(verifyErr.message || 'Payment verification failed. Please contact support.');
+                setSubmitting(false);
+              }
+            }
+          };
+
+          const rzpInstance = new Razorpay(options);
+          rzpInstance.on('payment.failed', function(response) {
+            showError(`Payment failed: ${response.error?.description || response.error?.message || 'Payment was declined.'}`);
+            setSubmitting(false);
+          });
+          rzpInstance.open();
+        } catch (err) {
+          showError(err.message || 'Unable to connect to payment gateway. Please try Cash on Delivery.');
+          setSubmitting(false);
+        }
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      await loadServerConfig();
+      renderOrderSummary();
+      setupPaymentMethodRadios();
+
+      const placeBtn = document.getElementById('place-order-btn');
+      if (placeBtn) {
+        placeBtn.addEventListener('click', handlePlaceOrder);
+      }
+
+      const form = document.getElementById('checkout-form');
+      if (form) {
+        form.addEventListener('submit', (e) => {
+          e.preventDefault();
+          handlePlaceOrder();
+        });
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+
+# Database & Local Secrets
+data/*.db
+data/*.sqlite
+data/*.sqlite3
+.env
+.env.local
+.env.*.local
+config.local.json
+!.env.example
+
+# Operating System & IDE
+.DS_Store
+Thumbs.db
+*.log
+.vscode/
+.idea/
+.system_generated/
+scratch/

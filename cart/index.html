@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <link rel="icon" type="image/png" href="../favicon.png"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous"/>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Kalam:wght@300;400;700&family=Karla:wght@400;500;600&display=swap"/>
+  <link rel="stylesheet" href="../assets/styles.css"/>
+  <title>Your Bag — Naari</title>
+  <meta name="description" content="Review your bag and check out."/>
+  <meta property="og:type" content="website"/>
+  <meta property="og:title" content="Your Bag — Naari"/>
+  <meta property="og:description" content="Review your bag and check out."/>
+  <meta name="twitter:card" content="summary_large_image"/>
+  <meta name="twitter:title" content="Your Bag — Naari"/>
+  <meta name="twitter:description" content="Review your bag and check out."/>
+  <style>
+    body {
+      background-image: url('../images/paper.jpg'), url('/images/paper.jpg');
+      background-size: 700px;
+    }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <header class="sticky top-0 z-30 border-b border-border/60 bg-background/85 backdrop-blur">
+    <div class="mx-auto flex max-w-6xl items-center justify-between px-5 py-2">
+      <a aria-label="Naari home" href="../">
+        <img src="../images/naari-logo.png" alt="Naari" class="h-11 w-auto sm:h-14 mix-blend-multiply"/>
+      </a>
+      <nav class="flex gap-5 font-hand text-lg sm:gap-8">
+        <a class="hidden text-foreground/80 hover:text-primary sm:inline" href="../">Home</a>
+        <a class="hidden text-foreground/80 hover:text-primary sm:inline" href="../shop/">Shop</a>
+        <a class="hidden text-foreground/80 hover:text-primary sm:inline" href="../story/">Our Story</a>
+        <a class="hidden text-foreground/80 hover:text-primary sm:inline" href="../contact/">Contact</a>
+        <a class="text-primary active !inline" href="./" data-status="active" aria-current="page">Bag (<span class="bag-count-badge">0</span>)</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Main Bag Content -->
+  <main>
+    <section class="mx-auto max-w-3xl px-4 py-12 sm:px-5">
+      <div class="text-center">
+        <p class="font-hand text-lg text-primary">your bag</p>
+        <h1 class="text-4xl font-semibold sm:text-5xl">Checkout</h1>
+      </div>
+
+      <div id="cart-content-area" class="mt-8"></div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer class="mt-24 border-t border-border/60">
+    <div class="mx-auto grid max-w-6xl gap-8 px-5 py-12 sm:grid-cols-3">
+      <div>
+        <img src="../images/naari-logo.png" alt="Naari" class="h-16 w-auto mix-blend-multiply"/>
+        <p class="mt-2 font-hand text-muted-foreground">Modern kurtis, woven with heritage.</p>
+      </div>
+      <div class="font-hand text-lg">
+        <a class="block hover:text-primary" href="../">Home</a>
+        <a class="block hover:text-primary" href="../shop/">Shop</a>
+        <a class="block hover:text-primary" href="../story/">Our Story</a>
+        <a class="block hover:text-primary" href="../contact/">Contact</a>
+      </div>
+      <div class="text-sm text-muted-foreground">
+        <p>hello@naari.in</p>
+        <p><a href="https://wa.me/918849366915?text=Hi%20Naari!%20I'd%20like%20to%20enquire%20about%20your%20kurtis." target="_blank" class="hover:text-primary transition">+91 88493 66915</a></p>
+        <p class="mt-4">© 2026 Naari</p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="../assets/app.js"></script>
+  <script>
+    function renderCartView() {
+      const container = document.getElementById('cart-content-area');
+      const cart = getCart();
+
+      if (!cart || cart.length === 0) {
+        container.innerHTML = `
+          <div class="mt-12 text-center">
+            <p class="font-hand text-xl text-muted-foreground">Your bag is empty.</p>
+            <a class="mt-6 inline-block bg-primary px-7 py-3 text-sm uppercase tracking-[0.2em] text-primary-foreground hover:opacity-90 transition" href="../shop/">
+              Shop kurtis
+            </a>
+          </div>
+        `;
+        return;
+      }
+
+      const total = getCartTotal();
+
+      const itemsHtml = cart.map(item => `
+        <li class="grid grid-cols-[64px_minmax(0,1fr)_auto] items-center gap-3 bg-card/70 p-3 ring-1 ring-border sm:grid-cols-[80px_minmax(0,1fr)_auto]">
+          <img src="../${item.image.replace(/^\//, '')}" alt="${item.name}" class="aspect-[3/4] w-full object-cover"/>
+          <div class="min-w-0">
+            <p class="truncate font-display text-lg font-semibold sm:text-xl">${item.name}</p>
+            <p class="text-sm text-muted-foreground">${item.color} · ${item.size}</p>
+            <div class="mt-2 flex items-center gap-3">
+              <div class="flex items-center border border-border">
+                <button
+                  type="button"
+                  aria-label="Decrease"
+                  data-key="${item.key}"
+                  class="cart-dec-btn h-7 w-7 flex items-center justify-center hover:text-primary cursor-pointer"
+                >−</button>
+                <span class="w-6 text-center text-sm tabular-nums">${item.qty}</span>
+                <button
+                  type="button"
+                  aria-label="Increase"
+                  data-key="${item.key}"
+                  class="cart-inc-btn h-7 w-7 flex items-center justify-center hover:text-primary cursor-pointer"
+                >+</button>
+              </div>
+              <button
+                type="button"
+                data-key="${item.key}"
+                class="cart-remove-btn font-hand text-sm text-primary underline cursor-pointer"
+              >
+                remove
+              </button>
+            </div>
+          </div>
+          <p class="font-display text-lg text-primary">${formatPrice(item.price * item.qty)}</p>
+        </li>
+      `).join('');
+
+      container.innerHTML = `
+        <ul class="mt-10 space-y-3">${itemsHtml}</ul>
+        <div class="mt-6 flex items-center justify-between border-t border-border pt-4">
+          <span class="font-hand text-xl">Total</span>
+          <span class="font-display text-2xl text-primary">${formatPrice(total)}</span>
+        </div>
+        <a
+          href="../checkout/"
+          id="proceed-checkout-btn"
+          class="mt-6 block text-center w-full bg-primary py-4 text-sm uppercase tracking-[0.2em] text-primary-foreground hover:opacity-90 transition cursor-pointer font-medium shadow-sm"
+        >
+          Proceed to Checkout →
+        </a>
+        <div class="mt-4 flex flex-col items-center gap-2 text-center text-sm text-muted-foreground">
+          <p class="font-hand text-base text-foreground/80">✿ Free delivery across India · Authentic Handcraft</p>
+          <p>Need sizing or order help? <a href="https://wa.me/918849366915?text=Hi%20Naari!%20I%20have%20a%20question%20about%20my%20bag." target="_blank" class="text-primary underline">Chat with us on WhatsApp</a></p>
+          <a href="../shop/" class="mt-2 block font-hand text-primary underline">
+            continue shopping
+          </a>
+        </div>
+      `;
+
+      attachCartListeners();
+    }
+
+    function attachCartListeners() {
+      document.querySelectorAll('.cart-dec-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const key = btn.dataset.key;
+          const cart = getCart();
+          const item = cart.find(i => i.key === key);
+          if (item) {
+            updateCartQty(key, item.qty - 1);
+            renderCartView();
+          }
+        });
+      });
+
+      document.querySelectorAll('.cart-inc-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const key = btn.dataset.key;
+          const cart = getCart();
+          const item = cart.find(i => i.key === key);
+          if (item) {
+            updateCartQty(key, item.qty + 1);
+            renderCartView();
+          }
+        });
+      });
+
+      document.querySelectorAll('.cart-remove-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const key = btn.dataset.key;
+          removeCartItem(key);
+          getToast().success('Item removed from bag.');
+          renderCartView();
+        });
+      });
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      renderCartView();
+    });
+  </script>
+</body>
+</html>
