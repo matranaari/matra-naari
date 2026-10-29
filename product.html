@@ -1,0 +1,785 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <link rel="icon" type="image/png" href="favicon.png"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous"/>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Kalam:wght@300;400;700&family=Karla:wght@400;500;600&display=swap"/>
+  <link rel="stylesheet" href="assets/styles.css"/>
+  <title>Handcrafted Kurti — Matra Naari</title>
+  <meta name="description" content="Authentic handcrafted Indian ethnic kurti in pure breathable cotton. Hand-finished details, tailored for everyday grace."/>
+  <style>
+    body {
+      background-image: url('images/paper.jpg'), url('/images/paper.jpg');
+      background-size: 700px;
+    }
+  </style>
+</head>
+<body class="text-foreground antialiased selection:bg-primary/20 selection:text-primary">
+
+  <!-- Top Announcement Bar -->
+  <div id="top-announcement-bar" class="bg-primary text-primary-foreground py-2 px-4 text-xs font-sans tracking-wider text-center flex items-center justify-center">
+    <div class="flex items-center gap-2">
+      <span class="text-xs">✿</span>
+      <span class="announcement-text transition-opacity duration-300 font-medium">FREE EXPRESS SHIPPING ON ALL ORDERS · USE CODE: NAARI10 FOR 10% OFF</span>
+      <span class="text-xs">✿</span>
+    </div>
+  </div>
+
+  <!-- Sticky Header -->
+  <header class="sticky top-0 z-40 border-b border-border/80 bg-background/90 backdrop-blur-md">
+    <div class="mx-auto flex max-w-7xl items-center justify-between px-4 py-2.5 sm:px-6">
+      <a aria-label="Matra Naari Home" href="index.html" class="flex items-center gap-3">
+        <img src="images/naari-logo.png" alt="Matra Naari" class="h-10 w-auto sm:h-12 mix-blend-multiply"/>
+      </a>
+      <nav class="hidden md:flex items-center gap-8 font-hand text-lg">
+        <a class="text-foreground/80 hover:text-primary transition" href="index.html">Home</a>
+        <a class="text-primary font-bold active" href="shop.html">Collection</a>
+        <a class="text-foreground/80 hover:text-primary transition" href="story.html">Our Craft</a>
+        <a class="text-foreground/80 hover:text-primary transition" href="contact.html">Contact</a>
+      </nav>
+      <div class="flex items-center gap-3 sm:gap-5">
+        <button type="button" class="open-search-modal-btn p-2 text-foreground/80 hover:text-primary transition cursor-pointer" aria-label="Search">
+          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+        </button>
+        <button type="button" class="open-wishlist-drawer-btn relative p-2 text-foreground/80 hover:text-primary transition cursor-pointer" aria-label="Wishlist">
+          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
+          <span class="wishlist-count-badge absolute -top-1 -right-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-primary-foreground font-sans" style="display:none;">0</span>
+        </button>
+        <button type="button" class="open-auth-modal-btn p-2 text-foreground/80 hover:text-primary transition flex items-center gap-1.5 cursor-pointer" aria-label="Account">
+          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+          <span class="header-user-label hidden sm:inline text-xs font-sans font-medium text-foreground/80">Account</span>
+        </button>
+        <button type="button" class="open-cart-drawer-btn flex items-center gap-2 bg-primary/10 hover:bg-primary/20 text-primary px-3 py-1.5 rounded-xs transition cursor-pointer" aria-label="Bag">
+          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
+          <span class="font-hand text-base">Bag</span>
+          <span class="bag-count-badge flex h-4 min-w-[16px] items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-primary-foreground font-sans" style="display:none;">0</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- PDP Main Content -->
+  <main class="mx-auto max-w-7xl px-4 py-8 sm:px-6">
+    <!-- Breadcrumb -->
+    <nav class="mb-6 flex items-center gap-2 text-xs text-muted-foreground uppercase tracking-wider font-sans">
+      <a href="index.html" class="hover:text-primary">Home</a>
+      <span>/</span>
+      <a href="shop.html" class="hover:text-primary">Collection</a>
+      <span>/</span>
+      <span id="pdp-crumb-category" class="hover:text-primary">Kurti</span>
+      <span>/</span>
+      <span id="pdp-crumb-name" class="text-primary font-medium truncate max-w-xs">Product</span>
+    </nav>
+
+    <!-- Product Layout Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-[1fr_480px] gap-10 items-start">
+      
+      <!-- Left: Image Gallery (Libas-Style Main Viewer + Thumbnails + Touch Swipe) -->
+      <div class="space-y-4">
+        <div id="pdp-main-image-wrap" class="relative overflow-hidden bg-card/60 border border-border rounded-xs shadow-md select-none">
+          <img id="pdp-main-image" src="assets/hero.jpg" alt="Kurti" onerror="this.onerror=null;this.src='assets/hero.jpg';" class="w-full aspect-[4/5] object-cover transition-all duration-300"/>
+          <span id="pdp-discount-badge" class="absolute top-4 left-4 badge-discount text-xs font-bold px-3 py-1 rounded-xs shadow">35% OFF</span>
+          <!-- Prev / Next Gallery Controls -->
+          <button type="button" id="pdp-gallery-prev" class="absolute left-3 top-1/2 -translate-y-1/2 h-9 w-9 rounded-full bg-card/85 hover:bg-card text-foreground shadow flex items-center justify-center cursor-pointer transition" aria-label="Previous image">‹</button>
+          <button type="button" id="pdp-gallery-next" class="absolute right-3 top-1/2 -translate-y-1/2 h-9 w-9 rounded-full bg-card/85 hover:bg-card text-foreground shadow flex items-center justify-center cursor-pointer transition" aria-label="Next image">›</button>
+          <!-- Wishlist Floating Toggle -->
+          <button
+            type="button"
+            id="pdp-wishlist-toggle"
+            class="wishlist-btn-heart absolute top-4 right-4 flex h-10 w-10 items-center justify-center rounded-full bg-card/90 shadow text-foreground hover:text-primary cursor-pointer transition"
+            aria-label="Add to Wishlist"
+          >
+            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
+          </button>
+        </div>
+
+        <!-- Thumbnail Selector -->
+        <div class="flex gap-3 overflow-x-auto pb-2" id="pdp-thumbnails">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+
+      <!-- Right: Product Information & Purchase Controls -->
+      <div class="space-y-6">
+        <div>
+          <div class="flex items-center gap-2 flex-wrap">
+            <span id="pdp-category-tag" class="text-xs uppercase tracking-widest text-primary font-bold">Straight Cut</span>
+            <span class="text-muted-foreground text-xs">·</span>
+            <span id="pdp-style-tag" class="text-xs text-muted-foreground font-sans">Handcrafted Ethnic Wear</span>
+          </div>
+          <h1 id="pdp-title" class="font-display text-3xl sm:text-4xl font-semibold mt-1">Gulmohar Straight Kurti</h1>
+          <div class="mt-2 flex items-center gap-3 text-sm flex-wrap">
+            <span id="pdp-stock-badge" class="text-xs text-emerald-800 bg-emerald-50 border border-emerald-700/20 px-2.5 py-0.5 rounded font-medium">In Stock · Ready to Ship</span>
+            <span id="pdp-sku-label" class="text-xs text-muted-foreground font-mono">SKU: NAARI-STR</span>
+          </div>
+        </div>
+
+        <!-- Price Display -->
+        <div class="p-4 bg-card/60 border border-border rounded-xs space-y-1">
+          <div class="flex items-baseline gap-3 flex-wrap">
+            <span id="pdp-price" class="font-display text-3xl font-bold text-primary">₹1,299</span>
+            <span id="pdp-mrp" class="text-base line-through text-muted-foreground">₹1,999</span>
+            <span id="pdp-savings" class="text-xs font-semibold text-emerald-800">You Save ₹700 (35%)</span>
+          </div>
+          <p class="text-[11px] text-muted-foreground">Inclusive of all taxes · Free express shipping on orders above ₹999</p>
+        </div>
+
+        <!-- Color Selection -->
+        <div class="space-y-2">
+          <div class="flex items-center justify-between text-xs uppercase tracking-wider font-semibold text-muted-foreground">
+            <span>Color: <strong id="pdp-selected-color-label" class="text-foreground">Maroon</strong></span>
+          </div>
+          <div class="flex gap-2" id="pdp-color-swatches">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+
+        <!-- Size Selection & Size Guide Modal Trigger -->
+        <div class="space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="text-xs uppercase tracking-wider font-semibold text-muted-foreground">Select Size:</span>
+            <button type="button" id="open-size-chart-btn" class="text-xs font-hand text-primary underline cursor-pointer hover:font-bold">
+              ✿ Size Chart &amp; Fit Guide
+            </button>
+          </div>
+          <div class="flex flex-wrap gap-2" id="pdp-sizes-list">
+            <!-- Size pills rendered by JS -->
+          </div>
+          <p id="pdp-size-error" class="text-xs text-destructive hidden">Please select an available size before adding to bag.</p>
+        </div>
+
+        <!-- Quantity & Action CTAs -->
+        <div class="space-y-3 pt-2">
+          <div class="flex items-center gap-3">
+            <span class="text-xs uppercase tracking-wider font-semibold text-muted-foreground">Quantity:</span>
+            <div class="flex items-center border border-border bg-card">
+              <button type="button" id="pdp-qty-dec" class="h-9 w-9 flex items-center justify-center hover:text-primary cursor-pointer text-sm font-semibold" aria-label="Decrease quantity">−</button>
+              <span id="pdp-qty-val" class="w-9 text-center text-sm font-semibold tabular-nums">1</span>
+              <button type="button" id="pdp-qty-inc" class="h-9 w-9 flex items-center justify-center hover:text-primary cursor-pointer text-sm font-semibold" aria-label="Increase quantity">+</button>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3 pt-2">
+            <button
+              type="button"
+              id="pdp-add-to-bag-btn"
+              class="border-2 border-primary bg-primary text-primary-foreground py-3.5 text-xs uppercase tracking-[0.2em] font-semibold hover:opacity-90 transition cursor-pointer shadow-sm text-center"
+            >
+              Add to Bag
+            </button>
+            <button
+              type="button"
+              id="pdp-buy-now-btn"
+              class="border-2 border-foreground bg-foreground text-background py-3.5 text-xs uppercase tracking-[0.2em] font-semibold hover:bg-foreground/90 transition cursor-pointer shadow-sm text-center"
+            >
+              Buy It Now
+            </button>
+          </div>
+        </div>
+
+        <!-- Delivery Pincode Checker (Indian Postal Circles) -->
+        <div class="bg-card/70 border border-border p-4 rounded-xs space-y-2">
+          <div class="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            <svg class="h-4 w-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+            <span>Delivery Pincode &amp; Serviceability</span>
+          </div>
+          <form id="pdp-pincode-form" class="flex gap-2">
+            <input
+              type="text"
+              id="pdp-pincode-input"
+              maxlength="6"
+              placeholder="Enter 6-digit PIN code (e.g. 400001)"
+              class="min-w-0 flex-1 border border-border bg-background px-3 py-2 text-xs font-mono outline-none focus:border-primary"
+            />
+            <button type="submit" class="bg-primary/10 border border-primary text-primary px-4 py-2 text-xs uppercase tracking-wider font-semibold hover:bg-primary hover:text-primary-foreground transition cursor-pointer">
+              Check
+            </button>
+          </form>
+          <div id="pdp-pincode-result" class="text-xs pt-1">
+            <span class="text-[11px] text-muted-foreground">Enter your 6-digit Indian PIN code to check postal circle serviceability &amp; COD availability.</span>
+          </div>
+        </div>
+
+        <!-- Available Offers & Coupons Spotlight Box (Dynamically Hydrated) -->
+        <div id="pdp-offers-box" class="bg-primary/5 border border-primary/20 p-4 rounded-xs space-y-2">
+          <div class="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-primary">
+            <span>✿</span>
+            <span>Active Promotional Offers</span>
+          </div>
+          <div id="pdp-offers-list" class="space-y-2 text-xs font-sans">
+            <!-- Hydrated from /api/coupons -->
+          </div>
+        </div>
+
+        <!-- Collapsible Accordion Tabs (Description, Specifications, Fabric & Care, Shipping) -->
+        <div class="border-t border-border space-y-3 pt-4 text-xs font-sans">
+          <!-- Accordion 1: Description & Specifications -->
+          <details class="group border-b border-border/80 pb-3" open>
+            <summary class="flex justify-between items-center font-display text-base font-semibold text-foreground cursor-pointer list-none">
+              <span>Description &amp; Garment Specifications</span>
+              <span class="group-open:rotate-180 transition-transform">▼</span>
+            </summary>
+            <div class="mt-2 space-y-3 text-muted-foreground leading-relaxed">
+              <p id="pdp-desc-text">
+                Everyday ease, hand block-printed on fine cotton. Designed with a clean straight silhouette and side slits.
+              </p>
+              <div class="grid grid-cols-2 gap-2 pt-2 border-t border-border/50 text-xs">
+                <div><span class="text-muted-foreground">Silhouette:</span> <strong id="pdp-spec-category" class="text-foreground">Straight Cut</strong></div>
+                <div><span class="text-muted-foreground">Style:</span> <strong id="pdp-spec-style" class="text-foreground">Straight Kurta</strong></div>
+                <div><span class="text-muted-foreground">Occasion:</span> <strong id="pdp-spec-occasion" class="text-foreground">Everyday &amp; Workwear</strong></div>
+                <div><span class="text-muted-foreground">Pattern:</span> <strong id="pdp-spec-pattern" class="text-foreground">Hand-Block Print</strong></div>
+                <div><span class="text-muted-foreground">Sleeve:</span> <strong id="pdp-spec-sleeve" class="text-foreground">3/4th Sleeves</strong></div>
+                <div><span class="text-muted-foreground">Neckline:</span> <strong id="pdp-spec-neck" class="text-foreground">Mandarin Collar</strong></div>
+              </div>
+            </div>
+          </details>
+
+          <!-- Accordion 2: Fabric & Care -->
+          <details class="group border-b border-border/80 pb-3" open>
+            <summary class="flex justify-between items-center font-display text-base font-semibold text-foreground cursor-pointer list-none">
+              <span>Fabric &amp; Care Instructions</span>
+              <span class="group-open:rotate-180 transition-transform">▼</span>
+            </summary>
+            <div class="mt-2 space-y-1 text-muted-foreground leading-relaxed">
+              <p><strong>Fabric:</strong> <span id="pdp-fabric-text">100% Pure Cambric Cotton</span></p>
+              <p><strong>Wash Care:</strong> <span id="pdp-care-text">Hand wash separately in cold water with mild detergent. Line dry in shade.</span></p>
+            </div>
+          </details>
+
+          <!-- Accordion 3: Shipping & Returns -->
+          <details class="group border-b border-border/80 pb-3">
+            <summary class="flex justify-between items-center font-display text-base font-semibold text-foreground cursor-pointer list-none">
+              <span>Shipping &amp; 7-Day Returns Policy</span>
+              <span class="group-open:rotate-180 transition-transform">▼</span>
+            </summary>
+            <div class="mt-2 space-y-1 text-muted-foreground leading-relaxed">
+              <p>• Free express shipping across India on orders above ₹999 (₹99 standard shipping below ₹999).</p>
+              <p>• Dispatched within 24–48 hours; typical delivery within 3 to 6 business days depending on postal zone.</p>
+              <p>• Easy 7-day size exchanges and returns directly from your customer account portal.</p>
+            </div>
+          </details>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Related Kurtis Section -->
+    <section class="mt-20 border-t border-border/80 pt-12">
+      <div class="flex items-center justify-between mb-6">
+        <div>
+          <p class="font-hand text-base text-primary">curated pairings</p>
+          <h2 class="font-display text-3xl font-semibold">You May Also Like</h2>
+        </div>
+        <a href="shop.html" class="font-hand text-primary text-base hover:underline">view collection →</a>
+      </div>
+      <div class="grid grid-cols-2 gap-4 sm:gap-6 lg:grid-cols-4" id="pdp-related-grid">
+        <!-- Loaded by JS -->
+      </div>
+    </section>
+
+    <!-- Recently Viewed Kurtis Section -->
+    <section id="pdp-recently-viewed-section" class="hidden mt-16 border-t border-border/80 pt-12">
+      <div class="flex items-center justify-between mb-6">
+        <div>
+          <p class="font-hand text-base text-primary">your browsing history</p>
+          <h2 class="font-display text-3xl font-semibold">Recently Viewed</h2>
+        </div>
+      </div>
+      <div class="grid grid-cols-2 gap-4 sm:gap-6 lg:grid-cols-4" id="pdp-recently-viewed-grid">
+        <!-- Loaded by JS -->
+      </div>
+    </section>
+  </main>
+
+  <!-- Sticky Mobile Bottom Purchase Bar (< 640px) -->
+  <div id="pdp-mobile-sticky-bar" class="sm:hidden fixed bottom-0 left-0 right-0 z-40 bg-card/95 backdrop-blur-md border-t border-border px-4 py-2.5 flex items-center justify-between gap-3 shadow-2xl">
+    <div class="min-w-0">
+      <p id="pdp-sticky-name" class="text-xs font-semibold truncate">Gulmohar Straight Kurti</p>
+      <p id="pdp-sticky-price" class="font-display text-lg font-bold text-primary">₹1,299</p>
+    </div>
+    <div class="flex items-center gap-2 shrink-0">
+      <button type="button" onclick="document.getElementById('pdp-add-to-bag-btn').click()" class="bg-primary text-primary-foreground px-4 py-2.5 text-xs uppercase tracking-wider font-semibold cursor-pointer">
+        Add to Bag
+      </button>
+      <button type="button" onclick="document.getElementById('pdp-buy-now-btn').click()" class="bg-foreground text-background px-3.5 py-2.5 text-xs uppercase tracking-wider font-semibold cursor-pointer">
+        Buy Now
+      </button>
+    </div>
+  </div>
+
+  <!-- Interactive Size Chart Modal -->
+  <div id="size-chart-modal" class="fixed inset-0 z-50 invisible opacity-0 transition-opacity duration-200 flex items-center justify-center p-4">
+    <div id="size-chart-backdrop" class="drawer-backdrop absolute inset-0"></div>
+    <div class="modal-enter relative w-full max-w-lg bg-card border border-border shadow-2xl p-6 rounded-xs z-10 space-y-4">
+      <div class="flex items-center justify-between border-b border-border pb-3">
+        <div>
+          <h3 class="font-display text-2xl font-semibold text-primary">Size Chart &amp; Fit Guide</h3>
+          <p class="text-xs text-muted-foreground">Standard garment measurements in inches</p>
+        </div>
+        <button type="button" id="close-size-chart-btn" class="p-1 text-muted-foreground hover:text-primary transition cursor-pointer">✕</button>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-xs text-left border-collapse">
+          <thead>
+            <tr class="bg-primary/10 text-primary border-b border-border">
+              <th class="p-2.5 font-bold">Size</th>
+              <th class="p-2.5 font-bold">Bust</th>
+              <th class="p-2.5 font-bold">Waist</th>
+              <th class="p-2.5 font-bold">Hip</th>
+              <th class="p-2.5 font-bold">Length</th>
+            </tr>
+          </thead>
+          <tbody id="size-chart-body" class="divide-y divide-border/60">
+            <!-- Rendered by JS -->
+          </tbody>
+        </table>
+      </div>
+      <div class="text-[11px] text-muted-foreground font-sans space-y-1 bg-background/60 p-3 rounded-xs border border-border/40">
+        <p>✿ <strong>How to Measure:</strong> Measure around the fullest part of your bust and waist while keeping the tape comfortably loose.</p>
+        <p>✿ If you prefer a relaxed or layered fit, we suggest taking one size larger.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="mt-20 pb-16 sm:pb-0 border-t border-border bg-card/90">
+    <div class="mx-auto grid max-w-7xl gap-8 px-4 py-12 sm:px-6 sm:grid-cols-3">
+      <div>
+        <img src="images/naari-logo.png" alt="Matra Naari" class="h-14 w-auto mix-blend-multiply"/>
+        <p class="mt-2 font-hand text-muted-foreground">Modern kurtis, woven with heritage.</p>
+      </div>
+      <div class="font-hand text-lg space-y-1">
+        <a class="block hover:text-primary transition" href="index.html">Home</a>
+        <a class="block hover:text-primary transition active text-primary" href="shop.html">Shop Catalog</a>
+        <a class="block hover:text-primary transition" href="story.html">Our Craft Story</a>
+        <a class="block hover:text-primary transition" href="contact.html">Studio Contact</a>
+      </div>
+      <div class="text-xs text-muted-foreground font-sans space-y-1">
+        <p>hello@naari.in · +91 88493 66915</p>
+        <p class="pt-2">✿ Free delivery above ₹999 across India · Easy 7-day returns</p>
+        <p class="pt-4">© 2026 Matra Naari.</p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="assets/app.js"></script>
+  <script>
+    // Product Detail Page Controller
+    let currentProduct = null;
+    let currentGallery = [];
+    let currentImageIdx = 0;
+    let selectedColor = '';
+    let selectedSize = '';
+    let selectedQty = 1;
+
+    async function loadProductDetail() {
+      const params = new URLSearchParams(window.location.search);
+      const pid = params.get('id') || 'straight';
+
+      loadActivePdpCoupons();
+
+      try {
+        const resp = await fetch(`${API_BASE}/api/products/${pid}`);
+        const data = await resp.json();
+        if (data.ok && data.product) {
+          currentProduct = data.product;
+          renderProduct(data.product, data.size_chart, data.related_products);
+          return;
+        }
+      } catch (e) {}
+
+      // Fallback
+      currentProduct = PRODUCTS.find(p => p.id === pid) || PRODUCTS[0];
+      renderProduct(currentProduct, null, PRODUCTS.filter(p => p.id !== currentProduct.id));
+    }
+
+    async function loadActivePdpCoupons() {
+      const box = document.getElementById('pdp-offers-box');
+      const listEl = document.getElementById('pdp-offers-list');
+      if (!box || !listEl) return;
+      try {
+        const res = await fetch(`${API_BASE}/api/coupons`);
+        const data = await res.json();
+        const coupons = (data && data.coupons) ? data.coupons : [];
+        if (coupons.length === 0) {
+          box.classList.add('hidden');
+          return;
+        }
+        box.classList.remove('hidden');
+        listEl.innerHTML = coupons.slice(0, 3).map((cp, idx) => `
+          <div class="flex items-center justify-between ${idx < Math.min(coupons.length, 3) - 1 ? 'border-b border-primary/10 pb-1.5' : ''}">
+            <div>
+              <strong class="font-mono text-primary font-bold">${cp.code}</strong>
+              <p class="text-muted-foreground text-[11px]">${cp.description || (cp.discount_type === 'percentage' ? cp.discount_value + '% OFF' : 'Flat ₹' + cp.discount_value + ' OFF')}${cp.min_order_value ? ' (Min order ₹' + cp.min_order_value + ')' : ''}</p>
+            </div>
+            <button type="button" class="copy-coupon-btn text-xs font-hand text-primary hover:underline cursor-pointer shrink-0 ml-2" data-code="${cp.code}">Copy Code</button>
+          </div>
+        `).join('');
+        listEl.querySelectorAll('.copy-coupon-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const code = btn.dataset.code;
+            navigator.clipboard?.writeText(code);
+            getToast().success(`Coupon code "${code}" copied! Apply it in your bag.`);
+          });
+        });
+      } catch (e) {
+        box.classList.add('hidden');
+      }
+    }
+
+    function renderProduct(p, sizeChart, related) {
+      document.title = `${p.name} — Matra Naari`;
+
+      // Record in recently viewed after capturing previous history
+      const prevViewed = getRecentlyViewed(p.id);
+      trackRecentlyViewed(p);
+
+      // Breadcrumbs & Title
+      document.getElementById('pdp-crumb-category').textContent = p.category;
+      document.getElementById('pdp-crumb-name').textContent = p.name;
+      document.getElementById('pdp-category-tag').textContent = p.category;
+      document.getElementById('pdp-style-tag').textContent = p.style || p.occasion || 'Handcrafted Ethnic Wear';
+      document.getElementById('pdp-title').textContent = p.name;
+      document.getElementById('pdp-sku-label').textContent = `SKU: NAARI-${(p.id || 'KRT').toUpperCase()}`;
+      document.getElementById('pdp-price').textContent = formatPrice(p.price);
+
+      const stickyName = document.getElementById('pdp-sticky-name');
+      const stickyPrice = document.getElementById('pdp-sticky-price');
+      if (stickyName) stickyName.textContent = p.name;
+      if (stickyPrice) stickyPrice.textContent = formatPrice(p.price);
+
+      if (p.mrp && p.mrp > p.price) {
+        document.getElementById('pdp-mrp').style.display = '';
+        document.getElementById('pdp-savings').style.display = '';
+        document.getElementById('pdp-discount-badge').style.display = '';
+        document.getElementById('pdp-mrp').textContent = formatPrice(p.mrp);
+        const savings = p.mrp - p.price;
+        const pct = p.discountPercent || Math.round((savings / p.mrp) * 100);
+        document.getElementById('pdp-savings').textContent = `You Save ${formatPrice(savings)} (${pct}%)`;
+        document.getElementById('pdp-discount-badge').textContent = `${pct}% OFF`;
+      } else {
+        document.getElementById('pdp-mrp').style.display = 'none';
+        document.getElementById('pdp-savings').style.display = 'none';
+        document.getElementById('pdp-discount-badge').style.display = 'none';
+      }
+
+      // Stock & Availability Status
+      const stockBadge = document.getElementById('pdp-stock-badge');
+      const addBtn = document.getElementById('pdp-add-to-bag-btn');
+      const buyBtn = document.getElementById('pdp-buy-now-btn');
+      const stockCount = p.stock !== undefined ? Number(p.stock) : 25;
+      if (stockCount <= 0) {
+        stockBadge.textContent = 'Out of Stock';
+        stockBadge.className = 'text-xs text-rose-700 bg-destructive/10 border border-rose-700/20 px-2.5 py-0.5 rounded font-medium';
+        if (addBtn) { addBtn.disabled = true; addBtn.textContent = 'Out of Stock'; addBtn.classList.add('opacity-50'); }
+        if (buyBtn) { buyBtn.disabled = true; buyBtn.classList.add('opacity-50'); }
+      } else if (stockCount <= 5) {
+        stockBadge.textContent = `Low Stock · Only ${stockCount} Left`;
+        stockBadge.className = 'text-xs text-amber-700 bg-primary/10 border border-amber-700/20 px-2.5 py-0.5 rounded font-medium';
+      } else {
+        stockBadge.textContent = `In Stock (${stockCount} available) · Ready to Ship`;
+        stockBadge.className = 'text-xs text-emerald-800 bg-emerald-50 border border-emerald-700/20 px-2.5 py-0.5 rounded font-medium';
+      }
+
+      // Accordion Details & Specifications
+      document.getElementById('pdp-desc-text').textContent = p.description || p.note;
+      document.getElementById('pdp-fabric-text').textContent = p.fabric || '100% Pure Breathable Cotton';
+      document.getElementById('pdp-care-text').textContent = p.care || 'Gentle hand wash cold. Dry in shade.';
+      document.getElementById('pdp-spec-category').textContent = p.category || 'Kurti';
+      document.getElementById('pdp-spec-style').textContent = p.style || p.category || 'Straight Cut';
+      document.getElementById('pdp-spec-occasion').textContent = p.occasion || 'Everyday & Festive';
+      document.getElementById('pdp-spec-pattern').textContent = p.pattern || 'Artisan Hand-Block / Woven';
+      document.getElementById('pdp-spec-sleeve').textContent = p.sleeve_length || '3/4th Sleeves';
+      document.getElementById('pdp-spec-neck').textContent = p.neck_design || 'Classic Ethnic Neckline';
+
+      // Gallery Images
+      const primaryImg = p.relative_image || p.relativeImage || p.image || 'assets/hero.jpg';
+      currentGallery = (p.gallery && p.gallery.length > 0) ? p.gallery : [primaryImg];
+      currentImageIdx = 0;
+      updateGalleryDisplay(0);
+
+      // Colors
+      const colors = p.colors || [{ name: 'Standard', swatch: '#6B2D31' }];
+      selectedColor = colors[0].name;
+      document.getElementById('pdp-selected-color-label').textContent = selectedColor;
+      const colorContainer = document.getElementById('pdp-color-swatches');
+      colorContainer.innerHTML = colors.map((c, idx) => `
+        <button
+          type="button"
+          title="${c.name}"
+          aria-label="Select color ${c.name}"
+          class="h-8 w-8 rounded-full border ring-offset-2 transition cursor-pointer ${idx === 0 ? 'ring-2 ring-primary ring-offset-card' : 'border-border'}"
+          style="background-color: ${c.swatch};"
+          onclick="onPdpColorSelect('${c.name}', this)"
+        ></button>
+      `).join('');
+
+      // Sizes
+      const sizes = p.sizes || ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
+      const soldOut = p.soldOutSizes || (p.sold_out_sizes_json ? JSON.parse(p.sold_out_sizes_json || '[]') : []);
+      const availSizes = sizes.filter(s => !soldOut.includes(s));
+      selectedSize = availSizes.length === 1 ? availSizes[0] : '';
+      const sizeContainer = document.getElementById('pdp-sizes-list');
+      sizeContainer.innerHTML = sizes.map(sz => {
+        const isSold = soldOut.includes(sz);
+        return `
+          <button
+            type="button"
+            class="size-pill border px-3.5 py-2 text-xs font-semibold rounded-xs cursor-pointer ${isSold ? 'opacity-40 cursor-not-allowed line-through' : ''} ${selectedSize === sz ? 'selected' : 'border-border'}"
+            ${isSold ? 'disabled' : ''}
+            onclick="onPdpSizeSelect('${sz}', this)"
+          >
+            ${sz}
+          </button>
+        `;
+      }).join('');
+
+      // Wishlist State
+      updatePdpWishlistState();
+
+      // Size Chart Body
+      const chartData = sizeChart || [
+        {"size": "XS", "bust": "34", "waist": "30", "hip": "36", "length": "44"},
+        {"size": "S", "bust": "36", "waist": "32", "hip": "38", "length": "44"},
+        {"size": "M", "bust": "38", "waist": "34", "hip": "40", "length": "45"},
+        {"size": "L", "bust": "40", "waist": "36", "hip": "42", "length": "45"},
+        {"size": "XL", "bust": "42", "waist": "38", "hip": "44", "length": "46"},
+        {"size": "XXL", "bust": "44", "waist": "40", "hip": "46", "length": "46"}
+      ];
+      const chartBody = document.getElementById('size-chart-body');
+      if (chartBody) {
+        chartBody.innerHTML = chartData.map(row => `
+          <tr class="hover:bg-primary/5">
+            <td class="p-2.5 font-bold">${row.size}</td>
+            <td class="p-2.5">${row.bust}"</td>
+            <td class="p-2.5">${row.waist}"</td>
+            <td class="p-2.5">${row.hip}"</td>
+            <td class="p-2.5">${row.length}"</td>
+          </tr>
+        `).join('');
+      }
+
+      // Related Products
+      const relatedGrid = document.getElementById('pdp-related-grid');
+      if (relatedGrid && related) {
+        relatedGrid.innerHTML = related.slice(0, 4).map(rel => renderProductCard(rel)).join('');
+        attachProductCardEvents(relatedGrid, related);
+      }
+
+      // Recently Viewed Products
+      const rvSection = document.getElementById('pdp-recently-viewed-section');
+      const rvGrid = document.getElementById('pdp-recently-viewed-grid');
+      if (rvSection && rvGrid && prevViewed.length > 0) {
+        rvSection.classList.remove('hidden');
+        rvGrid.innerHTML = prevViewed.slice(0, 4).map(rv => renderProductCard(rv)).join('');
+        attachProductCardEvents(rvGrid, prevViewed);
+      }
+    }
+
+    function updateGalleryDisplay(idx) {
+      if (!currentGallery || currentGallery.length === 0) return;
+      currentImageIdx = (idx + currentGallery.length) % currentGallery.length;
+      const src = currentGallery[currentImageIdx];
+      const mainImg = document.getElementById('pdp-main-image');
+      if (mainImg) mainImg.src = src;
+
+      const thumbsContainer = document.getElementById('pdp-thumbnails');
+      if (thumbsContainer) {
+        thumbsContainer.innerHTML = currentGallery.map((img, i) => `
+          <button type="button" class="h-20 w-16 object-cover border-2 transition rounded-xs overflow-hidden cursor-pointer shrink-0 ${i === currentImageIdx ? 'border-primary ring-1 ring-primary' : 'border-border opacity-70 hover:opacity-100'}" onclick="updateGalleryDisplay(${i})">
+            <img src="${img}" alt="Thumbnail ${i + 1}" onerror="this.onerror=null;this.src='assets/hero.jpg';" class="h-full w-full object-cover"/>
+          </button>
+        `).join('');
+      }
+    }
+
+    function onPdpColorSelect(colorName, btn) {
+      selectedColor = colorName;
+      document.getElementById('pdp-selected-color-label').textContent = colorName;
+      document.querySelectorAll('#pdp-color-swatches button').forEach(b => {
+        b.classList.remove('ring-2', 'ring-primary', 'ring-offset-card');
+      });
+      btn.classList.add('ring-2', 'ring-primary', 'ring-offset-card');
+    }
+
+    function onPdpSizeSelect(sz, btn) {
+      selectedSize = sz;
+      document.getElementById('pdp-size-error').classList.add('hidden');
+      document.querySelectorAll('#pdp-sizes-list button').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+    }
+
+    function updatePdpWishlistState() {
+      if (!currentProduct) return;
+      const btn = document.getElementById('pdp-wishlist-toggle');
+      const isSaved = isInWishlist(currentProduct.id);
+      btn.classList.toggle('active', isSaved);
+      const svg = btn.querySelector('svg');
+      if (svg) {
+        svg.setAttribute('fill', isSaved ? '#6B2D31' : 'none');
+        svg.setAttribute('stroke', isSaved ? '#6B2D31' : 'currentColor');
+      }
+    }
+
+    function validatePdpSelection() {
+      if (!currentProduct) return false;
+      const maxStock = currentProduct.stock !== undefined ? Number(currentProduct.stock) : 25;
+      if (maxStock <= 0) {
+        getToast().error('Sorry, this kurti is currently out of stock.');
+        return false;
+      }
+      if (!selectedSize) {
+        const errEl = document.getElementById('pdp-size-error');
+        errEl.classList.remove('hidden');
+        errEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        getToast().error('Please select a size first.');
+        return false;
+      }
+      if (selectedQty > maxStock) {
+        getToast().error(`Only ${maxStock} unit(s) available in stock.`);
+        return false;
+      }
+      return true;
+    }
+
+    // Attach PDP event listeners
+    document.addEventListener('DOMContentLoaded', () => {
+      loadProductDetail();
+
+      // Prev / Next & Touch Swipe on Gallery
+      const prevBtn = document.getElementById('pdp-gallery-prev');
+      const nextBtn = document.getElementById('pdp-gallery-next');
+      const imgWrap = document.getElementById('pdp-main-image-wrap');
+      if (prevBtn) prevBtn.addEventListener('click', () => updateGalleryDisplay(currentImageIdx - 1));
+      if (nextBtn) nextBtn.addEventListener('click', () => updateGalleryDisplay(currentImageIdx + 1));
+
+      if (imgWrap) {
+        let touchStartX = 0;
+        imgWrap.addEventListener('touchstart', (e) => {
+          touchStartX = e.changedTouches[0].screenX;
+        }, { passive: true });
+        imgWrap.addEventListener('touchend', (e) => {
+          const diff = e.changedTouches[0].screenX - touchStartX;
+          if (Math.abs(diff) > 40) {
+            updateGalleryDisplay(diff < 0 ? currentImageIdx + 1 : currentImageIdx - 1);
+          }
+        }, { passive: true });
+      }
+
+      // Quantity controls
+      const qtyVal = document.getElementById('pdp-qty-val');
+      document.getElementById('pdp-qty-dec').addEventListener('click', () => {
+        if (selectedQty > 1) {
+          selectedQty--;
+          qtyVal.textContent = selectedQty;
+        }
+      });
+      document.getElementById('pdp-qty-inc').addEventListener('click', () => {
+        const maxStock = (currentProduct && currentProduct.stock !== undefined) ? Math.min(10, Number(currentProduct.stock)) : 10;
+        if (selectedQty < maxStock) {
+          selectedQty++;
+          qtyVal.textContent = selectedQty;
+        } else {
+          getToast().info(`Maximum available quantity (${maxStock}) selected.`);
+        }
+      });
+
+      // Wishlist toggle
+      document.getElementById('pdp-wishlist-toggle').addEventListener('click', () => {
+        if (currentProduct) {
+          toggleWishlist(currentProduct);
+          updatePdpWishlistState();
+        }
+      });
+
+      // Add to bag
+      document.getElementById('pdp-add-to-bag-btn').addEventListener('click', () => {
+        if (!validatePdpSelection()) return;
+        addToCart({
+          id: currentProduct.id,
+          name: currentProduct.name,
+          color: selectedColor,
+          size: selectedSize,
+          price: currentProduct.price,
+          mrp: currentProduct.mrp,
+          image: currentProduct.relative_image || currentProduct.relativeImage || currentProduct.image,
+          qty: selectedQty
+        }, true);
+      });
+
+      // Buy Now
+      document.getElementById('pdp-buy-now-btn').addEventListener('click', () => {
+        if (!validatePdpSelection()) return;
+        addToCart({
+          id: currentProduct.id,
+          name: currentProduct.name,
+          color: selectedColor,
+          size: selectedSize,
+          price: currentProduct.price,
+          mrp: currentProduct.mrp,
+          image: currentProduct.relative_image || currentProduct.relativeImage || currentProduct.image,
+          qty: selectedQty
+        }, false);
+        window.location.href = 'checkout.html';
+      });
+
+      // Pincode Checker
+      const pinForm = document.getElementById('pdp-pincode-form');
+      const pinInput = document.getElementById('pdp-pincode-input');
+      const pinResult = document.getElementById('pdp-pincode-result');
+
+      pinForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const pin = pinInput.value.trim();
+        if (pin.length !== 6 || !/^\d+$/.test(pin)) {
+          pinResult.innerHTML = '<span class="text-destructive">Please enter a valid 6-digit Indian PIN code.</span>';
+          return;
+        }
+        pinResult.innerHTML = '<span class="text-primary animate-pulse">Checking postal circle serviceability...</span>';
+        try {
+          const resp = await fetch(`${API_BASE}/api/check-pincode`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ pincode: pin })
+          });
+          const data = await resp.json();
+          if (data.ok) {
+            pinResult.innerHTML = `
+              <div class="text-emerald-800 space-y-0.5">
+                <p class="font-medium">✓ Serviceable to <strong>${pin}</strong> (${data.region || 'Domestic Zone'})</p>
+                <p class="text-muted-foreground text-[11px]">Estimated arrival: <strong>${data.estimated_delivery}</strong> · ${data.cod_available ? 'COD & Prepaid available' : 'Prepaid available'}</p>
+                <p class="text-muted-foreground text-[10px]">Note: Standard postal circle estimate. Live courier AWB tracking is provided upon dispatch.</p>
+              </div>
+            `;
+          } else {
+            pinResult.innerHTML = `<span class="text-destructive">${data.error}</span>`;
+          }
+        } catch (err) {
+          pinResult.innerHTML = '<span class="text-destructive">Unable to verify PIN code right now.</span>';
+        }
+      });
+
+      // Size chart modal
+      const chartModal = document.getElementById('size-chart-modal');
+      const openChartBtn = document.getElementById('open-size-chart-btn');
+      const closeChartBtn = document.getElementById('close-size-chart-btn');
+      const chartBackdrop = document.getElementById('size-chart-backdrop');
+
+      openChartBtn.addEventListener('click', () => {
+        chartModal.classList.remove('invisible', 'opacity-0');
+        chartModal.classList.add('opacity-100');
+      });
+      function closeSizeChart() {
+        chartModal.classList.remove('opacity-100');
+        chartModal.classList.add('opacity-0');
+        setTimeout(() => chartModal.classList.add('invisible'), 200);
+      }
+      if (closeChartBtn) closeChartBtn.addEventListener('click', closeSizeChart);
+      if (chartBackdrop) chartBackdrop.addEventListener('click', closeSizeChart);
+    });
+  </script>
+</body>
+</html>

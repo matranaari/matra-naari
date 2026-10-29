@@ -8,14 +8,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous"/>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Kalam:wght@300;400;700&family=Karla:wght@400;500;600&display=swap"/>
   <link rel="stylesheet" href="assets/styles.css"/>
-  <title>Your Bag — Naari</title>
-  <meta name="description" content="Review your bag and check out."/>
-  <meta property="og:type" content="website"/>
-  <meta property="og:title" content="Your Bag — Naari"/>
-  <meta property="og:description" content="Review your bag and check out."/>
-  <meta name="twitter:card" content="summary_large_image"/>
-  <meta name="twitter:title" content="Your Bag — Naari"/>
-  <meta name="twitter:description" content="Review your bag and check out."/>
+  <title>Shopping Bag — Matra Naari</title>
+  <meta name="description" content="Review your handcrafted kurtis, apply promo coupons, and proceed to checkout."/>
   <style>
     body {
       background-image: url('images/paper.jpg'), url('/images/paper.jpg');
@@ -23,177 +17,319 @@
     }
   </style>
 </head>
-<body>
-  <!-- Header -->
-  <header class="sticky top-0 z-30 border-b border-border/60 bg-background/85 backdrop-blur">
-    <div class="mx-auto flex max-w-6xl items-center justify-between px-5 py-2">
-      <a aria-label="Naari home" href="index.html">
-        <img src="images/naari-logo.png" alt="Naari" class="h-11 w-auto sm:h-14 mix-blend-multiply"/>
+<body class="text-foreground antialiased selection:bg-primary/20 selection:text-primary">
+
+  <!-- Top Announcement Bar -->
+  <div id="top-announcement-bar" class="bg-primary text-primary-foreground py-2 px-4 text-xs font-sans tracking-wider text-center flex items-center justify-center">
+    <div class="flex items-center gap-2">
+      <span class="text-xs">✿</span>
+      <span class="announcement-text transition-opacity duration-300 font-medium">FREE EXPRESS SHIPPING ON ALL ORDERS · USE CODE: NAARI10 FOR 10% OFF</span>
+      <span class="text-xs">✿</span>
+    </div>
+  </div>
+
+  <!-- Sticky Header -->
+  <header class="sticky top-0 z-40 border-b border-border/80 bg-background/90 backdrop-blur-md">
+    <div class="mx-auto flex max-w-7xl items-center justify-between px-4 py-2.5 sm:px-6">
+      <a aria-label="Matra Naari Home" href="index.html" class="flex items-center gap-3">
+        <img src="images/naari-logo.png" alt="Matra Naari" class="h-10 w-auto sm:h-12 mix-blend-multiply"/>
       </a>
-      <nav class="flex gap-5 font-hand text-lg sm:gap-8">
-        <a class="hidden text-foreground/80 hover:text-primary sm:inline" href="index.html">Home</a>
-        <a class="hidden text-foreground/80 hover:text-primary sm:inline" href="shop.html">Shop</a>
-        <a class="hidden text-foreground/80 hover:text-primary sm:inline" href="story.html">Our Story</a>
-        <a class="hidden text-foreground/80 hover:text-primary sm:inline" href="contact.html">Contact</a>
-        <a class="text-primary active !inline" href="cart.html" data-status="active" aria-current="page">Bag (<span class="bag-count-badge">0</span>)</a>
+      <nav class="hidden md:flex items-center gap-8 font-hand text-lg">
+        <a class="text-foreground/80 hover:text-primary transition" href="index.html">Home</a>
+        <a class="text-foreground/80 hover:text-primary transition" href="shop.html">Collection</a>
+        <a class="text-foreground/80 hover:text-primary transition" href="story.html">Our Craft</a>
+        <a class="text-foreground/80 hover:text-primary transition" href="contact.html">Contact</a>
       </nav>
+      <div class="flex items-center gap-3 sm:gap-5">
+        <button type="button" class="open-search-modal-btn p-2 text-foreground/80 hover:text-primary transition cursor-pointer" aria-label="Search">
+          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+        </button>
+        <button type="button" class="open-wishlist-drawer-btn relative p-2 text-foreground/80 hover:text-primary transition cursor-pointer" aria-label="Wishlist">
+          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
+          <span class="wishlist-count-badge absolute -top-1 -right-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-primary-foreground font-sans" style="display:none;">0</span>
+        </button>
+        <button type="button" class="open-auth-modal-btn p-2 text-foreground/80 hover:text-primary transition flex items-center gap-1.5 cursor-pointer" aria-label="Account">
+          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+          <span class="header-user-label hidden sm:inline text-xs font-sans font-medium text-foreground/80">Account</span>
+        </button>
+        <button type="button" class="open-cart-drawer-btn flex items-center gap-2 bg-primary/10 hover:bg-primary/20 text-primary px-3 py-1.5 rounded-xs transition cursor-pointer" aria-label="Bag">
+          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
+          <span class="font-hand text-base">Bag</span>
+          <span class="bag-count-badge flex h-4 min-w-[16px] items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-primary-foreground font-sans" style="display:none;">0</span>
+        </button>
+      </div>
     </div>
   </header>
 
-  <!-- Main Bag Content -->
-  <main>
-    <section class="mx-auto max-w-3xl px-4 py-12 sm:px-5">
-      <div class="text-center">
-        <p class="font-hand text-lg text-primary">your bag</p>
-        <h1 class="text-4xl font-semibold sm:text-5xl">Checkout</h1>
+  <!-- Bag Main Content -->
+  <main class="mx-auto max-w-5xl px-4 py-10 sm:px-6">
+    <div class="mb-8 text-center">
+      <p class="font-hand text-lg text-primary">your selections</p>
+      <h1 class="font-display text-4xl sm:text-5xl font-semibold">Shopping Bag</h1>
+      <div class="mt-2 flex items-center justify-center gap-2 text-xs uppercase tracking-widest text-muted-foreground font-sans">
+        <span class="text-primary font-bold">1. Bag Review</span>
+        <span>→</span>
+        <span>2. Delivery &amp; Payment</span>
+        <span>→</span>
+        <span>3. Confirmation</span>
       </div>
+    </div>
 
-      <!-- Container dynamically populated by JavaScript -->
-      <div id="cart-content-area" class="mt-8">
-        <!-- Rendered dynamically -->
+    <!-- Free Shipping Meter -->
+    <div id="cart-page-shipping-meter" class="mb-8 bg-card/70 border border-border p-4 rounded-xs text-center space-y-2">
+      <p id="cart-page-meter-text" class="text-xs sm:text-sm font-hand text-foreground">Add ₹999 for Free Express Delivery across India ✿</p>
+      <div class="mx-auto max-w-md h-2 overflow-hidden rounded-full bg-border">
+        <div id="cart-page-meter-bar" class="progress-bar-fill h-full bg-primary" style="width: 0%;"></div>
       </div>
-    </section>
+    </div>
+
+    <!-- Dynamic Cart Container -->
+    <div id="cart-page-main-container">
+      <!-- Populated by JavaScript -->
+    </div>
   </main>
 
   <!-- Footer -->
-  <footer class="mt-24 border-t border-border/60">
-    <div class="mx-auto grid max-w-6xl gap-8 px-5 py-12 sm:grid-cols-3">
+  <footer class="mt-20 border-t border-border bg-card/90">
+    <div class="mx-auto grid max-w-7xl gap-8 px-4 py-12 sm:px-6 sm:grid-cols-3">
       <div>
-        <img src="images/naari-logo.png" alt="Naari" class="h-16 w-auto mix-blend-multiply"/>
+        <img src="images/naari-logo.png" alt="Matra Naari" class="h-14 w-auto mix-blend-multiply"/>
         <p class="mt-2 font-hand text-muted-foreground">Modern kurtis, woven with heritage.</p>
       </div>
-      <div class="font-hand text-lg">
-        <a class="block hover:text-primary" href="index.html">Home</a>
-        <a class="block hover:text-primary" href="shop.html">Shop</a>
-        <a class="block hover:text-primary" href="story.html">Our Story</a>
-        <a class="block hover:text-primary" href="contact.html">Contact</a>
+      <div class="font-hand text-lg space-y-1">
+        <a class="block hover:text-primary transition" href="index.html">Home</a>
+        <a class="block hover:text-primary transition" href="shop.html">Shop Catalog</a>
+        <a class="block hover:text-primary transition" href="story.html">Our Craft Story</a>
+        <a class="block hover:text-primary transition" href="contact.html">Studio Contact</a>
       </div>
-      <div class="text-sm text-muted-foreground">
-        <p>hello@naari.in</p>
-        <p><a href="https://wa.me/918849366915?text=Hi%20Naari!%20I'd%20like%20to%20enquire%20about%20your%20kurtis." target="_blank" class="hover:text-primary transition">+91 88493 66915</a></p>
-        <p class="mt-4">© 2026 Naari</p>
+      <div class="text-xs text-muted-foreground font-sans space-y-1">
+        <p>hello@naari.in · +91 88493 66915</p>
+        <p class="pt-2">✿ Free delivery across India · Easy 7-day returns</p>
+        <p class="pt-4">© 2026 Matra Naari.</p>
       </div>
     </div>
   </footer>
 
   <script src="assets/app.js"></script>
   <script>
-    function renderCartView() {
-      const container = document.getElementById('cart-content-area');
+    function renderFullCartPage() {
+      const container = document.getElementById('cart-page-main-container');
       const cart = getCart();
+      const subtotal = getCartSubtotal();
+      const activeCoupon = getActiveCoupon();
 
-      if (!cart || cart.length === 0) {
+      // Update Shipping Meter
+      const storeSettings = window.NAARI_STORE_SETTINGS || { free_shipping_threshold: 999, shipping_fee: 99 };
+      const freeThreshold = Number(storeSettings.free_shipping_threshold ?? 999);
+      const baseShippingFee = Number(storeSettings.shipping_fee ?? 99);
+      const meterText = document.getElementById('cart-page-meter-text');
+      const meterBar = document.getElementById('cart-page-meter-bar');
+      if (subtotal >= freeThreshold) {
+        meterText.innerHTML = '🎉 You have unlocked <strong>FREE Express Delivery</strong> across India!';
+        meterBar.style.width = '100%';
+      } else {
+        const diff = freeThreshold - subtotal;
+        meterText.innerHTML = `Add <strong>${formatPrice(diff)}</strong> more to get <strong>FREE Express Delivery</strong> ✿`;
+        const pct = Math.min(100, Math.round((subtotal / freeThreshold) * 100));
+        meterBar.style.width = `${pct}%`;
+      }
+
+      if (cart.length === 0) {
         container.innerHTML = `
-          <div class="mt-12 text-center">
-            <p class="font-hand text-xl text-muted-foreground">Your bag is empty.</p>
-            <a class="mt-6 inline-block bg-primary px-7 py-3 text-sm uppercase tracking-[0.2em] text-primary-foreground hover:opacity-90 transition" href="shop.html">
-              Shop kurtis
+          <div class="py-20 text-center bg-card/60 border border-border p-8 rounded-xs">
+            <p class="font-hand text-2xl text-muted-foreground">Your shopping bag is currently empty.</p>
+            <p class="text-xs text-muted-foreground mt-2 max-w-sm mx-auto">Discover our handcrafted collection of straight cut, A-line, and festive anarkalis.</p>
+            <a href="shop.html" class="mt-6 inline-block bg-primary px-8 py-3.5 text-xs uppercase tracking-widest text-primary-foreground font-semibold hover:opacity-90 transition">
+              Explore The Collection
             </a>
           </div>
         `;
         return;
       }
 
-      const total = getCartTotal();
+      // Compute discounts
+      let discountAmount = 0;
+      if (activeCoupon && activeCoupon.code) {
+        if (typeof activeCoupon.discount_amount === 'number' && activeCoupon.subtotal_snapshot === subtotal) {
+          discountAmount = activeCoupon.discount_amount;
+        } else if (activeCoupon.discount_type === 'percentage') {
+          discountAmount = Math.round(subtotal * (activeCoupon.discount_value / 100));
+          if (activeCoupon.max_discount && discountAmount > activeCoupon.max_discount) {
+            discountAmount = activeCoupon.max_discount;
+          }
+        } else {
+          discountAmount = Math.min(activeCoupon.discount_value, subtotal);
+        }
+      }
 
-      const itemsHtml = cart.map(item => `
-        <li class="grid grid-cols-[64px_minmax(0,1fr)_auto] items-center gap-3 bg-card/70 p-3 ring-1 ring-border sm:grid-cols-[80px_minmax(0,1fr)_auto]">
-          <img src="${item.image}" alt="${item.name}" class="aspect-[3/4] w-full object-cover"/>
-          <div class="min-w-0">
-            <p class="truncate font-display text-lg font-semibold sm:text-xl">${item.name}</p>
-            <p class="text-sm text-muted-foreground">${item.color} · ${item.size}</p>
-            <div class="mt-2 flex items-center gap-3">
-              <div class="flex items-center border border-border">
-                <button
-                  type="button"
-                  aria-label="Decrease"
-                  data-key="${item.key}"
-                  class="cart-dec-btn h-7 w-7 flex items-center justify-center hover:text-primary cursor-pointer"
-                >−</button>
-                <span class="w-6 text-center text-sm tabular-nums">${item.qty}</span>
-                <button
-                  type="button"
-                  aria-label="Increase"
-                  data-key="${item.key}"
-                  class="cart-inc-btn h-7 w-7 flex items-center justify-center hover:text-primary cursor-pointer"
-                >+</button>
+      const shipping = subtotal >= freeThreshold ? 0 : baseShippingFee;
+      const finalTotal = Math.max(0, subtotal - discountAmount + shipping);
+
+      container.innerHTML = `
+        <div class="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-8 items-start">
+          <!-- Items List -->
+          <div class="space-y-4">
+            ${cart.map(item => `
+              <div class="flex gap-4 bg-card/70 border border-border p-4 rounded-xs items-center justify-between">
+                <img src="${item.image}" alt="${item.name}" class="h-24 w-20 object-cover rounded-xs shrink-0"/>
+                <div class="flex-1 min-w-0">
+                  <a href="product.html?id=${item.id}" class="truncate font-display text-lg font-semibold hover:text-primary transition block">${item.name}</a>
+                  <p class="text-xs text-muted-foreground">${item.color} · Size: <strong class="text-foreground">${item.size}</strong></p>
+                  <div class="mt-3 flex items-center gap-4">
+                    <!-- Qty Stepper -->
+                    <div class="flex items-center border border-border bg-background">
+                      <button type="button" class="page-cart-dec h-7 w-7 flex items-center justify-center hover:text-primary cursor-pointer text-sm" data-key="${item.key}">−</button>
+                      <span class="w-8 text-center text-xs font-semibold tabular-nums">${item.qty}</span>
+                      <button type="button" class="page-cart-inc h-7 w-7 flex items-center justify-center hover:text-primary cursor-pointer text-sm" data-key="${item.key}">+</button>
+                    </div>
+                    <button type="button" class="page-cart-remove text-xs text-muted-foreground hover:text-destructive underline cursor-pointer" data-key="${item.key}">
+                      Remove
+                    </button>
+                  </div>
+                </div>
+                <div class="text-right">
+                  <span class="font-display text-xl font-bold text-primary">${formatPrice(item.price * item.qty)}</span>
+                  ${item.qty > 1 ? `<p class="text-[11px] text-muted-foreground">${formatPrice(item.price)} each</p>` : ''}
+                </div>
               </div>
-              <button
-                type="button"
-                data-key="${item.key}"
-                class="cart-remove-btn font-hand text-sm text-primary underline cursor-pointer"
-              >
-                remove
+            `).join('')}
+
+            <div class="flex justify-between items-center pt-2">
+              <a href="shop.html" class="font-hand text-primary text-base hover:underline">← Continue Shopping</a>
+              <button type="button" onclick="localStorage.removeItem('${CART_STORAGE_KEY}'); renderFullCartPage(); updateHeaderBadges();" class="text-xs text-muted-foreground hover:text-destructive underline">
+                Clear Shopping Bag
               </button>
             </div>
           </div>
-          <p class="font-display text-lg text-primary">${formatPrice(item.price * item.qty)}</p>
-        </li>
-      `).join('');
 
-      container.innerHTML = `
-        <ul class="mt-10 space-y-3">${itemsHtml}</ul>
-        <div class="mt-6 flex items-center justify-between border-t border-border pt-4">
-          <span class="font-hand text-xl">Total</span>
-          <span class="font-display text-2xl text-primary">${formatPrice(total)}</span>
-        </div>
-        <a
-          href="checkout.html"
-          id="proceed-checkout-btn"
-          class="mt-6 block text-center w-full bg-primary py-4 text-sm uppercase tracking-[0.2em] text-primary-foreground hover:opacity-90 transition cursor-pointer font-medium shadow-sm"
-        >
-          Proceed to Checkout →
-        </a>
-        <div class="mt-4 flex flex-col items-center gap-2 text-center text-sm text-muted-foreground">
-          <p class="font-hand text-base text-foreground/80">✿ Free delivery across India · Authentic Handcraft</p>
-          <p>Need sizing or order help? <a href="https://wa.me/918849366915?text=Hi%20Naari!%20I%20have%20a%20question%20about%20my%20bag." target="_blank" class="text-primary underline">Chat with us on WhatsApp</a></p>
-          <a href="shop.html" class="mt-2 block font-hand text-primary underline">
-            continue shopping
-          </a>
+          <!-- Order Summary Sidebar -->
+          <div class="bg-card/80 border border-border p-6 rounded-xs space-y-6">
+            <h3 class="font-display text-2xl font-semibold border-b border-border pb-3">Order Summary</h3>
+
+            <!-- Coupon Box -->
+            <div class="space-y-2">
+              <label class="block text-xs uppercase tracking-wider font-semibold text-muted-foreground">Promo Coupon Code</label>
+              <form id="cart-page-coupon-form" class="flex gap-2">
+                <input
+                  type="text"
+                  id="cart-page-coupon-input"
+                  placeholder="Code (e.g. NAARI10)"
+                  value="${activeCoupon ? activeCoupon.code : ''}"
+                  class="min-w-0 flex-1 border border-border bg-background px-3 py-2 text-xs uppercase tracking-wider font-mono outline-none focus:border-primary"
+                />
+                <button type="submit" class="bg-primary px-4 py-2 text-xs uppercase tracking-wider font-semibold text-primary-foreground hover:opacity-90 transition cursor-pointer">
+                  ${activeCoupon ? 'Reapply' : 'Apply'}
+                </button>
+              </form>
+              <div id="cart-page-coupon-msg" class="text-xs">
+                ${activeCoupon ? `<span class="text-emerald-800 font-medium">✓ Coupon "${activeCoupon.code}" applied!</span> <button type="button" onclick="setActiveCoupon(null); renderFullCartPage();" class="text-muted-foreground hover:text-destructive underline ml-1">Remove</button>` : ''}
+              </div>
+            </div>
+
+            <!-- Price Breakdown -->
+            <div class="space-y-2 text-xs sm:text-sm font-sans">
+              <div class="flex justify-between text-muted-foreground">
+                <span>Subtotal (${getCartCount()} items)</span>
+                <span class="font-display text-base text-foreground">${formatPrice(subtotal)}</span>
+              </div>
+              ${discountAmount > 0 ? `
+                <div class="flex justify-between text-emerald-800 font-medium">
+                  <span>Coupon Discount (${activeCoupon.code})</span>
+                  <span>-${formatPrice(discountAmount)}</span>
+                </div>
+              ` : ''}
+              <div class="flex justify-between text-muted-foreground">
+                <span>Estimated Shipping</span>
+                <span class="text-xs uppercase tracking-wider font-bold text-primary">${shipping === 0 ? 'FREE' : formatPrice(shipping)}</span>
+              </div>
+              <div class="flex justify-between items-center border-t border-border pt-3 text-base font-bold">
+                <span class="font-display text-lg">Total Amount</span>
+                <span class="font-display text-2xl text-primary">${formatPrice(finalTotal)}</span>
+              </div>
+              <p class="text-[11px] text-muted-foreground text-center pt-1">Inclusive of all taxes &amp; duties</p>
+            </div>
+
+            <!-- Checkout CTA -->
+            <a
+              href="checkout.html"
+              class="block w-full bg-primary py-4 text-center text-xs uppercase tracking-[0.2em] font-semibold text-primary-foreground hover:opacity-90 transition shadow-sm"
+            >
+              Proceed to Checkout →
+            </a>
+
+            <div class="text-[11px] text-muted-foreground text-center space-y-1 font-hand">
+              <p>✿ 100% Genuine Handcrafted Textiles</p>
+              <p>✿ Free Delivery Across India · COD Available</p>
+            </div>
+          </div>
         </div>
       `;
 
-      attachCartListeners();
-    }
-
-    function attachCartListeners() {
-      document.querySelectorAll('.cart-dec-btn').forEach(btn => {
+      // Attach Steppers
+      container.querySelectorAll('.page-cart-dec').forEach(btn => {
         btn.addEventListener('click', () => {
           const key = btn.dataset.key;
-          const cart = getCart();
           const item = cart.find(i => i.key === key);
           if (item) {
             updateCartQty(key, item.qty - 1);
-            renderCartView();
+            renderFullCartPage();
           }
         });
       });
 
-      document.querySelectorAll('.cart-inc-btn').forEach(btn => {
+      container.querySelectorAll('.page-cart-inc').forEach(btn => {
         btn.addEventListener('click', () => {
           const key = btn.dataset.key;
-          const cart = getCart();
           const item = cart.find(i => i.key === key);
           if (item) {
             updateCartQty(key, item.qty + 1);
-            renderCartView();
+            renderFullCartPage();
           }
         });
       });
 
-      document.querySelectorAll('.cart-remove-btn').forEach(btn => {
+      container.querySelectorAll('.page-cart-remove').forEach(btn => {
         btn.addEventListener('click', () => {
-          const key = btn.dataset.key;
-          removeCartItem(key);
-          getToast().success('Item removed from bag.');
-          renderCartView();
+          removeCartItem(btn.dataset.key);
+          renderFullCartPage();
         });
       });
+
+      // Coupon Form
+      const cForm = document.getElementById('cart-page-coupon-form');
+      if (cForm) {
+        cForm.addEventListener('submit', async (e) => {
+          e.preventDefault();
+          const code = document.getElementById('cart-page-coupon-input').value.trim().toUpperCase();
+          const msgBox = document.getElementById('cart-page-coupon-msg');
+          if (!code) return;
+          msgBox.innerHTML = '<span class="text-primary animate-pulse">Validating coupon...</span>';
+
+          try {
+            const resp = await fetch(`${API_BASE}/api/apply-coupon`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ code, subtotal, items: getCart() })
+            });
+            const data = await resp.json();
+            if (data.ok) {
+              data.subtotal_snapshot = subtotal;
+              setActiveCoupon(data);
+              renderFullCartPage();
+              getToast().success(data.message);
+            } else {
+              msgBox.innerHTML = `<span class="text-destructive">${data.error}</span>`;
+              getToast().error(data.error);
+            }
+          } catch (err) {
+            msgBox.innerHTML = '<span class="text-destructive">Error validating coupon.</span>';
+          }
+        });
+      }
     }
 
-    document.addEventListener('DOMContentLoaded', () => {
-      renderCartView();
-    });
+    document.addEventListener('DOMContentLoaded', renderFullCartPage);
+    window.addEventListener('naari:cartUpdated', renderFullCartPage);
   </script>
 </body>
 </html>

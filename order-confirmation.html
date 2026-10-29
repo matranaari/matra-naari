@@ -73,6 +73,36 @@
           </div>
         </div>
 
+        <!-- Live Order Fulfillment Tracker Stepper -->
+        <div class="bg-card/70 p-5 ring-1 ring-border rounded-xs">
+          <div class="flex items-center justify-between text-xs uppercase tracking-wider font-semibold text-muted-foreground mb-4">
+            <span>Fulfillment Progress</span>
+            <span id="order-status-badge" class="px-2 py-0.5 rounded bg-primary/10 text-primary font-bold">Confirmed</span>
+          </div>
+          <div class="grid grid-cols-4 gap-2 text-center text-xs">
+            <div class="space-y-1" id="step-placed">
+              <div class="h-2 rounded-full bg-primary mx-auto"></div>
+              <span class="text-[11px] font-semibold text-foreground">1. Placed</span>
+            </div>
+            <div class="space-y-1" id="step-confirmed">
+              <div class="h-2 rounded-full bg-primary mx-auto"></div>
+              <span class="text-[11px] font-semibold text-foreground">2. Confirmed</span>
+            </div>
+            <div class="space-y-1" id="step-shipped">
+              <div id="step-shipped-bar" class="h-2 rounded-full bg-border mx-auto"></div>
+              <span id="step-shipped-text" class="text-[11px] font-medium text-muted-foreground">3. Shipped</span>
+            </div>
+            <div class="space-y-1" id="step-delivered">
+              <div id="step-delivered-bar" class="h-2 rounded-full bg-border mx-auto"></div>
+              <span id="step-delivered-text" class="text-[11px] font-medium text-muted-foreground">4. Delivered</span>
+            </div>
+          </div>
+          <div id="order-tracking-info" class="mt-4 hidden p-3 bg-background border border-border text-xs text-foreground/90 space-y-1 rounded-xs">
+            <p>🚚 <strong>Courier Partner:</strong> <span id="order-courier-val">Blue Dart</span></p>
+            <p>📦 <strong>Tracking Number:</strong> <span id="order-tracking-val" class="font-mono font-bold select-all"></span></p>
+          </div>
+        </div>
+
         <!-- Order Information Cards Grid -->
         <div class="grid gap-6 sm:grid-cols-2">
           <!-- Delivery Details Card -->
@@ -129,6 +159,10 @@
               <span>Subtotal</span>
               <span id="order-subtotal" class="font-display text-foreground"></span>
             </div>
+            <div id="order-discount-row" class="hidden justify-between text-emerald-800 font-medium">
+              <span>Coupon Savings (<span id="order-coupon-code"></span>)</span>
+              <span id="order-discount-val">-₹0</span>
+            </div>
             <div class="flex justify-between text-muted-foreground">
               <span>Delivery</span>
               <span class="text-primary font-medium">FREE ✿</span>
@@ -138,6 +172,21 @@
               <span id="order-total-amount" class="font-display text-2xl font-semibold text-primary"></span>
             </div>
           </div>
+        </div>
+
+        <!-- Customer Actions: Returns, Cancel & Print -->
+        <div class="flex flex-wrap items-center justify-between gap-3 p-4 bg-card/60 border border-border rounded-xs">
+          <div class="flex flex-wrap items-center gap-2">
+            <button type="button" id="open-return-modal-btn" class="border border-primary text-primary px-4 py-2 text-xs uppercase tracking-wider font-semibold hover:bg-primary/5 transition cursor-pointer">
+              Request Return / Exchange
+            </button>
+            <button type="button" id="cancel-order-btn" class="hidden border border-destructive/60 text-destructive px-4 py-2 text-xs uppercase tracking-wider font-semibold hover:bg-destructive/10 transition cursor-pointer">
+              Cancel Order
+            </button>
+          </div>
+          <button type="button" onclick="window.print()" class="border border-border text-foreground px-4 py-2 text-xs uppercase tracking-wider hover:border-primary transition cursor-pointer">
+            Print Order Receipt 🖨
+          </button>
         </div>
 
         <!-- Customer Support Block -->
@@ -166,8 +215,56 @@
           </a>
         </div>
       </div>
-    </section>
-  </main>
+  <!-- Return & Exchange Modal -->
+  <div id="return-modal" class="fixed inset-0 z-50 invisible opacity-0 transition-opacity duration-200 flex items-center justify-center p-4">
+    <div id="return-modal-backdrop" class="drawer-backdrop absolute inset-0"></div>
+    <div class="modal-enter relative w-full max-w-md bg-card border border-border shadow-2xl p-6 rounded-xs z-10 space-y-4">
+      <div class="flex items-center justify-between border-b border-border pb-3">
+        <h3 class="font-display text-xl font-semibold text-primary">Return or Exchange Request</h3>
+        <button type="button" id="close-return-modal-btn" class="p-1 text-muted-foreground hover:text-primary transition cursor-pointer">✕</button>
+      </div>
+      <form id="return-form" class="space-y-3 text-xs font-sans">
+        <div>
+          <label class="block text-muted-foreground uppercase tracking-wider mb-1">Item to Return / Exchange</label>
+          <select id="return-item-select" required class="w-full border border-border bg-background px-3 py-2 text-xs outline-none focus:border-primary">
+            <!-- Populated with order items -->
+          </select>
+        </div>
+        <div>
+          <label class="block text-muted-foreground uppercase tracking-wider mb-1">Request Type</label>
+          <div class="grid grid-cols-2 gap-2">
+            <label class="flex items-center gap-2 border border-border p-2 rounded-xs cursor-pointer">
+              <input type="radio" name="action_type" value="exchange" checked class="accent-primary"/>
+              <span>Size Exchange</span>
+            </label>
+            <label class="flex items-center gap-2 border border-border p-2 rounded-xs cursor-pointer">
+              <input type="radio" name="action_type" value="return" class="accent-primary"/>
+              <span>Return for Refund</span>
+            </label>
+          </div>
+        </div>
+        <div>
+          <label class="block text-muted-foreground uppercase tracking-wider mb-1">Reason</label>
+          <select id="return-reason-select" required class="w-full border border-border bg-background px-3 py-2 text-xs outline-none focus:border-primary">
+            <option value="Size too small">Size too small — need larger size</option>
+            <option value="Size too large">Size too large — need smaller size</option>
+            <option value="Fabric / Color variation">Fabric / Color variation from expectations</option>
+            <option value="Fitting or silhouette issue">Fitting or silhouette issue</option>
+            <option value="Defect or stitching issue">Defect or stitching issue</option>
+            <option value="Other reason">Other reason</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-muted-foreground uppercase tracking-wider mb-1">Notes / Desired Size</label>
+          <textarea id="return-notes" rows="2" placeholder="e.g. Please send Size M instead of L" class="w-full border border-border bg-background px-3 py-2 text-xs outline-none focus:border-primary"></textarea>
+        </div>
+        <div id="return-status-msg" class="text-xs"></div>
+        <button type="submit" class="w-full bg-primary py-3 text-xs uppercase tracking-wider text-primary-foreground font-semibold hover:opacity-90 transition cursor-pointer">
+          Submit Return Request
+        </button>
+      </form>
+    </div>
+  </div>
 
   <!-- Footer -->
   <footer class="mt-24 border-t border-border/60">
@@ -339,6 +436,63 @@
           waLink.href = `https://wa.me/918849366915?text=Hi%20Naari!%20I%20have%20a%20question%20regarding%20my%20order%20${encodeURIComponent(order.id)}.`;
         }
 
+        // Update Tracker
+        const st = (order.order_status || 'confirmed').toLowerCase();
+        const badge = document.getElementById('order-status-badge');
+        if (badge) badge.textContent = st.charAt(0).toUpperCase() + st.slice(1);
+
+        const cancelBtn = document.getElementById('cancel-order-btn');
+        if (cancelBtn) {
+          if (st === 'confirmed' || st === 'processing' || st === 'pending_payment') {
+            cancelBtn.classList.remove('hidden');
+          } else {
+            cancelBtn.classList.add('hidden');
+          }
+        }
+
+        if (st === 'shipped' || st === 'delivered') {
+          const shippedBar = document.getElementById('step-shipped-bar');
+          const shippedTxt = document.getElementById('step-shipped-text');
+          if (shippedBar) shippedBar.className = 'h-2 rounded-full bg-primary mx-auto';
+          if (shippedTxt) shippedTxt.className = 'text-[11px] font-semibold text-foreground';
+        }
+        if (st === 'delivered') {
+          const delBar = document.getElementById('step-delivered-bar');
+          const delTxt = document.getElementById('step-delivered-text');
+          if (delBar) delBar.className = 'h-2 rounded-full bg-primary mx-auto';
+          if (delTxt) delTxt.className = 'text-[11px] font-semibold text-foreground';
+        }
+
+        // Tracking Details
+        if (order.tracking_number) {
+          const trackBox = document.getElementById('order-tracking-info');
+          const trackVal = document.getElementById('order-tracking-val');
+          const courierVal = document.getElementById('order-courier-val');
+          if (trackBox) trackBox.classList.remove('hidden');
+          if (trackVal) trackVal.textContent = order.tracking_number;
+          if (courierVal && order.courier_partner) courierVal.textContent = order.courier_partner;
+        }
+
+        // Coupon discount
+        if (order.discount_amount && order.discount_amount > 0) {
+          const discRow = document.getElementById('order-discount-row');
+          const discCode = document.getElementById('order-coupon-code');
+          const discVal = document.getElementById('order-discount-val');
+          if (discRow) discRow.classList.remove('hidden');
+          if (discRow) discRow.classList.add('flex');
+          if (discCode) discCode.textContent = order.coupon_code || 'COUPON';
+          if (discVal) discVal.textContent = `-${formatPrice(order.discount_amount)}`;
+        }
+
+        // Setup Return Modal items
+        currentOrderForReturn = order;
+        const itemSelect = document.getElementById('return-item-select');
+        if (itemSelect && itemsList) {
+          itemSelect.innerHTML = (order.items || []).map(i => `
+            <option value="${i.name} (${i.size})">${i.name} - ${i.color}, Size ${i.size}</option>
+          `).join('');
+        }
+
         loadingEl.classList.add('hidden');
         contentEl.classList.remove('hidden');
       } catch (err) {
@@ -359,7 +513,10 @@
       }
     }
 
+    let currentOrderForReturn = null;
+
     function renderOrderFromData(order) {
+      currentOrderForReturn = order;
       const loadingEl = document.getElementById('confirmation-loading');
       const errorEl = document.getElementById('confirmation-error');
       const contentEl = document.getElementById('confirmation-content');
@@ -427,6 +584,13 @@
       document.getElementById('order-subtotal').textContent = formatPrice(order.subtotal || order.total_amount || 0);
       document.getElementById('order-total-amount').textContent = formatPrice(order.total_amount || 0);
 
+      const itemSelect = document.getElementById('return-item-select');
+      if (itemSelect) {
+        itemSelect.innerHTML = items.map(i => `
+          <option value="${i.name} (${i.size})">${i.name} - ${i.color}, Size ${i.size}</option>
+        `).join('');
+      }
+
       // Update WhatsApp support link with order ID prefilled
       const waLink = document.getElementById('order-support-whatsapp');
       if (waLink) {
@@ -438,8 +602,99 @@
       contentEl.classList.remove('hidden');
     }
 
+    // Return Modal Handling
     document.addEventListener('DOMContentLoaded', () => {
       loadOrderConfirmation();
+
+      const returnModal = document.getElementById('return-modal');
+      const openReturnBtn = document.getElementById('open-return-modal-btn');
+      const closeReturnBtn = document.getElementById('close-return-modal-btn');
+      const returnBackdrop = document.getElementById('return-modal-backdrop');
+      const returnForm = document.getElementById('return-form');
+      const returnMsg = document.getElementById('return-status-msg');
+
+      if (openReturnBtn && returnModal) {
+        openReturnBtn.addEventListener('click', () => {
+          returnModal.classList.remove('invisible', 'opacity-0');
+          returnModal.classList.add('opacity-100');
+        });
+      }
+
+      function closeReturnModal() {
+        if (!returnModal) return;
+        returnModal.classList.remove('opacity-100');
+        returnModal.classList.add('opacity-0');
+        setTimeout(() => returnModal.classList.add('invisible'), 200);
+      }
+
+      if (closeReturnBtn) closeReturnBtn.addEventListener('click', closeReturnModal);
+      if (returnBackdrop) returnBackdrop.addEventListener('click', closeReturnModal);
+
+      const cancelOrderBtn = document.getElementById('cancel-order-btn');
+      if (cancelOrderBtn) {
+        cancelOrderBtn.addEventListener('click', async () => {
+          if (!currentOrderForReturn) return;
+          if (!confirm('Are you sure you want to cancel this order?')) return;
+          try {
+            const { res, data } = await safeFetchJson('/api/customer/orders/cancel', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                order_id: currentOrderForReturn.id || currentOrderForReturn.order_id,
+                customer_email: currentOrderForReturn.customer_email,
+                reason: 'Customer requested cancellation'
+              })
+            });
+            if (res.ok && data && data.ok) {
+              getToast().success(data.message || 'Order cancelled.');
+              loadOrderConfirmation();
+            } else {
+              getToast().error(data?.error || 'Unable to cancel order.');
+            }
+          } catch (e) {
+            getToast().error('Error cancelling order.');
+          }
+        });
+      }
+
+      if (returnForm) {
+        returnForm.addEventListener('submit', async (e) => {
+          e.preventDefault();
+          if (!currentOrderForReturn) return;
+          const itemName = document.getElementById('return-item-select').value;
+          const actionType = document.querySelector('input[name="action_type"]:checked').value;
+          const reason = document.getElementById('return-reason-select').value;
+          const notes = document.getElementById('return-notes').value;
+
+          returnMsg.innerHTML = '<span class="text-primary animate-pulse">Submitting request...</span>';
+
+          try {
+            const { res, data } = await safeFetchJson('/api/customer/returns', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                order_id: currentOrderForReturn.id || currentOrderForReturn.order_id,
+                customer_email: currentOrderForReturn.customer_email,
+                customer_phone: currentOrderForReturn.customer_phone,
+                item_name: itemName,
+                action_type: actionType,
+                reason: reason,
+                notes: notes
+              })
+            });
+
+            if (res.ok && data && data.ok) {
+              returnMsg.innerHTML = `<span class="text-emerald-800 font-medium">✓ ${data.message}</span>`;
+              getToast().success(data.message);
+              setTimeout(closeReturnModal, 2500);
+            } else {
+              returnMsg.innerHTML = `<span class="text-destructive">${data?.error || 'Failed to submit.'}</span>`;
+            }
+          } catch (err) {
+            returnMsg.innerHTML = '<span class="text-destructive">Network error. Please try again.</span>';
+          }
+        });
+      }
     });
   </script>
 </body>

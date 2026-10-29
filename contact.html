@@ -23,20 +23,47 @@
     }
   </style>
 </head>
-<body>
-  <!-- Header -->
-  <header class="sticky top-0 z-30 border-b border-border/60 bg-background/85 backdrop-blur">
-    <div class="mx-auto flex max-w-6xl items-center justify-between px-5 py-2">
-      <a aria-label="Naari home" href="index.html">
-        <img src="images/naari-logo.png" alt="Naari" class="h-11 w-auto sm:h-14 mix-blend-multiply"/>
+<body class="text-foreground antialiased selection:bg-primary/20 selection:text-primary">
+
+  <!-- Top Announcement Bar -->
+  <div id="top-announcement-bar" class="bg-primary text-primary-foreground py-2 px-4 text-xs font-sans tracking-wider text-center flex items-center justify-center">
+    <div class="flex items-center gap-2">
+      <span class="text-xs">✿</span>
+      <span class="announcement-text transition-opacity duration-300 font-medium">FREE EXPRESS SHIPPING ON ALL ORDERS · USE CODE: NAARI10 FOR 10% OFF</span>
+      <span class="text-xs">✿</span>
+    </div>
+  </div>
+
+  <!-- Sticky Header -->
+  <header class="sticky top-0 z-40 border-b border-border/80 bg-background/90 backdrop-blur-md">
+    <div class="mx-auto flex max-w-7xl items-center justify-between px-4 py-2.5 sm:px-6">
+      <a aria-label="Matra Naari Home" href="index.html" class="flex items-center gap-3">
+        <img src="images/naari-logo.png" alt="Matra Naari" class="h-10 w-auto sm:h-12 mix-blend-multiply"/>
       </a>
-      <nav class="flex gap-5 font-hand text-lg sm:gap-8">
-        <a class="hidden text-foreground/80 hover:text-primary sm:inline" href="index.html">Home</a>
-        <a class="hidden text-foreground/80 hover:text-primary sm:inline" href="shop.html">Shop</a>
-        <a class="hidden text-foreground/80 hover:text-primary sm:inline" href="story.html">Our Story</a>
-        <a class="hidden text-foreground/80 hover:text-primary sm:inline !inline text-primary" href="contact.html" data-status="active" aria-current="page">Contact</a>
-        <a class="text-primary" href="cart.html">Bag (<span class="bag-count-badge">0</span>)</a>
+      <nav class="hidden md:flex items-center gap-8 font-hand text-lg">
+        <a class="text-foreground/80 hover:text-primary transition" href="index.html">Home</a>
+        <a class="text-foreground/80 hover:text-primary transition" href="shop.html">Collection</a>
+        <a class="text-foreground/80 hover:text-primary transition" href="story.html">Our Story</a>
+        <a class="text-primary font-bold active" href="contact.html" aria-current="page">Contact</a>
       </nav>
+      <div class="flex items-center gap-3 sm:gap-5">
+        <button type="button" class="open-search-modal-btn p-2 text-foreground/80 hover:text-primary transition cursor-pointer" aria-label="Search">
+          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+        </button>
+        <button type="button" class="open-wishlist-drawer-btn relative p-2 text-foreground/80 hover:text-primary transition cursor-pointer" aria-label="Wishlist">
+          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
+          <span class="wishlist-count-badge absolute -top-1 -right-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-primary-foreground font-sans" style="display:none;">0</span>
+        </button>
+        <button type="button" class="open-auth-modal-btn p-2 text-foreground/80 hover:text-primary transition flex items-center gap-1.5 cursor-pointer" aria-label="Account">
+          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+          <span class="header-user-label hidden sm:inline text-xs font-sans font-medium text-foreground/80">Account</span>
+        </button>
+        <button type="button" class="open-cart-drawer-btn flex items-center gap-2 bg-primary/10 hover:bg-primary/20 text-primary px-3 py-1.5 rounded-xs transition cursor-pointer" aria-label="Bag">
+          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
+          <span class="font-hand text-base">Bag</span>
+          <span class="bag-count-badge flex h-4 min-w-[16px] items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-primary-foreground font-sans" style="display:none;">0</span>
+        </button>
+      </div>
     </div>
   </header>
 
@@ -71,23 +98,56 @@
     </section>
   </main>
 
-  <!-- Footer -->
-  <footer class="mt-24 border-t border-border/60">
-    <div class="mx-auto grid max-w-6xl gap-8 px-5 py-12 sm:grid-cols-3">
-      <div>
-        <img src="images/naari-logo.png" alt="Naari" class="h-16 w-auto mix-blend-multiply"/>
-        <p class="mt-2 font-hand text-muted-foreground">Modern kurtis, woven with heritage.</p>
-      </div>
-      <div class="font-hand text-lg">
-        <a class="block hover:text-primary" href="index.html">Home</a>
-        <a class="block hover:text-primary" href="shop.html">Shop</a>
-        <a class="block hover:text-primary" href="story.html">Our Story</a>
-        <a class="block hover:text-primary active text-primary" href="contact.html" data-status="active" aria-current="page">Contact</a>
-      </div>
-      <div class="text-sm text-muted-foreground">
-        <p>hello@naari.in</p>
-        <p><a href="https://wa.me/918849366915?text=Hi%20Naari!%20I'd%20like%20to%20enquire%20about%20your%20kurtis." target="_blank" class="hover:text-primary transition">+91 88493 66915</a></p>
-        <p class="mt-4">© 2026 Naari</p>
+  <!-- Complete Storefront Footer -->
+  <footer class="mt-24 border-t border-border bg-card/90">
+    <div class="mx-auto max-w-7xl px-4 py-14 sm:px-6">
+      <div class="grid gap-10 sm:grid-cols-2 md:grid-cols-4">
+        <!-- Brand Info -->
+        <div>
+          <img src="images/naari-logo.png" alt="Matra Naari" class="h-14 w-auto mix-blend-multiply"/>
+          <p class="mt-3 font-hand text-muted-foreground text-base">Modern Indian ethnic wear, woven with authentic craft.</p>
+          <div class="mt-4 space-y-1 text-xs text-muted-foreground font-sans">
+            <p>✉ <a href="mailto:hello@naari.in" class="hover:text-primary transition">hello@naari.in</a></p>
+            <p>📱 <a href="https://wa.me/918849366915?text=Hi%20Naari!%20I'd%20like%20to%20enquire%20about%20your%20kurtis." target="_blank" class="hover:text-primary transition">+91 88493 66915</a></p>
+          </div>
+        </div>
+
+        <!-- Shop Categories -->
+        <div>
+          <h4 class="font-display text-lg font-semibold text-primary mb-3">Shop Collections</h4>
+          <ul class="space-y-2 text-xs font-sans text-muted-foreground">
+            <li><a href="shop.html?category=Straight Cut" class="hover:text-primary transition">Straight Cut Kurtis</a></li>
+            <li><a href="shop.html?category=A-Line" class="hover:text-primary transition">A-Line Kurtis</a></li>
+            <li><a href="shop.html?category=Anarkali" class="hover:text-primary transition">Festive Anarkalis</a></li>
+            <li><a href="shop.html?category=Short Kurti" class="hover:text-primary transition">Short Everyday Kurtis</a></li>
+            <li><a href="shop.html?category=Co-ord Set" class="hover:text-primary transition">Co-ord Kurta Sets</a></li>
+            <li><a href="shop.html?category=Kaftan" class="hover:text-primary transition">Resort Kaftans</a></li>
+          </ul>
+        </div>
+
+        <!-- Customer Care & Policies -->
+        <div>
+          <h4 class="font-display text-lg font-semibold text-primary mb-3">Customer Care</h4>
+          <ul class="space-y-2 text-xs font-sans text-muted-foreground">
+            <li><a href="account.html" class="hover:text-primary transition">Track My Order</a></li>
+            <li><a href="account.html" class="hover:text-primary transition">Returns &amp; Exchanges</a></li>
+            <li><a href="story.html" class="hover:text-primary transition">Our Craft &amp; Sourcing</a></li>
+            <li><a href="contact.html" class="hover:text-primary transition">Size Guide &amp; Fit</a></li>
+            <li><a href="contact.html" class="hover:text-primary transition">Contact Studio</a></li>
+            <li><a href="admin.html" class="hover:text-primary transition text-foreground/50">Staff Admin Portal</a></li>
+          </ul>
+        </div>
+
+        <!-- Newsletter & Promotions -->
+        <div>
+          <h4 class="font-display text-lg font-semibold text-primary mb-3">Exclusive Club</h4>
+          <p class="text-xs text-muted-foreground">Receive private drop previews, artisan stories, and VIP discounts.</p>
+          <form class="mt-3 flex gap-1" onsubmit="event.preventDefault(); getToast().success('Thank you for subscribing to Matra Naari!'); this.reset();">
+            <input type="email" required placeholder="Enter your email" class="min-w-0 flex-1 border border-border bg-background px-3 py-2 text-xs outline-none focus:border-primary"/>
+            <button type="submit" class="bg-primary px-3 py-2 text-xs uppercase tracking-wider text-primary-foreground font-semibold cursor-pointer">Join</button>
+          </form>
+          <p class="mt-4 text-[11px] text-muted-foreground">© 2026 Matra Naari. Handcrafted in India.</p>
+        </div>
       </div>
     </div>
   </footer>

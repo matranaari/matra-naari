@@ -82,6 +82,12 @@
               Delivery Address
             </h2>
 
+            <!-- Saved Addresses Quick-Fill (populated if logged in) -->
+            <div id="saved-addresses-quickfill" class="mt-4 hidden space-y-2 border-b border-border/60 pb-4">
+              <p class="text-[11px] uppercase tracking-wider font-semibold text-primary font-sans">Saved Addresses — Tap to Auto-Fill</p>
+              <div id="saved-addresses-chips" class="flex flex-wrap gap-2"></div>
+            </div>
+
             <form id="checkout-form" class="mt-6 space-y-4">
               <div class="grid gap-4 sm:grid-cols-2">
                 <div>
@@ -309,20 +315,46 @@
               <!-- Populated by JS -->
             </ul>
 
+            <!-- Promo Coupon Input in Checkout -->
+            <div class="mt-4 pt-3 border-t border-border/60">
+              <label class="block text-xs uppercase tracking-wider font-semibold text-muted-foreground mb-1">Promo Coupon Code</label>
+              <div class="flex gap-2">
+                <input
+                  id="checkout-coupon-input"
+                  type="text"
+                  placeholder="Code (e.g. NAARI10)"
+                  class="min-w-0 flex-1 border border-border bg-background px-3 py-1.5 text-xs uppercase font-mono outline-none focus:border-primary"
+                />
+                <button
+                  type="button"
+                  id="checkout-apply-coupon-btn"
+                  class="bg-primary px-3 py-1.5 text-xs uppercase tracking-wider text-primary-foreground font-semibold hover:opacity-90 transition cursor-pointer"
+                >
+                  Apply
+                </button>
+              </div>
+              <div id="checkout-coupon-msg" class="text-xs mt-1"></div>
+            </div>
+
             <!-- Totals -->
             <div class="mt-4 space-y-2 border-t border-border pt-4 text-sm">
               <div class="flex justify-between text-muted-foreground">
                 <span>Subtotal</span>
                 <span id="summary-subtotal" class="font-display text-foreground">₹0</span>
               </div>
+              <div id="summary-discount-row" class="hidden justify-between text-emerald-800 font-medium">
+                <span>Coupon Discount (<span id="summary-coupon-code"></span>)</span>
+                <span id="summary-discount">-₹0</span>
+              </div>
               <div class="flex justify-between text-muted-foreground">
                 <span>Delivery across India</span>
-                <span class="text-primary font-medium">FREE ✿</span>
+                <span id="summary-shipping" class="text-primary font-medium">FREE ✿</span>
               </div>
               <div class="flex justify-between items-baseline border-t border-border pt-3 text-base">
                 <span class="font-semibold text-foreground">Total Amount</span>
                 <span id="summary-total" class="font-display text-2xl text-primary font-semibold">₹0</span>
               </div>
+              <p class="text-[11px] text-muted-foreground text-right">Inclusive of 5% GST (<span id="summary-gst-note">₹0</span>)</p>
             </div>
 
             <div class="mt-6 rounded border border-dashed border-primary/40 bg-primary/5 p-3 text-xs text-foreground/80">
@@ -432,6 +464,31 @@
       }
     }
 
+    function computeCheckoutAmounts() {
+      const subtotal = getCartTotal();
+      const activeCoupon = getActiveCoupon();
+      let discountAmount = 0;
+      if (activeCoupon && activeCoupon.code) {
+        if (typeof activeCoupon.discount_amount === 'number' && activeCoupon.subtotal_snapshot === subtotal) {
+          discountAmount = activeCoupon.discount_amount;
+        } else if (activeCoupon.discount_type === 'percentage') {
+          discountAmount = Math.round(subtotal * (activeCoupon.discount_value / 100));
+          if (activeCoupon.max_discount && discountAmount > activeCoupon.max_discount) {
+            discountAmount = activeCoupon.max_discount;
+          }
+        } else {
+          discountAmount = Math.min(activeCoupon.discount_value, subtotal);
+        }
+      }
+      const freeThreshold = Number(serverConfig?.free_shipping_threshold ?? window.NAARI_STORE_SETTINGS?.free_shipping_threshold ?? 999);
+      const baseFee = Number(serverConfig?.shipping_fee ?? window.NAARI_STORE_SETTINGS?.shipping_fee ?? 99);
+      const shipping = subtotal >= freeThreshold ? 0 : baseFee;
+      const finalTotal = Math.max(0, subtotal - discountAmount + shipping);
+      const gstPercentage = Number(serverConfig?.gst_percentage ?? 5);
+      const gstAmount = Math.round(finalTotal * gstPercentage / (100 + gstPercentage));
+      return { subtotal, discountAmount, shipping, finalTotal, gstAmount, activeCoupon };
+    }
+
     function renderOrderSummary() {
       const cart = getCart();
       const emptyState = document.getElementById('checkout-empty-state');
@@ -439,6 +496,11 @@
       const itemsList = document.getElementById('summary-items-list');
       const subtotalEl = document.getElementById('summary-subtotal');
       const totalEl = document.getElementById('summary-total');
+      const discRow = document.getElementById('summary-discount-row');
+      const discCodeEl = document.getElementById('summary-coupon-code');
+      const discValEl = document.getElementById('summary-discount');
+      const shippingEl = document.getElementById('summary-shipping');
+      const gstNoteEl = document.getElementById('summary-gst-note');
 
       if (!cart || cart.length === 0) {
         emptyState.classList.remove('hidden');
@@ -449,9 +511,22 @@
       emptyState.classList.add('hidden');
       mainGrid.classList.remove('hidden');
 
-      const total = getCartTotal();
-      subtotalEl.textContent = formatPrice(total);
-      totalEl.textContent = formatPrice(total);
+      const { subtotal, discountAmount, shipping, finalTotal, gstAmount, activeCoupon } = computeCheckoutAmounts();
+      subtotalEl.textContent = formatPrice(subtotal);
+      totalEl.textContent = formatPrice(finalTotal);
+      if (gstNoteEl) gstNoteEl.textContent = formatPrice(gstAmount);
+
+      if (shippingEl) shippingEl.textContent = shipping === 0 ? 'FREE ✿' : formatPrice(shipping);
+
+      if (discountAmount > 0 && activeCoupon) {
+        discRow.classList.remove('hidden');
+        discRow.classList.add('flex');
+        discCodeEl.textContent = activeCoupon.code;
+        discValEl.textContent = `-${formatPrice(discountAmount)}`;
+      } else {
+        discRow.classList.add('hidden');
+        discRow.classList.remove('flex');
+      }
 
       if (itemsList) {
         itemsList.innerHTML = cart.map(item => {
@@ -473,6 +548,23 @@
       }
 
       updateButtonText();
+    }
+
+    function updateButtonText() {
+      const method = getSelectedPaymentMethod();
+      const { finalTotal } = computeCheckoutAmounts();
+      const textEl = document.getElementById('place-order-text');
+      if (!textEl) return;
+
+      if (method === 'cod') {
+        textEl.textContent = finalTotal > 0
+          ? `Place Cash on Delivery Order (${formatPrice(finalTotal)})`
+          : 'Place Cash on Delivery Order';
+      } else {
+        textEl.textContent = finalTotal > 0
+          ? `Pay ${formatPrice(finalTotal)} via Razorpay`
+          : 'Pay via Razorpay';
+      }
     }
 
     function setPaymentMethod(method) {
@@ -503,23 +595,6 @@
     function getSelectedPaymentMethod() {
       const radio = document.querySelector('input[name="payment_method"]:checked');
       return radio ? radio.value : selectedPaymentMethod;
-    }
-
-    function updateButtonText() {
-      const method = getSelectedPaymentMethod();
-      const total = getCartTotal();
-      const textEl = document.getElementById('place-order-text');
-      if (!textEl) return;
-
-      if (method === 'cod') {
-        textEl.textContent = total > 0
-          ? `Place Cash on Delivery Order (${formatPrice(total)})`
-          : 'Place Cash on Delivery Order';
-      } else {
-        textEl.textContent = total > 0
-          ? `Pay ${formatPrice(total)} via Razorpay`
-          : 'Pay via Razorpay';
-      }
     }
 
     function setupPaymentMethodRadios() {
@@ -635,12 +710,14 @@
           let orderId = null;
           let orderTotal = getCartTotal();
 
+          const activeCoupon = getActiveCoupon();
           const { res, data } = await safeFetchJson('/api/create-cod-order', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               customer: customerData,
-              items: cart
+              items: cart,
+              coupon_code: activeCoupon ? activeCoupon.code : ''
             })
           });
 
@@ -685,12 +762,14 @@
       } else {
         // Online Payment Flow
         try {
+          const activeCoupon = getActiveCoupon();
           const { res: createRes, data: createData } = await safeFetchJson('/api/create-order', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               customer: customerData,
-              items: cart
+              items: cart,
+              coupon_code: activeCoupon ? activeCoupon.code : ''
             })
           });
 
@@ -852,6 +931,127 @@
         form.addEventListener('submit', (e) => {
           e.preventDefault();
           handlePlaceOrder();
+        });
+      }
+
+      // Pre-fill user profile & saved addresses if logged in
+      const session = getUserSession();
+      if (session && session.user) {
+        const u = session.user;
+        const nameInput = document.getElementById('cust-name');
+        const emailInput = document.getElementById('cust-email');
+        const phoneInput = document.getElementById('cust-phone');
+        if (nameInput && !nameInput.value) nameInput.value = u.name || '';
+        if (emailInput && !emailInput.value) emailInput.value = u.email || '';
+        if (phoneInput && !phoneInput.value) phoneInput.value = u.phone || '';
+
+        // Load saved addresses for 1-click fill
+        if (session.token) {
+          try {
+            const { res, data } = await safeFetchJson('/api/customer/addresses', {
+              headers: { 'Authorization': `Bearer ${session.token}` }
+            });
+            if (res.ok && data && Array.isArray(data.addresses) && data.addresses.length > 0) {
+              const quickWrap = document.getElementById('saved-addresses-quickfill');
+              const chipsWrap = document.getElementById('saved-addresses-chips');
+              if (quickWrap && chipsWrap) {
+                quickWrap.classList.remove('hidden');
+                chipsWrap.innerHTML = data.addresses.map((addr, idx) => `
+                  <button type="button" data-addr-idx="${idx}" class="saved-addr-chip text-left border border-border bg-background hover:border-primary px-3 py-2 rounded-xs text-xs transition cursor-pointer">
+                    <span class="font-semibold text-foreground block">${addr.name} ${addr.is_default ? '<span class="text-[10px] text-primary">(Default)</span>' : ''}</span>
+                    <span class="text-muted-foreground text-[11px] block">${addr.address_line1}, ${addr.city} - ${addr.pincode}</span>
+                  </button>
+                `).join('');
+
+                const fillAddress = (addr) => {
+                  if (nameInput) nameInput.value = addr.name || u.name || '';
+                  if (phoneInput) phoneInput.value = addr.phone || u.phone || '';
+                  const a1 = document.getElementById('cust-address1');
+                  const a2 = document.getElementById('cust-address2');
+                  const cityEl = document.getElementById('cust-city');
+                  const stateEl = document.getElementById('cust-state');
+                  const pinEl = document.getElementById('cust-pincode');
+                  if (a1) a1.value = addr.address_line1 || '';
+                  if (a2) a2.value = addr.address_line2 || '';
+                  if (cityEl) cityEl.value = addr.city || '';
+                  if (stateEl && addr.state) stateEl.value = addr.state;
+                  if (pinEl) pinEl.value = addr.pincode || '';
+                };
+
+                // Auto-fill default address on load
+                const defAddr = data.addresses.find(a => a.is_default) || data.addresses[0];
+                if (defAddr) fillAddress(defAddr);
+
+                chipsWrap.querySelectorAll('.saved-addr-chip').forEach(btn => {
+                  btn.addEventListener('click', () => {
+                    const addr = data.addresses[Number(btn.dataset.addrIdx)];
+                    if (addr) {
+                      fillAddress(addr);
+                      getToast().info('Delivery address filled!');
+                    }
+                  });
+                });
+              }
+            }
+          } catch (e) {}
+        }
+      }
+
+      // Respect COD availability from serverConfig
+      if (serverConfig && serverConfig.cod_enabled === false) {
+        const codLabel = document.querySelector('.payment-option-label[data-method="cod"]');
+        if (codLabel) codLabel.classList.add('hidden');
+        setPaymentMethod('razorpay');
+      }
+
+      // Checkout coupon button
+      const cInput = document.getElementById('checkout-coupon-input');
+      const cBtn = document.getElementById('checkout-apply-coupon-btn');
+      const cMsg = document.getElementById('checkout-coupon-msg');
+      const activeCoupon = getActiveCoupon();
+      if (cInput && activeCoupon) {
+        cInput.value = activeCoupon.code;
+        if (cMsg) {
+          cMsg.innerHTML = `<span class="text-emerald-800 font-medium">✓ Coupon "${activeCoupon.code}" applied</span> <button type="button" id="checkout-remove-coupon-btn" class="text-muted-foreground hover:text-destructive underline ml-1">Remove</button>`;
+        }
+      }
+
+      if (cMsg) {
+        cMsg.addEventListener('click', (e) => {
+          if (e.target && e.target.id === 'checkout-remove-coupon-btn') {
+            setActiveCoupon(null);
+            if (cInput) cInput.value = '';
+            cMsg.innerHTML = '';
+            renderOrderSummary();
+            getToast().info('Coupon removed.');
+          }
+        });
+      }
+
+      if (cBtn && cInput) {
+        cBtn.addEventListener('click', async () => {
+          const code = cInput.value.trim().toUpperCase();
+          if (!code) return;
+          cMsg.innerHTML = '<span class="text-primary animate-pulse">Checking code...</span>';
+          try {
+            const subtotal = getCartTotal();
+            const { res, data } = await safeFetchJson('/api/apply-coupon', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ code, subtotal, items: getCart() })
+            });
+            if (res.ok && data && data.ok) {
+              data.subtotal_snapshot = subtotal;
+              setActiveCoupon(data);
+              cMsg.innerHTML = `<span class="text-emerald-800 font-medium">✓ ${data.message}</span> <button type="button" id="checkout-remove-coupon-btn" class="text-muted-foreground hover:text-destructive underline ml-1">Remove</button>`;
+              renderOrderSummary();
+              getToast().success(data.message);
+            } else {
+              cMsg.innerHTML = `<span class="text-destructive">${data?.error || 'Invalid coupon.'}</span>`;
+            }
+          } catch (err) {
+            cMsg.innerHTML = '<span class="text-destructive">Failed to validate coupon.</span>';
+          }
         });
       }
     });

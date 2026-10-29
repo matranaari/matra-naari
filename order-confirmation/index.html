@@ -1,35 +1,39 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <link rel="icon" type="image/png" href="../favicon.png"/>
-  <link rel="preconnect" href="https://fonts.googleapis.com"/>
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous"/>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Kalam:wght@300;400;700&family=Karla:wght@400;500;600&display=swap"/>
-  <link rel="stylesheet" href="../assets/styles.css"/>
+  <base href="/"/>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/png" href="favicon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
+  <link rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Kalam:wght@300;400;700&family=Karla:wght@400;500;600&display=swap" />
+  <link rel="stylesheet" href="assets/styles.css" />
   <title>Order Confirmed — Naari</title>
-  <meta name="description" content="Thank you for your order with Naari."/>
+  <meta name="description" content="Thank you for your order with Naari." />
   <style>
     body {
-      background-image: url('../images/paper.jpg'), url('/images/paper.jpg');
+      background-image: url('images/paper.jpg'), url('/images/paper.jpg');
       background-size: 700px;
     }
   </style>
 </head>
+
 <body>
   <!-- Header -->
   <header class="sticky top-0 z-30 border-b border-border/60 bg-background/85 backdrop-blur">
     <div class="mx-auto flex max-w-6xl items-center justify-between px-5 py-2">
-      <a aria-label="Naari home" href="../">
-        <img src="../images/naari-logo.png" alt="Naari" class="h-11 w-auto sm:h-14 mix-blend-multiply"/>
+      <a aria-label="Naari home" href="index.html">
+        <img src="images/naari-logo.png" alt="Naari" class="h-11 w-auto sm:h-14 mix-blend-multiply" />
       </a>
       <nav class="flex gap-5 font-hand text-lg sm:gap-8">
-        <a class="hidden text-foreground/80 hover:text-primary sm:inline" href="../">Home</a>
-        <a class="hidden text-foreground/80 hover:text-primary sm:inline" href="../shop/">Shop</a>
-        <a class="hidden text-foreground/80 hover:text-primary sm:inline" href="../story/">Our Story</a>
-        <a class="hidden text-foreground/80 hover:text-primary sm:inline" href="../contact/">Contact</a>
-        <a class="text-primary" href="../cart/">Bag (<span class="bag-count-badge">0</span>)</a>
+        <a class="hidden text-foreground/80 hover:text-primary sm:inline" href="index.html">Home</a>
+        <a class="hidden text-foreground/80 hover:text-primary sm:inline" href="shop.html">Shop</a>
+        <a class="hidden text-foreground/80 hover:text-primary sm:inline" href="story.html">Our Story</a>
+        <a class="hidden text-foreground/80 hover:text-primary sm:inline" href="contact.html">Contact</a>
+        <a class="text-primary" href="cart.html">Bag (<span class="bag-count-badge">0</span>)</a>
       </nav>
     </div>
   </header>
@@ -37,21 +41,27 @@
   <!-- Main Order Confirmation Content -->
   <main>
     <section class="mx-auto max-w-3xl px-4 py-12 sm:px-5">
+      <!-- Loading State -->
       <div id="confirmation-loading" class="text-center py-16">
         <p class="font-hand text-2xl text-primary animate-pulse">✿ Retrieving your order details…</p>
       </div>
 
+      <!-- Error State -->
       <div id="confirmation-error" class="hidden text-center py-16">
         <p class="font-hand text-2xl text-destructive">Order not found.</p>
         <p class="mt-2 text-sm text-muted-foreground">Please check your order link or contact our studio.</p>
-        <a href="../shop/" class="mt-6 inline-block bg-primary px-7 py-3 text-sm uppercase tracking-[0.2em] text-primary-foreground hover:opacity-90 transition">
+        <a href="shop.html"
+          class="mt-6 inline-block bg-primary px-7 py-3 text-sm uppercase tracking-[0.2em] text-primary-foreground hover:opacity-90 transition">
           Return to Shop
         </a>
       </div>
 
+      <!-- Populated Confirmation Content -->
       <div id="confirmation-content" class="hidden space-y-8">
+        <!-- Success Banner -->
         <div class="text-center bg-card/80 p-6 ring-1 ring-border sm:p-8">
-          <div class="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 text-primary text-2xl">
+          <div
+            class="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 text-primary text-2xl">
             ✓
           </div>
           <p class="font-hand text-lg text-primary">handcrafted with love ✿</p>
@@ -64,7 +74,39 @@
           </div>
         </div>
 
+        <!-- Live Order Fulfillment Tracker Stepper -->
+        <div class="bg-card/70 p-5 ring-1 ring-border rounded-xs">
+          <div class="flex items-center justify-between text-xs uppercase tracking-wider font-semibold text-muted-foreground mb-4">
+            <span>Fulfillment Progress</span>
+            <span id="order-status-badge" class="px-2 py-0.5 rounded bg-primary/10 text-primary font-bold">Confirmed</span>
+          </div>
+          <div class="grid grid-cols-4 gap-2 text-center text-xs">
+            <div class="space-y-1" id="step-placed">
+              <div class="h-2 rounded-full bg-primary mx-auto"></div>
+              <span class="text-[11px] font-semibold text-foreground">1. Placed</span>
+            </div>
+            <div class="space-y-1" id="step-confirmed">
+              <div class="h-2 rounded-full bg-primary mx-auto"></div>
+              <span class="text-[11px] font-semibold text-foreground">2. Confirmed</span>
+            </div>
+            <div class="space-y-1" id="step-shipped">
+              <div id="step-shipped-bar" class="h-2 rounded-full bg-border mx-auto"></div>
+              <span id="step-shipped-text" class="text-[11px] font-medium text-muted-foreground">3. Shipped</span>
+            </div>
+            <div class="space-y-1" id="step-delivered">
+              <div id="step-delivered-bar" class="h-2 rounded-full bg-border mx-auto"></div>
+              <span id="step-delivered-text" class="text-[11px] font-medium text-muted-foreground">4. Delivered</span>
+            </div>
+          </div>
+          <div id="order-tracking-info" class="mt-4 hidden p-3 bg-background border border-border text-xs text-foreground/90 space-y-1 rounded-xs">
+            <p>🚚 <strong>Courier Partner:</strong> <span id="order-courier-val">Blue Dart</span></p>
+            <p>📦 <strong>Tracking Number:</strong> <span id="order-tracking-val" class="font-mono font-bold select-all"></span></p>
+          </div>
+        </div>
+
+        <!-- Order Information Cards Grid -->
         <div class="grid gap-6 sm:grid-cols-2">
+          <!-- Delivery Details Card -->
           <div class="bg-card/70 p-5 ring-1 ring-border">
             <h2 class="font-display text-lg font-semibold border-b border-border pb-2 text-primary">
               Delivery Address
@@ -73,12 +115,16 @@
               <p id="order-customer-name" class="font-semibold"></p>
               <p id="order-address-line1"></p>
               <p id="order-address-line2" class="text-muted-foreground"></p>
-              <p><span id="order-city"></span>, <span id="order-state"></span> — <span id="order-pincode" class="font-medium"></span></p>
-              <p class="pt-2 text-xs text-muted-foreground">📱 Phone: <span id="order-phone" class="text-foreground"></span></p>
-              <p class="text-xs text-muted-foreground">✉ Email: <span id="order-email" class="text-foreground"></span></p>
+              <p><span id="order-city"></span>, <span id="order-state"></span> — <span id="order-pincode"
+                  class="font-medium"></span></p>
+              <p class="pt-2 text-xs text-muted-foreground">📱 Phone: <span id="order-phone"
+                  class="text-foreground"></span></p>
+              <p class="text-xs text-muted-foreground">✉ Email: <span id="order-email" class="text-foreground"></span>
+              </p>
             </div>
           </div>
 
+          <!-- Payment Details Card -->
           <div class="bg-card/70 p-5 ring-1 ring-border">
             <h2 class="font-display text-lg font-semibold border-b border-border pb-2 text-primary">
               Payment & Status
@@ -96,13 +142,15 @@
                 <span class="text-muted-foreground">Payment ID:</span>
                 <span id="order-payment-id" class="font-mono text-[11px] text-foreground"></span>
               </div>
-              <div id="cod-note-box" class="hidden mt-3 p-2.5 bg-primary/5 border border-dashed border-primary/40 rounded text-xs text-foreground/80">
+              <div id="cod-note-box"
+                class="hidden mt-3 p-2.5 bg-primary/5 border border-dashed border-primary/40 rounded text-xs text-foreground/80">
                 💵 <strong>Cash on Delivery:</strong> Please keep exact cash ready upon delivery.
               </div>
             </div>
           </div>
         </div>
 
+        <!-- Items Ordered Card -->
         <div class="bg-card/70 p-5 ring-1 ring-border sm:p-6">
           <h2 class="font-display text-xl font-semibold border-b border-border pb-3">Items in your Order</h2>
           <ul id="order-items-list" class="divide-y divide-border/60"></ul>
@@ -111,6 +159,10 @@
             <div class="flex justify-between text-muted-foreground">
               <span>Subtotal</span>
               <span id="order-subtotal" class="font-display text-foreground"></span>
+            </div>
+            <div id="order-discount-row" class="hidden justify-between text-emerald-800 font-medium">
+              <span>Coupon Savings (<span id="order-coupon-code"></span>)</span>
+              <span id="order-discount-val">-₹0</span>
             </div>
             <div class="flex justify-between text-muted-foreground">
               <span>Delivery</span>
@@ -123,63 +175,121 @@
           </div>
         </div>
 
+        <!-- Customer Actions: Returns, Cancel & Print -->
+        <div class="flex flex-wrap items-center justify-between gap-3 p-4 bg-card/60 border border-border rounded-xs">
+          <div class="flex flex-wrap items-center gap-2">
+            <button type="button" id="open-return-modal-btn" class="border border-primary text-primary px-4 py-2 text-xs uppercase tracking-wider font-semibold hover:bg-primary/5 transition cursor-pointer">
+              Request Return / Exchange
+            </button>
+            <button type="button" id="cancel-order-btn" class="hidden border border-destructive/60 text-destructive px-4 py-2 text-xs uppercase tracking-wider font-semibold hover:bg-destructive/10 transition cursor-pointer">
+              Cancel Order
+            </button>
+          </div>
+          <button type="button" onclick="window.print()" class="border border-border text-foreground px-4 py-2 text-xs uppercase tracking-wider hover:border-primary transition cursor-pointer">
+            Print Order Receipt 🖨
+          </button>
+        </div>
+
+        <!-- Customer Support Block -->
         <div class="bg-card/70 p-5 ring-1 ring-border text-center">
           <p class="font-hand text-lg text-primary">Need assistance with this order?</p>
           <p class="mt-1 text-xs text-muted-foreground">
             Our team is here to assist with sizing adjustments, delivery queries, or gift notes.
           </p>
           <div class="mt-4 flex flex-wrap justify-center gap-3">
-            <a
-              id="order-support-whatsapp"
-              href="https://wa.me/918849366915"
-              target="_blank"
-              class="border border-primary px-4 py-2 text-xs uppercase tracking-wider text-primary hover:bg-primary/5 transition font-medium"
-            >
+            <a id="order-support-whatsapp" href="https://wa.me/918849366915" target="_blank"
+              class="border border-primary px-4 py-2 text-xs uppercase tracking-wider text-primary hover:bg-primary/5 transition font-medium">
               WhatsApp Support (+91 88493 66915)
             </a>
-            <a
-              href="mailto:hello@naari.in"
-              class="border border-border px-4 py-2 text-xs uppercase tracking-wider text-foreground hover:border-primary transition font-medium"
-            >
+            <a href="mailto:hello@naari.in"
+              class="border border-border px-4 py-2 text-xs uppercase tracking-wider text-foreground hover:border-primary transition font-medium">
               Email hello@naari.in
             </a>
           </div>
         </div>
 
+        <!-- Return to Shop Button -->
         <div class="text-center pt-4">
-          <a
-            href="../shop/"
-            class="inline-block bg-primary px-8 py-3.5 text-sm uppercase tracking-[0.2em] text-primary-foreground hover:opacity-90 transition font-medium shadow"
-          >
+          <a href="shop.html"
+            class="inline-block bg-primary px-8 py-3.5 text-sm uppercase tracking-[0.2em] text-primary-foreground hover:opacity-90 transition font-medium shadow">
             Continue Shopping
           </a>
         </div>
       </div>
-    </section>
-  </main>
+  <!-- Return & Exchange Modal -->
+  <div id="return-modal" class="fixed inset-0 z-50 invisible opacity-0 transition-opacity duration-200 flex items-center justify-center p-4">
+    <div id="return-modal-backdrop" class="drawer-backdrop absolute inset-0"></div>
+    <div class="modal-enter relative w-full max-w-md bg-card border border-border shadow-2xl p-6 rounded-xs z-10 space-y-4">
+      <div class="flex items-center justify-between border-b border-border pb-3">
+        <h3 class="font-display text-xl font-semibold text-primary">Return or Exchange Request</h3>
+        <button type="button" id="close-return-modal-btn" class="p-1 text-muted-foreground hover:text-primary transition cursor-pointer">✕</button>
+      </div>
+      <form id="return-form" class="space-y-3 text-xs font-sans">
+        <div>
+          <label class="block text-muted-foreground uppercase tracking-wider mb-1">Item to Return / Exchange</label>
+          <select id="return-item-select" required class="w-full border border-border bg-background px-3 py-2 text-xs outline-none focus:border-primary">
+            <!-- Populated with order items -->
+          </select>
+        </div>
+        <div>
+          <label class="block text-muted-foreground uppercase tracking-wider mb-1">Request Type</label>
+          <div class="grid grid-cols-2 gap-2">
+            <label class="flex items-center gap-2 border border-border p-2 rounded-xs cursor-pointer">
+              <input type="radio" name="action_type" value="exchange" checked class="accent-primary"/>
+              <span>Size Exchange</span>
+            </label>
+            <label class="flex items-center gap-2 border border-border p-2 rounded-xs cursor-pointer">
+              <input type="radio" name="action_type" value="return" class="accent-primary"/>
+              <span>Return for Refund</span>
+            </label>
+          </div>
+        </div>
+        <div>
+          <label class="block text-muted-foreground uppercase tracking-wider mb-1">Reason</label>
+          <select id="return-reason-select" required class="w-full border border-border bg-background px-3 py-2 text-xs outline-none focus:border-primary">
+            <option value="Size too small">Size too small — need larger size</option>
+            <option value="Size too large">Size too large — need smaller size</option>
+            <option value="Fabric / Color variation">Fabric / Color variation from expectations</option>
+            <option value="Fitting or silhouette issue">Fitting or silhouette issue</option>
+            <option value="Defect or stitching issue">Defect or stitching issue</option>
+            <option value="Other reason">Other reason</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-muted-foreground uppercase tracking-wider mb-1">Notes / Desired Size</label>
+          <textarea id="return-notes" rows="2" placeholder="e.g. Please send Size M instead of L" class="w-full border border-border bg-background px-3 py-2 text-xs outline-none focus:border-primary"></textarea>
+        </div>
+        <div id="return-status-msg" class="text-xs"></div>
+        <button type="submit" class="w-full bg-primary py-3 text-xs uppercase tracking-wider text-primary-foreground font-semibold hover:opacity-90 transition cursor-pointer">
+          Submit Return Request
+        </button>
+      </form>
+    </div>
+  </div>
 
   <!-- Footer -->
   <footer class="mt-24 border-t border-border/60">
     <div class="mx-auto grid max-w-6xl gap-8 px-5 py-12 sm:grid-cols-3">
       <div>
-        <img src="../images/naari-logo.png" alt="Naari" class="h-16 w-auto mix-blend-multiply"/>
+        <img src="images/naari-logo.png" alt="Naari" class="h-16 w-auto mix-blend-multiply" />
         <p class="mt-2 font-hand text-muted-foreground">Modern kurtis, woven with heritage.</p>
       </div>
       <div class="font-hand text-lg">
-        <a class="block hover:text-primary" href="../">Home</a>
-        <a class="block hover:text-primary" href="../shop/">Shop</a>
-        <a class="block hover:text-primary" href="../story/">Our Story</a>
-        <a class="block hover:text-primary" href="../contact/">Contact</a>
+        <a class="block hover:text-primary" href="index.html">Home</a>
+        <a class="block hover:text-primary" href="shop.html">Shop</a>
+        <a class="block hover:text-primary" href="story.html">Our Story</a>
+        <a class="block hover:text-primary" href="contact.html">Contact</a>
       </div>
       <div class="text-sm text-muted-foreground">
         <p>hello@naari.in</p>
-        <p><a href="https://wa.me/918849366915?text=Hi%20Naari!%20I'd%20like%20to%20enquire%20about%20your%20kurtis." target="_blank" class="hover:text-primary transition">+91 88493 66915</a></p>
+        <p><a href="https://wa.me/918849366915?text=Hi%20Naari!%20I'd%20like%20to%20enquire%20about%20your%20kurtis."
+            target="_blank" class="hover:text-primary transition">+91 88493 66915</a></p>
         <p class="mt-4">© 2026 Naari</p>
       </div>
     </div>
   </footer>
 
-  <script src="../assets/app.js"></script>
+  <script src="assets/app.js"></script>
   <script>
     function getApiBaseUrl() {
       if (typeof window !== 'undefined') {
@@ -238,7 +348,176 @@
       return { res, data };
     }
 
+    async function loadOrderConfirmation() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const orderId = urlParams.get('order_id');
+      const loadingEl = document.getElementById('confirmation-loading');
+      const errorEl = document.getElementById('confirmation-error');
+      const contentEl = document.getElementById('confirmation-content');
+
+      if (!orderId) {
+        loadingEl.classList.add('hidden');
+        errorEl.classList.remove('hidden');
+        return;
+      }
+
+      try {
+        const { res, data } = await safeFetchJson(`/api/order-details?order_id=${encodeURIComponent(orderId)}`);
+
+        if (!res.ok || !data || !data.ok || !data.order) {
+          throw new Error(data?.error || 'Order details could not be found.');
+        }
+
+        const order = data.order;
+        document.getElementById('order-ref-id').textContent = order.id;
+
+        // Customer & Delivery Address
+        document.getElementById('order-customer-name').textContent = order.customer_name;
+        document.getElementById('order-address-line1').textContent = order.address_line1;
+        const line2 = document.getElementById('order-address-line2');
+        if (order.address_line2) {
+          line2.textContent = order.address_line2;
+          line2.classList.remove('hidden');
+        } else {
+          line2.classList.add('hidden');
+        }
+        document.getElementById('order-city').textContent = order.city;
+        document.getElementById('order-state').textContent = order.state;
+        document.getElementById('order-pincode').textContent = order.pincode;
+        document.getElementById('order-phone').textContent = order.customer_phone;
+        document.getElementById('order-email').textContent = order.customer_email;
+
+        // Payment Details
+        const methodEl = document.getElementById('order-payment-method');
+        const statusEl = document.getElementById('order-payment-status');
+        const codNote = document.getElementById('cod-note-box');
+        const paymentIdRow = document.getElementById('payment-id-row');
+
+        if (order.payment_method === 'cod') {
+          methodEl.textContent = 'Cash on Delivery (COD)';
+          statusEl.textContent = 'Confirmed (Pay on Delivery)';
+          statusEl.className = 'font-medium text-xs px-2 py-0.5 rounded bg-primary/10 text-primary';
+          codNote.classList.remove('hidden');
+          paymentIdRow.classList.add('hidden');
+        } else {
+          methodEl.textContent = 'Online Payment (Razorpay)';
+          statusEl.textContent = order.payment_status === 'paid' ? 'Paid Successfully ✓' : order.payment_status;
+          statusEl.className = order.payment_status === 'paid'
+            ? 'font-medium text-xs px-2 py-0.5 rounded bg-green-950 text-green-200'
+            : 'font-medium text-xs px-2 py-0.5 rounded bg-amber-950 text-amber-200';
+          codNote.classList.add('hidden');
+          if (order.razorpay_payment_id) {
+            document.getElementById('order-payment-id').textContent = order.razorpay_payment_id;
+            paymentIdRow.classList.remove('hidden');
+          }
+        }
+
+        // Items List
+        const itemsList = document.getElementById('order-items-list');
+        itemsList.innerHTML = order.items.map(item => `
+          <li class="py-3 flex gap-3 items-center">
+            <img src="${item.image}" alt="${item.name}" class="h-16 w-12 object-cover rounded-sm ring-1 ring-border/50 shrink-0"/>
+            <div class="min-w-0 flex-1 text-xs">
+              <p class="font-semibold text-foreground truncate text-sm">${item.name}</p>
+              <p class="text-muted-foreground">${item.color} · Size ${item.size}</p>
+              <p class="text-muted-foreground">Qty: ${item.qty} × ${formatPrice(item.price)}</p>
+            </div>
+            <span class="font-display text-sm font-semibold text-primary shrink-0">
+              ${formatPrice(item.subtotal || item.price * item.qty)}
+            </span>
+          </li>
+        `).join('');
+
+        document.getElementById('order-subtotal').textContent = formatPrice(order.subtotal);
+        document.getElementById('order-total-amount').textContent = formatPrice(order.total_amount);
+
+        // Update WhatsApp support link with order ID prefilled
+        const waLink = document.getElementById('order-support-whatsapp');
+        if (waLink) {
+          waLink.href = `https://wa.me/918849366915?text=Hi%20Naari!%20I%20have%20a%20question%20regarding%20my%20order%20${encodeURIComponent(order.id)}.`;
+        }
+
+        // Update Tracker
+        const st = (order.order_status || 'confirmed').toLowerCase();
+        const badge = document.getElementById('order-status-badge');
+        if (badge) badge.textContent = st.charAt(0).toUpperCase() + st.slice(1);
+
+        const cancelBtn = document.getElementById('cancel-order-btn');
+        if (cancelBtn) {
+          if (st === 'confirmed' || st === 'processing' || st === 'pending_payment') {
+            cancelBtn.classList.remove('hidden');
+          } else {
+            cancelBtn.classList.add('hidden');
+          }
+        }
+
+        if (st === 'shipped' || st === 'delivered') {
+          const shippedBar = document.getElementById('step-shipped-bar');
+          const shippedTxt = document.getElementById('step-shipped-text');
+          if (shippedBar) shippedBar.className = 'h-2 rounded-full bg-primary mx-auto';
+          if (shippedTxt) shippedTxt.className = 'text-[11px] font-semibold text-foreground';
+        }
+        if (st === 'delivered') {
+          const delBar = document.getElementById('step-delivered-bar');
+          const delTxt = document.getElementById('step-delivered-text');
+          if (delBar) delBar.className = 'h-2 rounded-full bg-primary mx-auto';
+          if (delTxt) delTxt.className = 'text-[11px] font-semibold text-foreground';
+        }
+
+        // Tracking Details
+        if (order.tracking_number) {
+          const trackBox = document.getElementById('order-tracking-info');
+          const trackVal = document.getElementById('order-tracking-val');
+          const courierVal = document.getElementById('order-courier-val');
+          if (trackBox) trackBox.classList.remove('hidden');
+          if (trackVal) trackVal.textContent = order.tracking_number;
+          if (courierVal && order.courier_partner) courierVal.textContent = order.courier_partner;
+        }
+
+        // Coupon discount
+        if (order.discount_amount && order.discount_amount > 0) {
+          const discRow = document.getElementById('order-discount-row');
+          const discCode = document.getElementById('order-coupon-code');
+          const discVal = document.getElementById('order-discount-val');
+          if (discRow) discRow.classList.remove('hidden');
+          if (discRow) discRow.classList.add('flex');
+          if (discCode) discCode.textContent = order.coupon_code || 'COUPON';
+          if (discVal) discVal.textContent = `-${formatPrice(order.discount_amount)}`;
+        }
+
+        // Setup Return Modal items
+        currentOrderForReturn = order;
+        const itemSelect = document.getElementById('return-item-select');
+        if (itemSelect && itemsList) {
+          itemSelect.innerHTML = (order.items || []).map(i => `
+            <option value="${i.name} (${i.size})">${i.name} - ${i.color}, Size ${i.size}</option>
+          `).join('');
+        }
+
+        loadingEl.classList.add('hidden');
+        contentEl.classList.remove('hidden');
+      } catch (err) {
+        console.warn('Could not fetch from server, checking local order backup:', err);
+        try {
+          const cachedRaw = localStorage.getItem('naari_last_order');
+          if (cachedRaw) {
+            const cachedOrder = JSON.parse(cachedRaw);
+            if (cachedOrder && (cachedOrder.id === orderId || cachedOrder.order_id === orderId)) {
+              renderOrderFromData(cachedOrder);
+              return;
+            }
+          }
+        } catch (storageErr) {}
+
+        loadingEl.classList.add('hidden');
+        errorEl.classList.remove('hidden');
+      }
+    }
+
+    let currentOrderForReturn = null;
+
     function renderOrderFromData(order) {
+      currentOrderForReturn = order;
       const loadingEl = document.getElementById('confirmation-loading');
       const errorEl = document.getElementById('confirmation-error');
       const contentEl = document.getElementById('confirmation-content');
@@ -291,7 +570,7 @@
       const items = Array.isArray(order.items) ? order.items : [];
       itemsList.innerHTML = items.map(item => `
         <li class="py-3 flex gap-3 items-center">
-          <img src="../${(item.image || 'assets/hero.jpg').replace(/^\//, '')}" alt="${item.name}" class="h-16 w-12 object-cover rounded-sm ring-1 ring-border/50 shrink-0"/>
+          <img src="${(item.image || 'assets/hero.jpg').replace(/^\//, '')}" alt="${item.name}" class="h-16 w-12 object-cover rounded-sm ring-1 ring-border/50 shrink-0"/>
           <div class="min-w-0 flex-1 text-xs">
             <p class="font-semibold text-foreground truncate text-sm">${item.name}</p>
             <p class="text-muted-foreground">${item.color || 'Standard'} · Size ${item.size || 'M'}</p>
@@ -306,6 +585,13 @@
       document.getElementById('order-subtotal').textContent = formatPrice(order.subtotal || order.total_amount || 0);
       document.getElementById('order-total-amount').textContent = formatPrice(order.total_amount || 0);
 
+      const itemSelect = document.getElementById('return-item-select');
+      if (itemSelect) {
+        itemSelect.innerHTML = items.map(i => `
+          <option value="${i.name} (${i.size})">${i.name} - ${i.color}, Size ${i.size}</option>
+        `).join('');
+      }
+
       // Update WhatsApp support link with order ID prefilled
       const waLink = document.getElementById('order-support-whatsapp');
       if (waLink) {
@@ -317,47 +603,101 @@
       contentEl.classList.remove('hidden');
     }
 
-    async function loadOrderConfirmation() {
-      const urlParams = new URLSearchParams(window.location.search);
-      const orderId = urlParams.get('order_id');
-      const loadingEl = document.getElementById('confirmation-loading');
-      const errorEl = document.getElementById('confirmation-error');
-
-      if (!orderId) {
-        loadingEl.classList.add('hidden');
-        errorEl.classList.remove('hidden');
-        return;
-      }
-
-      try {
-        const { res, data } = await safeFetchJson(`/api/order-details?order_id=${encodeURIComponent(orderId)}`);
-
-        if (res.ok && data && data.ok && data.order) {
-          renderOrderFromData(data.order);
-          return;
-        }
-        throw new Error(data?.error || 'Order details not found on server.');
-      } catch (err) {
-        console.warn('Could not fetch from server, checking local order backup:', err);
-        try {
-          const cachedRaw = localStorage.getItem('naari_last_order');
-          if (cachedRaw) {
-            const cachedOrder = JSON.parse(cachedRaw);
-            if (cachedOrder && (cachedOrder.id === orderId || cachedOrder.order_id === orderId)) {
-              renderOrderFromData(cachedOrder);
-              return;
-            }
-          }
-        } catch (storageErr) {}
-
-        loadingEl.classList.add('hidden');
-        errorEl.classList.remove('hidden');
-      }
-    }
-
+    // Return Modal Handling
     document.addEventListener('DOMContentLoaded', () => {
       loadOrderConfirmation();
+
+      const returnModal = document.getElementById('return-modal');
+      const openReturnBtn = document.getElementById('open-return-modal-btn');
+      const closeReturnBtn = document.getElementById('close-return-modal-btn');
+      const returnBackdrop = document.getElementById('return-modal-backdrop');
+      const returnForm = document.getElementById('return-form');
+      const returnMsg = document.getElementById('return-status-msg');
+
+      if (openReturnBtn && returnModal) {
+        openReturnBtn.addEventListener('click', () => {
+          returnModal.classList.remove('invisible', 'opacity-0');
+          returnModal.classList.add('opacity-100');
+        });
+      }
+
+      function closeReturnModal() {
+        if (!returnModal) return;
+        returnModal.classList.remove('opacity-100');
+        returnModal.classList.add('opacity-0');
+        setTimeout(() => returnModal.classList.add('invisible'), 200);
+      }
+
+      if (closeReturnBtn) closeReturnBtn.addEventListener('click', closeReturnModal);
+      if (returnBackdrop) returnBackdrop.addEventListener('click', closeReturnModal);
+
+      const cancelOrderBtn = document.getElementById('cancel-order-btn');
+      if (cancelOrderBtn) {
+        cancelOrderBtn.addEventListener('click', async () => {
+          if (!currentOrderForReturn) return;
+          if (!confirm('Are you sure you want to cancel this order?')) return;
+          try {
+            const { res, data } = await safeFetchJson('/api/customer/orders/cancel', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                order_id: currentOrderForReturn.id || currentOrderForReturn.order_id,
+                customer_email: currentOrderForReturn.customer_email,
+                reason: 'Customer requested cancellation'
+              })
+            });
+            if (res.ok && data && data.ok) {
+              getToast().success(data.message || 'Order cancelled.');
+              loadOrderConfirmation();
+            } else {
+              getToast().error(data?.error || 'Unable to cancel order.');
+            }
+          } catch (e) {
+            getToast().error('Error cancelling order.');
+          }
+        });
+      }
+
+      if (returnForm) {
+        returnForm.addEventListener('submit', async (e) => {
+          e.preventDefault();
+          if (!currentOrderForReturn) return;
+          const itemName = document.getElementById('return-item-select').value;
+          const actionType = document.querySelector('input[name="action_type"]:checked').value;
+          const reason = document.getElementById('return-reason-select').value;
+          const notes = document.getElementById('return-notes').value;
+
+          returnMsg.innerHTML = '<span class="text-primary animate-pulse">Submitting request...</span>';
+
+          try {
+            const { res, data } = await safeFetchJson('/api/customer/returns', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                order_id: currentOrderForReturn.id || currentOrderForReturn.order_id,
+                customer_email: currentOrderForReturn.customer_email,
+                customer_phone: currentOrderForReturn.customer_phone,
+                item_name: itemName,
+                action_type: actionType,
+                reason: reason,
+                notes: notes
+              })
+            });
+
+            if (res.ok && data && data.ok) {
+              returnMsg.innerHTML = `<span class="text-emerald-800 font-medium">✓ ${data.message}</span>`;
+              getToast().success(data.message);
+              setTimeout(closeReturnModal, 2500);
+            } else {
+              returnMsg.innerHTML = `<span class="text-destructive">${data?.error || 'Failed to submit.'}</span>`;
+            }
+          } catch (err) {
+            returnMsg.innerHTML = '<span class="text-destructive">Network error. Please try again.</span>';
+          }
+        });
+      }
     });
   </script>
 </body>
+
 </html>

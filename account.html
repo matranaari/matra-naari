@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <link rel="icon" type="image/png" href="favicon.png"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous"/>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Kalam:wght@300;400;700&family=Karla:wght@400;500;600&display=swap"/>
+  <link rel="stylesheet" href="assets/styles.css"/>
+  <title>My Account &amp; Orders — Matra Naari</title>
+  <meta name="description" content="View your order history, track deliveries, manage saved addresses, and request returns."/>
+  <style>
+    body {
+      background-image: url('images/paper.jpg'), url('/images/paper.jpg');
+      background-size: 700px;
+    }
+  </style>
+</head>
+<body class="text-foreground antialiased selection:bg-primary/20 selection:text-primary">
+
+  <!-- Top Announcement Bar -->
+  <div id="top-announcement-bar" class="bg-primary text-primary-foreground py-2 px-4 text-xs font-sans tracking-wider text-center flex items-center justify-center">
+    <div class="flex items-center gap-2">
+      <span class="text-xs">✿</span>
+      <span class="announcement-text transition-opacity duration-300 font-medium">FREE EXPRESS SHIPPING ON ALL ORDERS · USE CODE: NAARI10 FOR 10% OFF</span>
+      <span class="text-xs">✿</span>
+    </div>
+  </div>
+
+  <!-- Sticky Header -->
+  <header class="sticky top-0 z-40 border-b border-border/80 bg-background/90 backdrop-blur-md">
+    <div class="mx-auto flex max-w-7xl items-center justify-between px-4 py-2.5 sm:px-6">
+      <a aria-label="Matra Naari Home" href="index.html" class="flex items-center gap-3">
+        <img src="images/naari-logo.png" alt="Matra Naari" class="h-10 w-auto sm:h-12 mix-blend-multiply"/>
+      </a>
+      <nav class="hidden md:flex items-center gap-8 font-hand text-lg">
+        <a class="text-foreground/80 hover:text-primary transition" href="index.html">Home</a>
+        <a class="text-foreground/80 hover:text-primary transition" href="shop.html">Collection</a>
+        <a class="text-foreground/80 hover:text-primary transition" href="story.html">Our Craft</a>
+        <a class="text-foreground/80 hover:text-primary transition" href="contact.html">Contact</a>
+      </nav>
+      <div class="flex items-center gap-3 sm:gap-5">
+        <button type="button" class="open-search-modal-btn p-2 text-foreground/80 hover:text-primary transition cursor-pointer" aria-label="Search">
+          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+        </button>
+        <button type="button" class="open-wishlist-drawer-btn relative p-2 text-foreground/80 hover:text-primary transition cursor-pointer" aria-label="Wishlist">
+          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
+          <span class="wishlist-count-badge absolute -top-1 -right-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-primary-foreground font-sans" style="display:none;">0</span>
+        </button>
+        <button type="button" class="open-auth-modal-btn p-2 text-primary font-bold transition flex items-center gap-1.5 cursor-pointer" aria-label="Account">
+          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+          <span class="header-user-label hidden sm:inline text-xs font-sans font-medium">Account</span>
+        </button>
+        <button type="button" class="open-cart-drawer-btn flex items-center gap-2 bg-primary/10 hover:bg-primary/20 text-primary px-3 py-1.5 rounded-xs transition cursor-pointer" aria-label="Bag">
+          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
+          <span class="font-hand text-base">Bag</span>
+          <span class="bag-count-badge flex h-4 min-w-[16px] items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-primary-foreground font-sans" style="display:none;">0</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="mx-auto max-w-6xl px-4 py-10 sm:px-6">
+    
+    <!-- State 1: Logged Out View -->
+    <div id="account-logged-out" class="max-w-md mx-auto bg-card/80 border border-border p-6 sm:p-8 rounded-xs shadow-xl text-center space-y-6">
+      <div>
+        <p class="font-hand text-lg text-primary">customer sanctuary</p>
+        <h1 class="font-display text-3xl sm:text-4xl font-semibold">Sign In to Matra Naari</h1>
+        <p class="text-xs text-muted-foreground mt-2">Track your orders, manage saved delivery addresses, and view size exchange requests.</p>
+      </div>
+
+      <div class="grid grid-cols-2 border-b border-border">
+        <button type="button" id="tab-login-btn" class="pb-2 text-sm font-semibold border-b-2 border-primary text-primary cursor-pointer">Sign In</button>
+        <button type="button" id="tab-register-btn" class="pb-2 text-sm font-semibold border-b-2 border-transparent text-muted-foreground hover:text-foreground cursor-pointer">Create Account</button>
+      </div>
+
+      <!-- Sign In Form -->
+      <form id="page-login-form" class="space-y-4 text-left">
+        <div>
+          <label class="block text-xs uppercase tracking-wider text-muted-foreground mb-1">Email Address</label>
+          <input type="email" id="p-login-email" required placeholder="you@example.com" class="w-full border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"/>
+        </div>
+        <div>
+          <label class="block text-xs uppercase tracking-wider text-muted-foreground mb-1">Password</label>
+          <input type="password" id="p-login-password" required placeholder="••••••••" class="w-full border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"/>
+        </div>
+        <div id="p-login-error" class="text-xs text-destructive hidden"></div>
+        <button type="submit" class="w-full bg-primary py-3 text-xs uppercase tracking-[0.2em] text-primary-foreground font-semibold hover:opacity-90 transition cursor-pointer">
+          Sign In
+        </button>
+      </form>
+
+      <!-- Register Form -->
+      <form id="page-reg-form" class="space-y-4 text-left hidden">
+        <div>
+          <label class="block text-xs uppercase tracking-wider text-muted-foreground mb-1">Full Name</label>
+          <input type="text" id="p-reg-name" required placeholder="Ananya Sharma" class="w-full border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"/>
+        </div>
+        <div>
+          <label class="block text-xs uppercase tracking-wider text-muted-foreground mb-1">Email Address</label>
+          <input type="email" id="p-reg-email" required placeholder="ananya@example.com" class="w-full border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"/>
+        </div>
+        <div>
+          <label class="block text-xs uppercase tracking-wider text-muted-foreground mb-1">Mobile Phone (10 digits)</label>
+          <input type="tel" id="p-reg-phone" maxlength="10" required placeholder="9876543210" class="w-full border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"/>
+        </div>
+        <div>
+          <label class="block text-xs uppercase tracking-wider text-muted-foreground mb-1">Password (min 6 chars)</label>
+          <input type="password" id="p-reg-password" minlength="6" required placeholder="••••••••" class="w-full border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"/>
+        </div>
+        <div id="p-reg-error" class="text-xs text-destructive hidden"></div>
+        <button type="submit" class="w-full bg-primary py-3 text-xs uppercase tracking-[0.2em] text-primary-foreground font-semibold hover:opacity-90 transition cursor-pointer">
+          Create Account
+        </button>
+      </form>
+
+      <div class="pt-4 border-t border-border/60 text-xs text-muted-foreground font-hand">
+        ✿ 100% Secure &amp; Confidential · Matra Naari Club
+      </div>
+    </div>
+
+    <!-- State 2: Logged In Account Dashboard -->
+    <div id="account-logged-in" class="hidden space-y-8">
+      <!-- Profile Header Banner -->
+      <div class="bg-card/80 border border-border p-6 rounded-xs flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div class="flex items-center gap-4 text-center sm:text-left">
+          <div class="h-14 w-14 rounded-full bg-primary/10 text-primary flex items-center justify-center font-display text-2xl font-bold">
+            <span id="user-avatar-initial">N</span>
+          </div>
+          <div>
+            <h1 class="font-display text-2xl sm:text-3xl font-semibold text-foreground" id="user-display-name">Customer</h1>
+            <p class="text-xs text-muted-foreground" id="user-display-email">customer@example.com</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-3">
+          <a href="shop.html" class="bg-primary/10 border border-primary text-primary px-4 py-2 text-xs uppercase tracking-wider font-semibold hover:bg-primary hover:text-primary-foreground transition">
+            Shop Catalog
+          </a>
+          <button type="button" id="account-logout-btn" class="border border-border text-muted-foreground px-4 py-2 text-xs uppercase tracking-wider hover:text-destructive hover:border-destructive transition cursor-pointer">
+            Sign Out
+          </button>
+        </div>
+      </div>
+
+      <!-- Account Navigation Tabs -->
+      <div class="flex border-b border-border gap-6 text-sm font-sans overflow-x-auto">
+        <button type="button" id="tab-orders-link" class="pb-3 border-b-2 border-primary text-primary font-bold cursor-pointer whitespace-nowrap">
+          Order History &amp; Tracking
+        </button>
+        <button type="button" id="tab-addresses-link" class="pb-3 border-b-2 border-transparent text-muted-foreground hover:text-foreground cursor-pointer whitespace-nowrap">
+          Saved Addresses
+        </button>
+        <button type="button" id="tab-returns-link" class="pb-3 border-b-2 border-transparent text-muted-foreground hover:text-foreground cursor-pointer whitespace-nowrap">
+          Return / Exchange Requests
+        </button>
+        <button type="button" id="tab-profile-link" class="pb-3 border-b-2 border-transparent text-muted-foreground hover:text-foreground cursor-pointer whitespace-nowrap">
+          Profile Settings
+        </button>
+      </div>
+
+      <!-- Panel 1: Orders -->
+      <div id="panel-orders" class="space-y-4">
+        <div id="orders-loading" class="py-12 text-center text-primary font-hand text-lg animate-pulse">
+          ✿ Retrieving your orders...
+        </div>
+        <div id="orders-empty" class="hidden py-16 text-center bg-card/60 border border-border rounded-xs">
+          <p class="font-hand text-2xl text-muted-foreground">You haven't placed any orders yet.</p>
+          <a href="shop.html" class="mt-4 inline-block bg-primary px-6 py-2.5 text-xs uppercase tracking-widest text-primary-foreground font-semibold">Start Shopping</a>
+        </div>
+        <div id="orders-list-container" class="space-y-4"></div>
+      </div>
+
+      <!-- Panel 2: Saved Addresses -->
+      <div id="panel-addresses" class="hidden space-y-6">
+        <div class="flex items-center justify-between">
+          <h3 class="font-display text-xl font-semibold">Your Delivery Addresses</h3>
+          <button type="button" id="toggle-add-addr-btn" class="bg-primary px-4 py-2 text-xs uppercase tracking-wider text-primary-foreground font-semibold cursor-pointer">
+            + Add New Address
+          </button>
+        </div>
+
+        <!-- Add Address Form -->
+        <form id="new-address-form" class="hidden bg-card/80 border border-border p-5 rounded-xs space-y-4 text-xs font-sans">
+          <h4 class="font-display text-lg font-semibold text-primary">New Shipping Address</h4>
+          <div class="grid sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-muted-foreground uppercase mb-1">Full Name</label>
+              <input type="text" id="addr-name" required class="w-full border border-border bg-background px-3 py-2 outline-none focus:border-primary"/>
+            </div>
+            <div>
+              <label class="block text-muted-foreground uppercase mb-1">Mobile Phone (10 digits)</label>
+              <input type="tel" id="addr-phone" maxlength="10" required class="w-full border border-border bg-background px-3 py-2 outline-none focus:border-primary"/>
+            </div>
+          </div>
+          <div>
+            <label class="block text-muted-foreground uppercase mb-1">Street Address</label>
+            <input type="text" id="addr-line1" required placeholder="Flat, house no, street name" class="w-full border border-border bg-background px-3 py-2 outline-none focus:border-primary"/>
+          </div>
+          <div>
+            <label class="block text-muted-foreground uppercase mb-1">Landmark / Locality (Optional)</label>
+            <input type="text" id="addr-line2" class="w-full border border-border bg-background px-3 py-2 outline-none focus:border-primary"/>
+          </div>
+          <div class="grid sm:grid-cols-3 gap-4">
+            <div>
+              <label class="block text-muted-foreground uppercase mb-1">City</label>
+              <input type="text" id="addr-city" required class="w-full border border-border bg-background px-3 py-2 outline-none focus:border-primary"/>
+            </div>
+            <div>
+              <label class="block text-muted-foreground uppercase mb-1">State</label>
+              <input type="text" id="addr-state" required class="w-full border border-border bg-background px-3 py-2 outline-none focus:border-primary"/>
+            </div>
+            <div>
+              <label class="block text-muted-foreground uppercase mb-1">PIN Code (6 digits)</label>
+              <input type="text" id="addr-pin" maxlength="6" required class="w-full border border-border bg-background px-3 py-2 font-mono outline-none focus:border-primary"/>
+            </div>
+          </div>
+          <label class="flex items-center gap-2 cursor-pointer">
+            <input type="checkbox" id="addr-default" class="accent-primary"/>
+            <span>Make this my default delivery address</span>
+          </label>
+          <div class="flex gap-2 pt-2">
+            <button type="submit" class="bg-primary px-6 py-2.5 uppercase tracking-wider text-primary-foreground font-semibold cursor-pointer">Save Address</button>
+            <button type="button" onclick="document.getElementById('new-address-form').classList.add('hidden')" class="border border-border px-4 py-2.5 uppercase tracking-wider">Cancel</button>
+          </div>
+        </form>
+
+        <div id="addresses-list-container" class="grid sm:grid-cols-2 gap-4"></div>
+      </div>
+
+      <!-- Panel 3: Returns & Exchanges -->
+      <div id="panel-returns" class="hidden space-y-4">
+        <div id="returns-empty" class="hidden py-16 text-center bg-card/60 border border-border rounded-xs">
+          <p class="font-hand text-xl text-muted-foreground">You have no active return or exchange requests.</p>
+          <p class="text-xs text-muted-foreground mt-1">If you need a different size on any delivered kurti, you can request an exchange from your Order History.</p>
+        </div>
+        <div id="returns-list-container" class="space-y-4"></div>
+      </div>
+
+      <!-- Panel 4: Profile Settings -->
+      <div id="panel-profile" class="hidden max-w-md">
+        <form id="profile-update-form" class="bg-card/80 border border-border p-6 rounded-xs space-y-4 text-xs font-sans">
+          <h3 class="font-display text-xl font-semibold text-primary">Update Profile Details</h3>
+          <div>
+            <label class="block text-muted-foreground uppercase tracking-wider mb-1">Full Name</label>
+            <input type="text" id="prof-name-input" required class="w-full border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"/>
+          </div>
+          <div>
+            <label class="block text-muted-foreground uppercase tracking-wider mb-1">Email Address (Verified)</label>
+            <input type="email" id="prof-email-input" disabled class="w-full border border-border bg-muted/40 px-3 py-2 text-sm text-muted-foreground cursor-not-allowed"/>
+          </div>
+          <div>
+            <label class="block text-muted-foreground uppercase tracking-wider mb-1">Mobile Phone (10 digits)</label>
+            <input type="tel" id="prof-phone-input" maxlength="10" required class="w-full border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"/>
+          </div>
+          <div id="prof-update-msg" class="text-xs"></div>
+          <button type="submit" class="bg-primary px-6 py-2.5 text-xs uppercase tracking-wider text-primary-foreground font-semibold hover:opacity-90 transition cursor-pointer">
+            Save Profile Changes
+          </button>
+        </form>
+      </div>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="mt-24 border-t border-border bg-card/90">
+    <div class="mx-auto grid max-w-7xl gap-8 px-4 py-12 sm:px-6 sm:grid-cols-3">
+      <div>
+        <img src="images/naari-logo.png" alt="Matra Naari" class="h-14 w-auto mix-blend-multiply"/>
+        <p class="mt-2 font-hand text-muted-foreground">Modern kurtis, woven with heritage.</p>
+      </div>
+      <div class="font-hand text-lg space-y-1">
+        <a class="block hover:text-primary transition" href="index.html">Home</a>
+        <a class="block hover:text-primary transition" href="shop.html">Shop Catalog</a>
+        <a class="block hover:text-primary transition" href="story.html">Our Craft Story</a>
+        <a class="block hover:text-primary transition" href="contact.html">Studio Contact</a>
+      </div>
+      <div class="text-xs text-muted-foreground font-sans space-y-1">
+        <p>hello@naari.in · +91 88493 66915</p>
+        <p class="pt-2">✿ Free delivery across India · Easy 7-day returns</p>
+        <p class="pt-4">© 2026 Matra Naari.</p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="assets/app.js"></script>
+  <script>
+    // Customer Account Controller
+    let currentUser = null;
+
+    async function checkAccountSession() {
+      const session = getUserSession();
+      if (!session || !session.token) {
+        showLoggedOutView();
+        return;
+      }
+
+      try {
+        const resp = await fetch(`${API_BASE}/api/auth/me`, {
+          headers: { 'Authorization': `Bearer ${session.token}` }
+        });
+        const data = await resp.json();
+        if (data.ok && data.user) {
+          currentUser = data.user;
+          showLoggedInView();
+        } else {
+          clearUserSession();
+          showLoggedOutView();
+        }
+      } catch (e) {
+        // Offline / fallback to stored session
+        if (session.user) {
+          currentUser = session.user;
+          showLoggedInView();
+        } else {
+          showLoggedOutView();
+        }
+      }
+    }
+
+    function showLoggedOutView() {
+      document.getElementById('account-logged-out').classList.remove('hidden');
+      document.getElementById('account-logged-in').classList.add('hidden');
+    }
+
+    function showLoggedInView() {
+      document.getElementById('account-logged-out').classList.add('hidden');
+      document.getElementById('account-logged-in').classList.remove('hidden');
+
+      document.getElementById('user-display-name').textContent = currentUser.name;
+      document.getElementById('user-display-email').textContent = `${currentUser.email} · ${currentUser.phone || ''}`;
+      document.getElementById('user-avatar-initial').textContent = currentUser.name.charAt(0).toUpperCase();
+
+      const profName = document.getElementById('prof-name-input');
+      const profEmail = document.getElementById('prof-email-input');
+      const profPhone = document.getElementById('prof-phone-input');
+      if (profName) profName.value = currentUser.name || '';
+      if (profEmail) profEmail.value = currentUser.email || '';
+      if (profPhone) profPhone.value = currentUser.phone || '';
+
+      loadCustomerOrders();
+      loadCustomerAddresses();
+      loadCustomerReturns();
+    }
+
+    // Orders Loader
+    async function loadCustomerOrders() {
+      const container = document.getElementById('orders-list-container');
+      const loading = document.getElementById('orders-loading');
+      const empty = document.getElementById('orders-empty');
+      const session = getUserSession();
+
+      try {
+        const resp = await fetch(`${API_BASE}/api/customer/orders?email=${encodeURIComponent(currentUser.email)}`, {
+          headers: session ? { 'Authorization': `Bearer ${session.token}` } : {}
+        });
+        const data = await resp.json();
+        loading.classList.add('hidden');
+
+        if (!data.orders || data.orders.length === 0) {
+          empty.classList.remove('hidden');
+          container.innerHTML = '';
+          return;
+        }
+
+        empty.classList.add('hidden');
+        container.innerHTML = data.orders.map(order => {
+          const status = (order.order_status || 'confirmed').toUpperCase();
+          const items = Array.isArray(order.items) ? order.items : [];
+          return `
+            <div class="bg-card/70 border border-border rounded-xs p-5 space-y-4 shadow-sm">
+              <div class="flex flex-col sm:flex-row sm:items-center justify-between border-b border-border/80 pb-3 gap-2">
+                <div>
+                  <span class="text-xs uppercase tracking-wider text-muted-foreground font-sans">Order Ref:</span>
+                  <strong class="font-mono text-sm text-primary ml-1">${order.id}</strong>
+                  <p class="text-[11px] text-muted-foreground font-sans">${new Date(order.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="text-xs px-2.5 py-1 rounded font-bold uppercase tracking-wider ${
+                    status === 'DELIVERED' ? 'bg-emerald-100 text-emerald-800' :
+                    status === 'SHIPPED' ? 'bg-sky-100 text-sky-800' :
+                    status === 'CANCELLED' ? 'bg-red-100 text-red-800' :
+                    'bg-primary/10 text-primary'
+                  }">${status}</span>
+                  <a href="order-confirmation.html?order_id=${order.id}" class="border border-border px-3 py-1 text-xs hover:border-primary transition">
+                    View Details →
+                  </a>
+                  ${(status === 'CONFIRMED' || status === 'PROCESSING') ? `
+                    <button type="button" onclick="cancelCustomerOrder('${order.id}')" class="border border-destructive/50 text-destructive px-2.5 py-1 text-xs hover:bg-destructive/10 transition cursor-pointer">
+                      Cancel
+                    </button>
+                  ` : ''}
+                </div>
+              </div>
+
+              <!-- Items in this order -->
+              <div class="space-y-2">
+                ${items.map(item => `
+                  <div class="flex items-center justify-between text-xs">
+                    <div class="flex items-center gap-3">
+                      <img src="${(item.image || 'assets/hero.jpg').replace(/^\//, '')}" alt="${item.name}" class="h-12 w-10 object-cover rounded-xs"/>
+                      <div>
+                        <p class="font-semibold text-sm">${item.name}</p>
+                        <p class="text-muted-foreground">${item.color} · Size: ${item.size} · Qty: ${item.qty}</p>
+                      </div>
+                    </div>
+                    <span class="font-display text-sm font-bold text-primary">${formatPrice(item.subtotal || item.price * item.qty)}</span>
+                  </div>
+                `).join('')}
+              </div>
+
+              <!-- Tracking if shipped -->
+              ${order.tracking_number ? `
+                <div class="bg-background border border-border p-3 text-xs space-y-0.5">
+                  <p>🚚 <strong>Courier Partner:</strong> ${order.courier_partner || 'Blue Dart'}</p>
+                  <p>📦 <strong>Tracking Number:</strong> <span class="font-mono font-bold select-all">${order.tracking_number}</span></p>
+                </div>
+              ` : ''}
+
+              <!-- Total & Address Footer -->
+              <div class="flex flex-col sm:flex-row sm:items-center justify-between border-t border-border/80 pt-3 text-xs text-muted-foreground gap-2">
+                <div>
+                  <span>Delivered to: </span>
+                  <strong class="text-foreground">${order.city}, ${order.state} (${order.pincode})</strong>
+                </div>
+                <div class="text-right">
+                  <span>Total Amount: </span>
+                  <strong class="font-display text-lg text-primary">${formatPrice(order.total_amount)}</strong>
+                </div>
+              </div>
+            </div>
+          `;
+        }).join('');
+      } catch (err) {
+        loading.classList.add('hidden');
+        container.innerHTML = '<p class="text-xs text-destructive text-center py-6">Could not load orders. Please refresh.</p>';
+      }
+    }
+
+    // Addresses Loader
+    async function loadCustomerAddresses() {
+      const container = document.getElementById('addresses-list-container');
+      const session = getUserSession();
+      if (!session) return;
+
+      try {
+        const resp = await fetch(`${API_BASE}/api/customer/addresses`, {
+          headers: { 'Authorization': `Bearer ${session.token}` }
+        });
+        const data = await resp.json();
+        const addrs = data.addresses || [];
+
+        if (addrs.length === 0) {
+          container.innerHTML = '<p class="text-xs text-muted-foreground col-span-2 py-4">No saved delivery addresses. Add your home or office address for fast checkout.</p>';
+          return;
+        }
+
+        container.innerHTML = addrs.map(a => `
+          <div class="bg-card/70 border border-border p-4 rounded-xs text-xs space-y-1 relative">
+            ${a.is_default ? '<span class="bg-primary/10 text-primary px-2 py-0.5 text-[10px] font-bold rounded uppercase tracking-wider mb-1 inline-block">Default Address</span>' : ''}
+            <p class="font-semibold text-sm text-foreground">${a.name}</p>
+            <p class="text-muted-foreground">${a.address_line1}</p>
+            ${a.address_line2 ? `<p class="text-muted-foreground">${a.address_line2}</p>` : ''}
+            <p class="text-foreground font-medium">${a.city}, ${a.state} — ${a.pincode}</p>
+            <p class="text-muted-foreground pt-1">📱 ${a.phone}</p>
+            <button type="button" onclick="deleteAddress('${a.id}')" class="absolute top-3 right-3 text-muted-foreground hover:text-destructive underline text-xs">
+              Delete
+            </button>
+          </div>
+        `).join('');
+      } catch (e) {}
+    }
+
+    async function deleteAddress(aid) {
+      const session = getUserSession();
+      if (!confirm('Remove this delivery address?')) return;
+      try {
+        await fetch(`${API_BASE}/api/customer/addresses/${aid}`, {
+          method: 'DELETE',
+          headers: { 'Authorization': `Bearer ${session.token}` }
+        });
+        loadCustomerAddresses();
+        getToast().info('Address deleted.');
+      } catch (e) {}
+    }
+
+    // Returns Loader
+    async function loadCustomerReturns() {
+      const container = document.getElementById('returns-list-container');
+      const empty = document.getElementById('returns-empty');
+      const session = getUserSession();
+
+      try {
+        const resp = await fetch(`${API_BASE}/api/customer/returns?email=${encodeURIComponent(currentUser.email)}`, {
+          headers: session ? { 'Authorization': `Bearer ${session.token}` } : {}
+        });
+        const data = await resp.json();
+        const returns = data.returns || [];
+
+        if (returns.length === 0) {
+          empty.classList.remove('hidden');
+          container.innerHTML = '';
+          return;
+        }
+
+        empty.classList.add('hidden');
+        container.innerHTML = returns.map(r => `
+          <div class="bg-card/70 border border-border p-4 rounded-xs text-xs space-y-2">
+            <div class="flex justify-between items-center border-b border-border/80 pb-2">
+              <div>
+                <strong class="font-mono text-primary font-bold">${r.id}</strong>
+                <span class="text-muted-foreground ml-2">Order: ${r.order_id}</span>
+              </div>
+              <span class="px-2 py-0.5 rounded text-[11px] font-bold uppercase tracking-wider ${
+                r.status === 'approved' ? 'bg-emerald-100 text-emerald-800' :
+                r.status === 'rejected' ? 'bg-red-100 text-red-800' :
+                r.status === 'completed' ? 'bg-blue-100 text-blue-800' :
+                'bg-amber-100 text-amber-800'
+              }">${r.status}</span>
+            </div>
+            <p><strong>Item:</strong> ${r.item_name} (${r.action_type.toUpperCase()})</p>
+            <p><strong>Reason:</strong> ${r.reason}</p>
+            ${r.notes ? `<p class="text-muted-foreground"><em>Customer note:</em> "${r.notes}"</p>` : ''}
+            <p class="text-[10px] text-muted-foreground">Submitted on: ${new Date(r.created_at).toLocaleString('en-IN')}</p>
+          </div>
+        `).join('');
+      } catch (e) {}
+    }
+
+    async function cancelCustomerOrder(orderId) {
+      if (!confirm('Are you sure you want to cancel this order?')) return;
+      const session = getUserSession();
+      try {
+        const resp = await fetch(`${API_BASE}/api/customer/orders/cancel`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(session ? { 'Authorization': `Bearer ${session.token}` } : {})
+          },
+          body: JSON.stringify({ order_id: orderId, customer_email: currentUser?.email || '' })
+        });
+        const data = await resp.json();
+        if (data.ok) {
+          getToast().success(data.message || 'Order cancelled.');
+          loadCustomerOrders();
+        } else {
+          getToast().error(data.error || 'Could not cancel order.');
+        }
+      } catch (e) {
+        getToast().error('Error cancelling order.');
+      }
+    }
+
+    // Tab Switching
+    function setupAccountTabs() {
+      const tOrders = document.getElementById('tab-orders-link');
+      const tAddrs = document.getElementById('tab-addresses-link');
+      const tReturns = document.getElementById('tab-returns-link');
+      const tProfile = document.getElementById('tab-profile-link');
+
+      const pOrders = document.getElementById('panel-orders');
+      const pAddrs = document.getElementById('panel-addresses');
+      const pReturns = document.getElementById('panel-returns');
+      const pProfile = document.getElementById('panel-profile');
+
+      function switchTab(target) {
+        [tOrders, tAddrs, tReturns, tProfile].filter(Boolean).forEach(t => {
+          t.className = 'pb-3 border-b-2 border-transparent text-muted-foreground hover:text-foreground cursor-pointer whitespace-nowrap';
+        });
+        [pOrders, pAddrs, pReturns, pProfile].filter(Boolean).forEach(p => p.classList.add('hidden'));
+
+        if (target === 'orders') {
+          tOrders.className = 'pb-3 border-b-2 border-primary text-primary font-bold cursor-pointer whitespace-nowrap';
+          pOrders.classList.remove('hidden');
+        } else if (target === 'addresses') {
+          tAddrs.className = 'pb-3 border-b-2 border-primary text-primary font-bold cursor-pointer whitespace-nowrap';
+          pAddrs.classList.remove('hidden');
+        } else if (target === 'returns') {
+          tReturns.className = 'pb-3 border-b-2 border-primary text-primary font-bold cursor-pointer whitespace-nowrap';
+          pReturns.classList.remove('hidden');
+        } else if (target === 'profile' && tProfile && pProfile) {
+          tProfile.className = 'pb-3 border-b-2 border-primary text-primary font-bold cursor-pointer whitespace-nowrap';
+          pProfile.classList.remove('hidden');
+        }
+      }
+
+      tOrders.addEventListener('click', () => switchTab('orders'));
+      tAddrs.addEventListener('click', () => switchTab('addresses'));
+      tReturns.addEventListener('click', () => switchTab('returns'));
+      if (tProfile) tProfile.addEventListener('click', () => switchTab('profile'));
+
+      const profForm = document.getElementById('profile-update-form');
+      if (profForm) {
+        profForm.addEventListener('submit', async (e) => {
+          e.preventDefault();
+          const session = getUserSession();
+          if (!session) return;
+          const name = document.getElementById('prof-name-input').value.trim();
+          const phone = document.getElementById('prof-phone-input').value.trim();
+          const msgEl = document.getElementById('prof-update-msg');
+          try {
+            const resp = await fetch(`${API_BASE}/api/auth/profile`, {
+              method: 'PUT',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${session.token}`
+              },
+              body: JSON.stringify({ name, phone })
+            });
+            const data = await resp.json();
+            if (data.ok && data.user) {
+              currentUser = data.user;
+              setUserSession(session.token, data.user);
+              showLoggedInView();
+              msgEl.innerHTML = '<span class="text-emerald-800 font-medium">✓ Profile updated!</span>';
+              getToast().success('Profile updated!');
+            } else {
+              msgEl.innerHTML = `<span class="text-destructive">${data.error || 'Failed to update.'}</span>`;
+            }
+          } catch (err) {
+            msgEl.innerHTML = '<span class="text-destructive">Network error.</span>';
+          }
+        });
+      }
+    }
+
+    // Attach Logged Out Tab Switching & Forms
+    document.addEventListener('DOMContentLoaded', () => {
+      checkAccountSession();
+      setupAccountTabs();
+
+      const tabLoginBtn = document.getElementById('tab-login-btn');
+      const tabRegBtn = document.getElementById('tab-register-btn');
+      const loginForm = document.getElementById('page-login-form');
+      const regForm = document.getElementById('page-reg-form');
+
+      tabLoginBtn.addEventListener('click', () => {
+        tabLoginBtn.className = 'pb-2 text-sm font-semibold border-b-2 border-primary text-primary cursor-pointer';
+        tabRegBtn.className = 'pb-2 text-sm font-semibold border-b-2 border-transparent text-muted-foreground hover:text-foreground cursor-pointer';
+        loginForm.classList.remove('hidden');
+        regForm.classList.add('hidden');
+      });
+
+      tabRegBtn.addEventListener('click', () => {
+        tabRegBtn.className = 'pb-2 text-sm font-semibold border-b-2 border-primary text-primary cursor-pointer';
+        tabLoginBtn.className = 'pb-2 text-sm font-semibold border-b-2 border-transparent text-muted-foreground hover:text-foreground cursor-pointer';
+        regForm.classList.remove('hidden');
+        loginForm.classList.add('hidden');
+      });
+
+      // Login Submission
+      loginForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const errEl = document.getElementById('p-login-error');
+        errEl.classList.add('hidden');
+        const email = document.getElementById('p-login-email').value.trim();
+        const password = document.getElementById('p-login-password').value;
+
+        try {
+          const resp = await fetch(`${API_BASE}/api/auth/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password })
+          });
+          const data = await resp.json();
+          if (data.ok) {
+            setUserSession(data.token, data.user);
+            currentUser = data.user;
+            showLoggedInView();
+            getToast().success(`Welcome, ${data.user.name}!`);
+          } else {
+            errEl.textContent = data.error || 'Login failed.';
+            errEl.classList.remove('hidden');
+          }
+        } catch (err) {
+          errEl.textContent = 'Server connection error.';
+          errEl.classList.remove('hidden');
+        }
+      });
+
+      // Register Submission
+      regForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const errEl = document.getElementById('p-reg-error');
+        errEl.classList.add('hidden');
+        const name = document.getElementById('p-reg-name').value.trim();
+        const email = document.getElementById('p-reg-email').value.trim();
+        const phone = document.getElementById('p-reg-phone').value.trim();
+        const password = document.getElementById('p-reg-password').value;
+
+        try {
+          const resp = await fetch(`${API_BASE}/api/auth/register`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, email, phone, password })
+          });
+          const data = await resp.json();
+          if (data.ok) {
+            setUserSession(data.token, data.user);
+            currentUser = data.user;
+            showLoggedInView();
+            getToast().success(`Account created for ${data.user.name}!`);
+          } else {
+            errEl.textContent = data.error || 'Registration failed.';
+            errEl.classList.remove('hidden');
+          }
+        } catch (err) {
+          errEl.textContent = 'Server connection error.';
+          errEl.classList.remove('hidden');
+        }
+      });
+
+      // Logout Button
+      document.getElementById('account-logout-btn').addEventListener('click', async () => {
+        const session = getUserSession();
+        if (session) {
+          await fetch(`${API_BASE}/api/auth/logout`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${session.token}` }
+          });
+        }
+        clearUserSession();
+        currentUser = null;
+        showLoggedOutView();
+        getToast().info('You have been logged out.');
+      });
+
+      // Add Address Toggle & Form
+      const addAddrBtn = document.getElementById('toggle-add-addr-btn');
+      const addrForm = document.getElementById('new-address-form');
+      addAddrBtn.addEventListener('click', () => {
+        addrForm.classList.toggle('hidden');
+        if (currentUser) {
+          document.getElementById('addr-name').value = currentUser.name || '';
+          document.getElementById('addr-phone').value = currentUser.phone || '';
+        }
+      });
+
+      addrForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const session = getUserSession();
+        const payload = {
+          name: document.getElementById('addr-name').value.trim(),
+          phone: document.getElementById('addr-phone').value.trim(),
+          address_line1: document.getElementById('addr-line1').value.trim(),
+          address_line2: document.getElementById('addr-line2').value.trim(),
+          city: document.getElementById('addr-city').value.trim(),
+          state: document.getElementById('addr-state').value.trim(),
+          pincode: document.getElementById('addr-pin').value.trim(),
+          is_default: document.getElementById('addr-default').checked
+        };
+
+        try {
+          const resp = await fetch(`${API_BASE}/api/customer/addresses`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${session.token}`
+            },
+            body: JSON.stringify(payload)
+          });
+          const data = await resp.json();
+          if (data.ok) {
+            addrForm.reset();
+            addrForm.classList.add('hidden');
+            loadCustomerAddresses();
+            getToast().success('Address saved successfully!');
+          } else {
+            getToast().error(data.error || 'Failed to save address.');
+          }
+        } catch (err) {
+          getToast().error('Network error saving address.');
+        }
+      });
+    });
+  </script>
+</body>
+</html>
