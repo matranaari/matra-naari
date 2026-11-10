@@ -148,7 +148,17 @@ def run_configured_razorpay_hmac_tests():
         })
         assert sim_bypass_resp.status_code == 400 and sim_bypass_resp.get_json()["ok"] is False
 
-        # E. Attempt verification with wrong/tampered HMAC signature -> MUST FAIL (400) and mark failed
+        # E. Test payment cancellation / failure recording (/api/payment-failed)
+        cancel_resp = client.post("/api/payment-failed", json={
+            "order_id": internal_order_id,
+            "razorpay_order_id": mock_rzp_order_id,
+            "reason": "Payment cancelled by customer"
+        })
+        assert cancel_resp.status_code == 200 and cancel_resp.get_json()["payment_status"] == "cancelled"
+        det_after_cancel = client.get(f"/api/order-details?order_id={internal_order_id}").get_json()
+        assert det_after_cancel["order"]["payment_status"] == "cancelled"
+
+        # F. Attempt verification with wrong/tampered HMAC signature -> MUST FAIL (400) and mark failed
         bad_sig_resp = client.post("/api/verify-payment", json={
             "order_id": internal_order_id,
             "razorpay_order_id": mock_rzp_order_id,
@@ -159,7 +169,7 @@ def run_configured_razorpay_hmac_tests():
         det_after_bad = client.get(f"/api/order-details?order_id={internal_order_id}").get_json()
         assert det_after_bad["order"]["payment_status"] == "failed"
 
-        # F. Compute genuine HMAC-SHA256 signature using RAZORPAY_KEY_SECRET and verify -> MUST SUCCEED (200)
+        # G. Compute genuine HMAC-SHA256 signature using RAZORPAY_KEY_SECRET and verify -> MUST SUCCEED (200)
         real_payment_id = "pay_RealPayment112233"
         msg = f"{mock_rzp_order_id}|{real_payment_id}".encode("utf-8")
         valid_signature = hmac.new(test_key_secret.encode("utf-8"), msg, hashlib.sha256).hexdigest()
@@ -175,7 +185,7 @@ def run_configured_razorpay_hmac_tests():
         assert good_sig_data["status"] == "paid"
         assert good_sig_data["payment_id"] == real_payment_id
 
-        # G. Verify duplicate verification request is handled idempotently
+        # H. Verify duplicate verification request is handled idempotently
         dup_resp = client.post("/api/verify-payment", json={
             "order_id": internal_order_id,
             "razorpay_order_id": mock_rzp_order_id,
@@ -185,7 +195,7 @@ def run_configured_razorpay_hmac_tests():
         dup_data = dup_resp.get_json()
         assert dup_resp.status_code == 200 and dup_data["ok"] is True and dup_data.get("already_verified") is True
 
-        # H. Confirm order in DB is now 'paid' and 'confirmed'
+        # I. Confirm order in DB is now 'paid' and 'confirmed'
         det_final = client.get(f"/api/order-details?order_id={internal_order_id}").get_json()
         assert det_final["order"]["payment_status"] == "paid"
         assert det_final["order"]["order_status"] == "confirmed"
@@ -288,68 +298,60 @@ def run_tests():
     print(f" [PASS] 6. POST /api/create-cod-order -> 200 Success! Created order {cod_order_id} (Total: ₹{data.get('total_amount')})")
     passed += 1
 
-    # 7. Online Payment - Create Order
+    # 7. Regression Test: Online Payment when Razorpay keys are NOT configured MUST NOT simulate or bypass Razorpay
     total += 1
     status, body, _ = make_request("/api/create-order", method="POST", payload={
         "customer": test_customer,
         "items": test_items
     })
     data = json.loads(body)
-    assert status == 200 and data.get("ok") is True, f"Online create-order failed: {body}"
-    online_order_id = data.get("order_id")
-    rzp_order_id = data.get("razorpay_order_id")
-    amount = data.get("amount")
-    assert amount == 429700, f"Expected 429700 paise, got {amount}"
-    print(f" [PASS] 7. POST /api/create-order -> 200 Success! Created online order {online_order_id}, rzp_order_id: {rzp_order_id}, amount: {amount} paise")
+    assert status == 503 and data.get("ok") is False, f"Expected 503 when Razorpay keys are missing (never simulate), got {status}: {body}"
+    assert not data.get("is_simulated"), "is_simulated must never be True"
+    print(f" [PASS] 7. Regression: POST /api/create-order without keys -> 503 Rejected (No simulated payment bypass: '{data.get('error')}')")
     passed += 1
 
-    # 8. Razorpay Signature Verification - FAILED Scenario (tampered / invalid signature)
+    # 8. Regression Test: POST /api/verify-payment rejects simulated & tampered requests
     total += 1
     status, body, _ = make_request("/api/verify-payment", method="POST", payload={
-        "order_id": online_order_id,
-        "razorpay_order_id": "order_live_999999",
-        "razorpay_payment_id": "pay_live_888888",
-        "razorpay_signature": "fraudulent_or_tampered_signature_hex",
-        "is_simulated": False
-    })
-    data = json.loads(body)
-    assert status == 400 and data.get("ok") is False, f"Expected 400 for tampered payment, got {status}: {body}"
-    print(f" [PASS] 8. POST /api/verify-payment (Failed payment / tampered signature) -> 400 Caught: '{data.get('error')}'")
-    passed += 1
-
-    # 9. Razorpay Payment - SUCCESS Scenario
-    total += 1
-    simulated_payment_id = "pay_test_verified_success"
-    status, body, _ = make_request("/api/verify-payment", method="POST", payload={
-        "order_id": online_order_id,
-        "razorpay_order_id": rzp_order_id,
-        "razorpay_payment_id": simulated_payment_id,
-        "razorpay_signature": "sig_simulated_valid",
+        "order_id": cod_order_id,
+        "razorpay_order_id": "order_test_fake123",
+        "razorpay_payment_id": "pay_test_fake123",
+        "razorpay_signature": "simulated_test_signature",
         "is_simulated": True
     })
     data = json.loads(body)
-    assert status == 200 and data.get("ok") is True, f"Payment verification failed: {body}"
-    assert data.get("status") == "paid", f"Expected status 'paid', got {data.get('status')}"
-    print(f" [PASS] 9. POST /api/verify-payment (Successful verification) -> 200 Success! Status: '{data.get('status')}'")
+    assert status == 400 and data.get("ok") is False, f"Expected 400 for simulated payment bypass, got {status}: {body}"
+    print(f" [PASS] 8. Regression: POST /api/verify-payment blocks simulated payment bypass -> 400 Caught: '{data.get('error')}'")
     passed += 1
 
-    # 10. Order Details Retrieval
+    # 9. Regression Test: Verify checkout.html has no simulated redirect and opens Razorpay Standard Checkout
     total += 1
-    status, body, _ = make_request(f"/api/order-details?order_id={online_order_id}")
+    checkout_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "checkout.html")
+    with open(checkout_path, "r", encoding="utf-8") as cf:
+        checkout_html = cf.read()
+    assert "if (createData.is_simulated)" not in checkout_html, "checkout.html must not contain simulated payment redirect branch"
+    assert "simulated_test_signature" not in checkout_html, "checkout.html must not send simulated_test_signature"
+    assert "new Razorpay(options)" in checkout_html and "rzpInstance.open()" in checkout_html, "checkout.html must open Razorpay Standard Checkout"
+    print(" [PASS] 9. Regression: checkout.html verified free of simulated bypass; opens new Razorpay(options) -> rzpInstance.open()")
+    passed += 1
+
+    # 10. Order Details Retrieval (COD Order)
+    total += 1
+    status, body, _ = make_request(f"/api/order-details?order_id={cod_order_id}")
     data = json.loads(body)
     assert status == 200 and data.get("ok") is True, f"Order details failed: {body}"
     ord_info = data.get("order", {})
-    assert ord_info.get("id") == online_order_id
-    assert ord_info.get("payment_status") == "paid"
+    assert ord_info.get("id") == cod_order_id
+    assert ord_info.get("payment_status") == "cod_confirmed"
     assert ord_info.get("customer_name") == test_customer["name"]
     assert len(ord_info.get("items", [])) == 2
-    print(f" [PASS] 10. GET /api/order-details -> 200 Success! Verified stored order with {len(ord_info.get('items'))} items, customer: '{ord_info.get('customer_name')}', payment: '{ord_info.get('payment_status')}'")
+    print(f" [PASS] 10. GET /api/order-details -> 200 Success! Verified stored COD order with {len(ord_info.get('items'))} items, customer: '{ord_info.get('customer_name')}', status: '{ord_info.get('payment_status')}'")
     passed += 1
 
     # 11. Configured RAZORPAY_KEY_ID & RAZORPAY_KEY_SECRET HMAC-SHA256 & Price-Authority Suite
     total += 1
     run_configured_razorpay_hmac_tests()
-    print(" [PASS] 11. Configured RAZORPAY_KEY_ID & RAZORPAY_KEY_SECRET (Env Vars, Price Authority, HMAC-SHA256 & Idempotency) -> Verified!")
+    print(" [PASS] 11. Configured RAZORPAY_KEY_ID & RAZORPAY_KEY_SECRET (Env Vars, Price Authority, Cancellation, HMAC-SHA256 & Idempotency) -> Verified!")
     passed += 1
 
     print("=" * 60)

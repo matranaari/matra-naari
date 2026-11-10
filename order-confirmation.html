@@ -368,6 +368,19 @@
         }
 
         const order = data.order;
+        if (order.payment_method !== 'cod' && order.payment_status !== 'paid') {
+          loadingEl.classList.add('hidden');
+          errorEl.innerHTML = `
+            <p class="font-hand text-2xl text-destructive">Payment Not Completed</p>
+            <p class="mt-2 text-sm text-muted-foreground">Payment for order <strong>${order.id}</strong> (${order.payment_status || 'pending'}) has not been verified yet.</p>
+            <a href="checkout.html"
+              class="mt-6 inline-block bg-primary px-7 py-3 text-sm uppercase tracking-[0.2em] text-primary-foreground hover:opacity-90 transition">
+              Return to Checkout
+            </a>
+          `;
+          errorEl.classList.remove('hidden');
+          return;
+        }
         document.getElementById('order-ref-id').textContent = order.id;
 
         // Customer & Delivery Address

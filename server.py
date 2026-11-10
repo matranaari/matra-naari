@@ -391,7 +391,13 @@ def load_config():
         config["support_email"] = str(db_settings["support_email"]).strip()
 
     env_mappings = {
+        "RAZORPAY_KEY": "razorpay_key_id",
+        "RAZORPAY_API_KEY": "razorpay_key_id",
+        "RZP_KEY_ID": "razorpay_key_id",
         "RAZORPAY_KEY_ID": "razorpay_key_id",
+        "RAZORPAY_SECRET": "razorpay_key_secret",
+        "RAZORPAY_API_SECRET": "razorpay_key_secret",
+        "RZP_KEY_SECRET": "razorpay_key_secret",
         "RAZORPAY_KEY_SECRET": "razorpay_key_secret",
         "CURRENCY": "currency",
         "STORE_NAME": "store_name",
@@ -419,7 +425,7 @@ def load_config():
     for env_var, cfg_key in env_mappings.items():
         val = os.environ.get(env_var)
         if val is not None and val.strip():
-            config[cfg_key] = val.strip()
+            config[cfg_key] = val.strip().strip('"').strip("'")
 
     return config
 
@@ -430,7 +436,17 @@ def is_razorpay_configured(cfg):
         return False
     if "YOUR_KEY" in key_id or "YOUR_KEY" in key_secret:
         return False
+    if key_id == "rzp_test_simulation":
+        return False
     return True
+
+def mask_key_id(key_id):
+    k = (key_id or "").strip()
+    if not k:
+        return "<missing>"
+    if len(k) <= 12:
+        return k[:4] + "****"
+    return k[:12] + "****"
 
 def get_db():
     conn = sqlite3.connect(DB_PATH, check_same_thread=False)
@@ -1025,6 +1041,12 @@ app.url_map.strict_slashes = False
 CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
 
 init_db()
+_startup_cfg = load_config()
+print(
+    f"[Razorpay Startup] is_razorpay_configured={is_razorpay_configured(_startup_cfg)}, "
+    f"key_id={mask_key_id(_startup_cfg.get('razorpay_key_id'))}",
+    flush=True
+)
 
 @app.after_request
 def add_cors_headers(response):
@@ -1816,65 +1838,15 @@ def api_create_order():
         order_id = generate_order_id()
 
     if not configured:
-        # Development / test mode: create simulated test Razorpay order when RAZORPAY_KEY_ID / RAZORPAY_KEY_SECRET are not set
-        test_rzp_order_id = f"order_test_{os.urandom(6).hex()}"
-        now_iso = datetime.now().isoformat()
-        conn = get_db()
-        c = conn.cursor()
-        c.execute("""
-            INSERT OR REPLACE INTO orders (
-                id, customer_name, customer_email, customer_phone,
-                address_line1, address_line2, city, state, pincode,
-                payment_method, payment_status, order_status, razorpay_order_id,
-                subtotal, shipping, discount_amount, coupon_code, total_amount, items_json,
-                user_id, created_at, updated_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, (
-            order_id,
-            cust.get("name").strip(),
-            cust.get("email").strip(),
-            cust.get("phone").strip(),
-            cust.get("address_line1").strip(),
-            cust.get("address_line2", "").strip(),
-            cust.get("city").strip(),
-            cust.get("state").strip(),
-            cust.get("pincode").strip(),
-            "razorpay",
-            "pending",
-            "pending_payment",
-            test_rzp_order_id,
-            calc["subtotal"],
-            calc["shipping"],
-            calc["discount"],
-            calc["applied_coupon"],
-            calc["total_amount"],
-            items_json_str,
-            user_id,
-            now_iso,
-            now_iso
-        ))
-        conn.commit()
-        conn.close()
-
+        print(
+            f"[Razorpay Config Error] POST /api/create-order rejected for order {order_id}: "
+            f"RAZORPAY_KEY_ID ({mask_key_id(cfg.get('razorpay_key_id'))}) or RAZORPAY_KEY_SECRET is not configured on the server.",
+            flush=True
+        )
         return jsonify({
-            "ok": True,
-            "order_id": order_id,
-            "razorpay_order_id": test_rzp_order_id,
-            "amount": amount_paise,
-            "subtotal": calc["subtotal"],
-            "shipping": calc["shipping"],
-            "discount_amount": calc["discount"],
-            "total_amount": calc["total_amount"],
-            "currency": "INR",
-            "key_id": "rzp_test_simulation",
-            "is_simulated": True,
-            "coupon_code": calc["applied_coupon"],
-            "customer": {
-                "name": cust.get("name"),
-                "email": cust.get("email"),
-                "phone": cust.get("phone")
-            }
-        })
+            "ok": False,
+            "error": "Online payment via Razorpay is currently unavailable because server payment credentials (RAZORPAY_KEY_ID / RAZORPAY_KEY_SECRET) are not configured. Please choose Cash on Delivery (COD) or contact support."
+        }), 503
 
     # Real Razorpay Order Creation via official Orders API (Secret key remains strictly on server)
     key_id = cfg["razorpay_key_id"].strip()
@@ -1887,12 +1859,14 @@ def api_create_order():
         "receipt": order_id,
         "notes": {
             "order_id": order_id,
-            "customer_name": cust.get("name"),
-            "customer_phone": cust.get("phone"),
-            "customer_email": cust.get("email"),
             "coupon_code": calc["applied_coupon"] or ""
         }
     }
+
+    print(
+        f"[Razorpay] Creating order on Razorpay API: internal_order_id={order_id}, amount_paise={amount_paise}, key_id={mask_key_id(key_id)}",
+        flush=True
+    )
 
     try:
         resp = requests.post(rzp_url, auth=(key_id, key_secret), json=payload, timeout=15)
@@ -1903,20 +1877,21 @@ def api_create_order():
                 err_detail = err_json.get("error", {}).get("description", "")
             except Exception:
                 pass
-            print(f"[Razorpay API Error] HTTP {resp.status_code}: {resp.text}")
+            print(f"[Razorpay API Error] HTTP {resp.status_code} for {order_id}: {err_detail or 'Order creation rejected'}", flush=True)
             return jsonify({
                 "ok": False,
                 "error": err_detail or f"Razorpay order creation failed (HTTP {resp.status_code}). Please verify RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET."
             }), 400
         rzp_res = resp.json()
-        razorpay_order_id = rzp_res.get("id")
-        if not razorpay_order_id:
+        razorpay_order_id = str(rzp_res.get("id") or "").strip()
+        if not razorpay_order_id or not razorpay_order_id.startswith("order_") or razorpay_order_id.startswith("order_test_"):
+            print(f"[Razorpay API Error] Invalid order_id returned by Razorpay for {order_id}: '{razorpay_order_id}'", flush=True)
             return jsonify({
                 "ok": False,
                 "error": "Razorpay did not return a valid order ID."
             }), 502
     except requests.exceptions.RequestException as e:
-        print(f"[Razorpay Network Error]: {e}")
+        print(f"[Razorpay Network Error] {order_id}: {type(e).__name__}", flush=True)
         return jsonify({
             "ok": False,
             "error": "Unable to connect to Razorpay payment gateway. Please check your connection or try again."
@@ -1960,10 +1935,16 @@ def api_create_order():
     conn.commit()
     conn.close()
 
+    print(
+        f"[Razorpay] Order created: internal_order_id={order_id}, razorpay_order_id={razorpay_order_id}, status=pending_payment",
+        flush=True
+    )
+
     return jsonify({
         "ok": True,
         "order_id": order_id,
         "razorpay_order_id": razorpay_order_id,
+        "id": razorpay_order_id,
         "amount": amount_paise,
         "subtotal": calc["subtotal"],
         "shipping": calc["shipping"],
@@ -1994,7 +1975,25 @@ def api_verify_payment():
     if not order_id and not rzp_order_id:
         return jsonify({"ok": False, "error": "Missing order ID parameter"}), 400
 
-    # Look up the existing order in SQLite first
+    # Never permit simulated payments or bypass flags
+    if data.get("is_simulated") or rzp_order_id.startswith("order_test_") or rzp_payment_id.startswith("pay_test_"):
+        print(
+            f"[Razorpay Security] Blocked simulated payment verification attempt: order_id={order_id}, rzp_order_id={rzp_order_id}",
+            flush=True
+        )
+        return jsonify({"ok": False, "error": "Simulated payments are disabled. Real Razorpay payment verification is required."}), 400
+
+    if not (rzp_order_id and rzp_payment_id and rzp_signature):
+        return jsonify({"ok": False, "error": "Missing Razorpay payment verification parameters (razorpay_order_id, razorpay_payment_id, razorpay_signature)"}), 400
+
+    cfg = load_config()
+    if not is_razorpay_configured(cfg):
+        print(f"[Razorpay Config Error] POST /api/verify-payment rejected for {order_id}: server keys not configured.", flush=True)
+        return jsonify({"ok": False, "error": "Server configuration missing valid Razorpay secret key"}), 400
+
+    key_secret = cfg.get("razorpay_key_secret", "").strip()
+
+    # Look up the existing order in SQLite
     conn = get_db()
     c = conn.cursor()
     if order_id:
@@ -2010,68 +2009,55 @@ def api_verify_payment():
     stored_order_id = ord_row["id"]
     stored_rzp_order_id = (ord_row["razorpay_order_id"] or "").strip()
 
-    # Handle idempotent duplicate verification requests if the order is already marked paid
+    if not stored_rzp_order_id or stored_rzp_order_id.startswith("order_test_"):
+        conn.close()
+        return jsonify({"ok": False, "error": "Order does not have a valid Razorpay order ID."}), 400
+
+    # Ensure the Razorpay order_id being verified matches the order's stored razorpay_order_id
+    if rzp_order_id != stored_rzp_order_id:
+        c.execute("UPDATE orders SET payment_status = 'failed', updated_at = ? WHERE id = ?", (
+            datetime.now().isoformat(), stored_order_id
+        ))
+        conn.commit()
+        conn.close()
+        print(
+            f"[Razorpay Security] Order ID mismatch for {stored_order_id}: expected {stored_rzp_order_id}, got {rzp_order_id}",
+            flush=True
+        )
+        return jsonify({"ok": False, "error": "Razorpay order ID mismatch for this order"}), 400
+
+    # Official Razorpay Standard Checkout HMAC-SHA256 signature verification:
+    # generated_signature = hmac_sha256(razorpay_order_id + "|" + razorpay_payment_id, secret)
+    message = f"{rzp_order_id}|{rzp_payment_id}".encode("utf-8")
+    expected_signature = hmac.new(key_secret.encode("utf-8"), message, hashlib.sha256).hexdigest()
+
+    if not hmac.compare_digest(expected_signature, rzp_signature):
+        if ord_row["payment_status"] != "paid":
+            c.execute("UPDATE orders SET payment_status = 'failed', updated_at = ? WHERE id = ?", (
+                datetime.now().isoformat(), stored_order_id
+            ))
+            conn.commit()
+        conn.close()
+        print(
+            f"[Razorpay Security] HMAC-SHA256 verification failed for order {stored_order_id} (rzp_order_id={rzp_order_id})",
+            flush=True
+        )
+        return jsonify({"ok": False, "error": "Cryptographic payment signature verification failed"}), 400
+
+    # Handle idempotent duplicate verification requests if the order was already verified with this valid signature
     if ord_row["payment_status"] == "paid":
-        existing_pay_id = ord_row["razorpay_payment_id"] or ""
-        if not rzp_payment_id or existing_pay_id == rzp_payment_id:
-            conn.close()
-            return jsonify({
-                "ok": True,
-                "order_id": stored_order_id,
-                "payment_id": existing_pay_id,
-                "status": "paid",
-                "already_verified": True
-            })
-
-    cfg = load_config()
-    configured = is_razorpay_configured(cfg)
-
-    # Simulation is ONLY permitted when Razorpay keys are NOT configured on the server
-    # AND the caller explicitly passes is_simulated=True for a server-generated order_test_* order
-    allow_simulation = (
-        not configured
-        and bool(data.get("is_simulated", False))
-        and stored_rzp_order_id.startswith("order_test_")
-        and rzp_order_id == stored_rzp_order_id
-    )
-
-    if not allow_simulation:
-        if not (rzp_order_id and rzp_payment_id and rzp_signature):
-            conn.close()
-            return jsonify({"ok": False, "error": "Missing Razorpay payment verification parameters"}), 400
-
-        key_secret = cfg.get("razorpay_key_secret", "").strip()
-        if not key_secret or "YOUR_KEY" in key_secret:
-            conn.close()
-            return jsonify({"ok": False, "error": "Server configuration missing valid Razorpay secret key"}), 400
-
-        # Ensure the Razorpay order_id being verified matches the order's stored razorpay_order_id
-        if stored_rzp_order_id and rzp_order_id != stored_rzp_order_id:
-            c.execute("UPDATE orders SET payment_status = 'failed', updated_at = ? WHERE id = ?", (
-                datetime.now().isoformat(), stored_order_id
-            ))
-            conn.commit()
-            conn.close()
-            return jsonify({"ok": False, "error": "Razorpay order ID mismatch for this order"}), 400
-
-        # Official Razorpay Standard Checkout HMAC-SHA256 signature verification:
-        # generated_signature = hmac_sha256(order_id + "|" + razorpay_payment_id, secret)
-        message = f"{rzp_order_id}|{rzp_payment_id}".encode("utf-8")
-        expected_signature = hmac.new(key_secret.encode("utf-8"), message, hashlib.sha256).hexdigest()
-
-        if not hmac.compare_digest(expected_signature, rzp_signature):
-            c.execute("UPDATE orders SET payment_status = 'failed', updated_at = ? WHERE id = ?", (
-                datetime.now().isoformat(), stored_order_id
-            ))
-            conn.commit()
-            conn.close()
-            return jsonify({"ok": False, "error": "Cryptographic payment signature verification failed"}), 400
+        existing_pay_id = ord_row["razorpay_payment_id"] or rzp_payment_id
+        conn.close()
+        return jsonify({
+            "ok": True,
+            "order_id": stored_order_id,
+            "payment_id": existing_pay_id,
+            "status": "paid",
+            "already_verified": True
+        })
 
     # Verification successful -> mark order as paid and confirmed in SQLite
     now_iso = datetime.now().isoformat()
-    final_payment_id = rzp_payment_id or "pay_simulated_success"
-    final_signature = rzp_signature or "sig_simulated_valid"
-
     c.execute("""
         UPDATE orders
         SET payment_status = 'paid',
@@ -2080,7 +2066,7 @@ def api_verify_payment():
             razorpay_signature = ?,
             updated_at = ?
         WHERE id = ?
-    """, (final_payment_id, final_signature, now_iso, stored_order_id))
+    """, (rzp_payment_id, rzp_signature, now_iso, stored_order_id))
 
     if ord_row["coupon_code"]:
         c.execute("UPDATE coupons SET used_count = used_count + 1 WHERE code = ?", (ord_row["coupon_code"],))
@@ -2088,10 +2074,15 @@ def api_verify_payment():
     conn.commit()
     conn.close()
 
+    print(
+        f"[Razorpay] Payment verified & order marked paid: internal_order_id={stored_order_id}, rzp_order_id={rzp_order_id}, rzp_payment_id={rzp_payment_id}",
+        flush=True
+    )
+
     return jsonify({
         "ok": True,
         "order_id": stored_order_id,
-        "payment_id": final_payment_id,
+        "payment_id": rzp_payment_id,
         "status": "paid"
     })
 

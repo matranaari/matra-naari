@@ -792,65 +792,18 @@
           const serverDiscount = createData.discount_amount ?? 0;
           const serverTotal = createData.total_amount ?? Math.round((createData.amount || 0) / 100);
 
-          // If Razorpay keys are not configured on the server, handle simulated dev/test mode smoothly
-          if (createData.is_simulated) {
-            const simPayId = 'pay_test_' + Date.now().toString(36);
-            const { res: verifyRes, data: verifyData } = await safeFetchJson('/api/verify-payment', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                order_id: createData.order_id,
-                razorpay_order_id: createData.razorpay_order_id,
-                razorpay_payment_id: simPayId,
-                razorpay_signature: 'simulated_test_signature',
-                is_simulated: true
-              })
-            });
+          const rzpOrderId = (createData.razorpay_order_id || createData.id || '').trim();
+          if (!rzpOrderId || !rzpOrderId.startsWith('order_') || rzpOrderId.startsWith('order_test_')) {
+            throw new Error('Server did not return a valid Razorpay order ID. Please verify Razorpay API keys on the server or select Cash on Delivery.');
+          }
 
-            if (!verifyRes.ok || !verifyData || !verifyData.ok || verifyData.status !== 'paid') {
-              throw new Error(verifyData?.error || 'Payment verification failed.');
-            }
-
-            const confirmedOrder = {
-              id: createData.order_id,
-              customer_name: customerData.name,
-              customer_phone: customerData.phone,
-              customer_email: customerData.email,
-              address_line1: customerData.address_line1,
-              address_line2: customerData.address_line2,
-              city: customerData.city,
-              state: customerData.state,
-              pincode: customerData.pincode,
-              payment_method: 'razorpay',
-              payment_status: 'paid',
-              razorpay_order_id: createData.razorpay_order_id,
-              razorpay_payment_id: verifyData.payment_id || simPayId,
-              subtotal: serverSubtotal,
-              shipping: serverShipping,
-              discount_amount: serverDiscount,
-              coupon_code: createData.coupon_code || '',
-              total_amount: serverTotal,
-              items: cart,
-              created_at: new Date().toISOString()
-            };
-            try {
-              localStorage.setItem('naari_last_order', JSON.stringify(confirmedOrder));
-            } catch (e) {}
-
-            localStorage.removeItem('naari_cart_v1');
-            if (typeof setActiveCoupon === 'function') setActiveCoupon(null);
-            updateHeaderBagCount();
-            window.location.href = `order-confirmation.html?order_id=${encodeURIComponent(createData.order_id)}`;
-            return;
+          const publicKeyId = (createData.key_id || serverConfig?.razorpay_key_id || '').trim();
+          if (!publicKeyId || publicKeyId === 'rzp_test_simulation' || publicKeyId.includes('YOUR_KEY')) {
+            throw new Error('Razorpay public Key ID (RAZORPAY_KEY_ID) is not configured on the server. Please select Cash on Delivery or contact support.');
           }
 
           if (typeof Razorpay === 'undefined') {
-            throw new Error('Razorpay payment gateway failed to load. Please check your internet connection or select Cash on Delivery.');
-          }
-
-          const publicKeyId = createData.key_id || serverConfig?.razorpay_key_id || '';
-          if (!publicKeyId) {
-            throw new Error('Razorpay public Key ID is missing from server configuration.');
+            throw new Error('Razorpay payment gateway script failed to load. Please check your internet connection or select Cash on Delivery.');
           }
 
           const options = {
@@ -860,7 +813,7 @@
             name: serverConfig?.store_name || 'Matra Naari',
             description: serverConfig?.store_description || 'Modern Kurtis Rooted in Craft',
             image: 'images/naari-logo.png',
-            order_id: createData.razorpay_order_id,
+            order_id: rzpOrderId,
             prefill: {
               name: customerData.name,
               email: customerData.email,
@@ -879,16 +832,20 @@
                   headers: { 'Content-Type': 'application/json' },
                   body: JSON.stringify({
                     order_id: createData.order_id,
-                    razorpay_order_id: createData.razorpay_order_id,
+                    razorpay_order_id: rzpOrderId,
                     reason: 'Payment cancelled by customer'
                   })
                 }).catch(() => {});
                 setSubmitting(false);
-                getToast().show('Payment was cancelled. You can retry anytime or select Cash on Delivery.', 'info');
+                showError('Payment window was closed before completing payment. You can try again or choose Cash on Delivery.');
               }
             },
             handler: async function(response) {
               try {
+                if (!response || !response.razorpay_payment_id || !response.razorpay_order_id || !response.razorpay_signature) {
+                  throw new Error('Incomplete payment response received from Razorpay.');
+                }
+
                 const { res: verifyRes, data: verifyData } = await safeFetchJson('/api/verify-payment', {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
@@ -949,7 +906,7 @@
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
                 order_id: createData.order_id,
-                razorpay_order_id: createData.razorpay_order_id,
+                razorpay_order_id: rzpOrderId,
                 reason: errDesc
               })
             }).catch(() => {});
