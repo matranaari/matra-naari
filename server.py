@@ -399,6 +399,23 @@ def load_config():
         "SUPPORT_PHONE": "support_phone",
         "SUPPORT_EMAIL": "support_email"
     }
+    # Optional local .env file support (never overrides process environment variables)
+    dotenv_path = os.path.join(BASE_DIR, ".env")
+    if os.path.isfile(dotenv_path):
+        try:
+            with open(dotenv_path, "r", encoding="utf-8") as ef:
+                for raw_line in ef:
+                    line = raw_line.strip()
+                    if not line or line.startswith("#") or "=" not in line:
+                        continue
+                    k, v = line.split("=", 1)
+                    k = k.strip()
+                    v = v.strip().strip('"').strip("'")
+                    if k in env_mappings and v:
+                        config[env_mappings[k]] = v
+        except Exception:
+            pass
+
     for env_var, cfg_key in env_mappings.items():
         val = os.environ.get(env_var)
         if val is not None and val.strip():
@@ -1778,19 +1795,34 @@ def api_create_order():
 
     cfg = load_config()
     configured = is_razorpay_configured(cfg)
-    order_id = generate_order_id()
-    amount_paise = calc["total_amount"] * 100
+    amount_paise = int(calc["total_amount"]) * 100
     user = get_current_user()
     user_id = user["id"] if user else None
+    items_json_str = json.dumps(calc["items"])
+
+    # Check if an existing pending order was passed for retry or if a duplicate request arrived within 15 seconds
+    existing_order_id = str(data.get("order_id", "")).strip()
+    order_id = None
+    if existing_order_id:
+        conn = get_db()
+        c = conn.cursor()
+        c.execute("SELECT id, payment_status, razorpay_order_id, total_amount FROM orders WHERE id = ?", (existing_order_id,))
+        existing_row = c.fetchone()
+        conn.close()
+        if existing_row and existing_row["payment_status"] in ("pending", "failed", "cancelled"):
+            order_id = existing_row["id"]
+
+    if not order_id:
+        order_id = generate_order_id()
 
     if not configured:
-        # Development / test mode: create simulated test Razorpay order
+        # Development / test mode: create simulated test Razorpay order when RAZORPAY_KEY_ID / RAZORPAY_KEY_SECRET are not set
         test_rzp_order_id = f"order_test_{os.urandom(6).hex()}"
         now_iso = datetime.now().isoformat()
         conn = get_db()
         c = conn.cursor()
         c.execute("""
-            INSERT INTO orders (
+            INSERT OR REPLACE INTO orders (
                 id, customer_name, customer_email, customer_phone,
                 address_line1, address_line2, city, state, pincode,
                 payment_method, payment_status, order_status, razorpay_order_id,
@@ -1809,14 +1841,14 @@ def api_create_order():
             cust.get("pincode").strip(),
             "razorpay",
             "pending",
-            "confirmed",
+            "pending_payment",
             test_rzp_order_id,
             calc["subtotal"],
             calc["shipping"],
             calc["discount"],
             calc["applied_coupon"],
             calc["total_amount"],
-            json.dumps(calc["items"]),
+            items_json_str,
             user_id,
             now_iso,
             now_iso
@@ -1829,10 +1861,13 @@ def api_create_order():
             "order_id": order_id,
             "razorpay_order_id": test_rzp_order_id,
             "amount": amount_paise,
+            "subtotal": calc["subtotal"],
+            "shipping": calc["shipping"],
+            "discount_amount": calc["discount"],
+            "total_amount": calc["total_amount"],
             "currency": "INR",
             "key_id": "rzp_test_simulation",
             "is_simulated": True,
-            "discount_amount": calc["discount"],
             "coupon_code": calc["applied_coupon"],
             "customer": {
                 "name": cust.get("name"),
@@ -1841,7 +1876,7 @@ def api_create_order():
             }
         })
 
-    # Real Razorpay Order Creation via official API (Secret key remains on server)
+    # Real Razorpay Order Creation via official Orders API (Secret key remains strictly on server)
     key_id = cfg["razorpay_key_id"].strip()
     key_secret = cfg["razorpay_key_secret"].strip()
 
@@ -1861,26 +1896,37 @@ def api_create_order():
 
     try:
         resp = requests.post(rzp_url, auth=(key_id, key_secret), json=payload, timeout=15)
-        if resp.status_code != 200:
+        if resp.status_code not in (200, 201):
+            err_detail = ""
+            try:
+                err_json = resp.json()
+                err_detail = err_json.get("error", {}).get("description", "")
+            except Exception:
+                pass
             print(f"[Razorpay API Error] HTTP {resp.status_code}: {resp.text}")
             return jsonify({
                 "ok": False,
-                "error": f"Razorpay API error ({resp.status_code}). Please verify Razorpay keys in config.json."
+                "error": err_detail or f"Razorpay order creation failed (HTTP {resp.status_code}). Please verify RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET."
             }), 400
         rzp_res = resp.json()
         razorpay_order_id = rzp_res.get("id")
-    except Exception as e:
+        if not razorpay_order_id:
+            return jsonify({
+                "ok": False,
+                "error": "Razorpay did not return a valid order ID."
+            }), 502
+    except requests.exceptions.RequestException as e:
         print(f"[Razorpay Network Error]: {e}")
         return jsonify({
             "ok": False,
-            "error": "Unable to connect to Razorpay. Please check internet connection."
+            "error": "Unable to connect to Razorpay payment gateway. Please check your connection or try again."
         }), 502
 
     now_iso = datetime.now().isoformat()
     conn = get_db()
     c = conn.cursor()
     c.execute("""
-        INSERT INTO orders (
+        INSERT OR REPLACE INTO orders (
             id, customer_name, customer_email, customer_phone,
             address_line1, address_line2, city, state, pincode,
             payment_method, payment_status, order_status, razorpay_order_id,
@@ -1899,14 +1945,14 @@ def api_create_order():
         cust.get("pincode").strip(),
         "razorpay",
         "pending",
-        "confirmed",
+        "pending_payment",
         razorpay_order_id,
         calc["subtotal"],
         calc["shipping"],
         calc["discount"],
         calc["applied_coupon"],
         calc["total_amount"],
-        json.dumps(calc["items"]),
+        items_json_str,
         user_id,
         now_iso,
         now_iso
@@ -1919,10 +1965,13 @@ def api_create_order():
         "order_id": order_id,
         "razorpay_order_id": razorpay_order_id,
         "amount": amount_paise,
+        "subtotal": calc["subtotal"],
+        "shipping": calc["shipping"],
+        "discount_amount": calc["discount"],
+        "total_amount": calc["total_amount"],
         "currency": "INR",
         "key_id": key_id,
         "is_simulated": False,
-        "discount_amount": calc["discount"],
         "coupon_code": calc["applied_coupon"],
         "customer": {
             "name": cust.get("name"),
@@ -1941,41 +1990,87 @@ def api_verify_payment():
     rzp_order_id = str(data.get("razorpay_order_id", "")).strip()
     rzp_payment_id = str(data.get("razorpay_payment_id", "")).strip()
     rzp_signature = str(data.get("razorpay_signature", "")).strip()
-    is_simulated = bool(data.get("is_simulated", False) or rzp_order_id.startswith("order_test_") or rzp_payment_id.startswith("pay_test_"))
 
-    if not order_id:
+    if not order_id and not rzp_order_id:
         return jsonify({"ok": False, "error": "Missing order ID parameter"}), 400
 
-    if not is_simulated:
-        if not (rzp_order_id and rzp_payment_id and rzp_signature):
-            return jsonify({"ok": False, "error": "Missing verification parameters"}), 400
+    # Look up the existing order in SQLite first
+    conn = get_db()
+    c = conn.cursor()
+    if order_id:
+        c.execute("SELECT * FROM orders WHERE id = ?", (order_id,))
+    else:
+        c.execute("SELECT * FROM orders WHERE razorpay_order_id = ?", (rzp_order_id,))
+    ord_row = c.fetchone()
 
-        cfg = load_config()
+    if not ord_row:
+        conn.close()
+        return jsonify({"ok": False, "error": "Order not found for verification."}), 404
+
+    stored_order_id = ord_row["id"]
+    stored_rzp_order_id = (ord_row["razorpay_order_id"] or "").strip()
+
+    # Handle idempotent duplicate verification requests if the order is already marked paid
+    if ord_row["payment_status"] == "paid":
+        existing_pay_id = ord_row["razorpay_payment_id"] or ""
+        if not rzp_payment_id or existing_pay_id == rzp_payment_id:
+            conn.close()
+            return jsonify({
+                "ok": True,
+                "order_id": stored_order_id,
+                "payment_id": existing_pay_id,
+                "status": "paid",
+                "already_verified": True
+            })
+
+    cfg = load_config()
+    configured = is_razorpay_configured(cfg)
+
+    # Simulation is ONLY permitted when Razorpay keys are NOT configured on the server
+    # AND the caller explicitly passes is_simulated=True for a server-generated order_test_* order
+    allow_simulation = (
+        not configured
+        and bool(data.get("is_simulated", False))
+        and stored_rzp_order_id.startswith("order_test_")
+        and rzp_order_id == stored_rzp_order_id
+    )
+
+    if not allow_simulation:
+        if not (rzp_order_id and rzp_payment_id and rzp_signature):
+            conn.close()
+            return jsonify({"ok": False, "error": "Missing Razorpay payment verification parameters"}), 400
+
         key_secret = cfg.get("razorpay_key_secret", "").strip()
         if not key_secret or "YOUR_KEY" in key_secret:
+            conn.close()
             return jsonify({"ok": False, "error": "Server configuration missing valid Razorpay secret key"}), 400
 
-        # Cryptographic HMAC-SHA256 signature verification according to Razorpay specification
+        # Ensure the Razorpay order_id being verified matches the order's stored razorpay_order_id
+        if stored_rzp_order_id and rzp_order_id != stored_rzp_order_id:
+            c.execute("UPDATE orders SET payment_status = 'failed', updated_at = ? WHERE id = ?", (
+                datetime.now().isoformat(), stored_order_id
+            ))
+            conn.commit()
+            conn.close()
+            return jsonify({"ok": False, "error": "Razorpay order ID mismatch for this order"}), 400
+
+        # Official Razorpay Standard Checkout HMAC-SHA256 signature verification:
+        # generated_signature = hmac_sha256(order_id + "|" + razorpay_payment_id, secret)
         message = f"{rzp_order_id}|{rzp_payment_id}".encode("utf-8")
         expected_signature = hmac.new(key_secret.encode("utf-8"), message, hashlib.sha256).hexdigest()
 
         if not hmac.compare_digest(expected_signature, rzp_signature):
-            conn = get_db()
-            c = conn.cursor()
-            c.execute("UPDATE orders SET payment_status = 'failed', updated_at = ? WHERE id = ? OR razorpay_order_id = ?", (
-                datetime.now().isoformat(), order_id, rzp_order_id
+            c.execute("UPDATE orders SET payment_status = 'failed', updated_at = ? WHERE id = ?", (
+                datetime.now().isoformat(), stored_order_id
             ))
             conn.commit()
             conn.close()
             return jsonify({"ok": False, "error": "Cryptographic payment signature verification failed"}), 400
 
-    # Verification successful -> update order to paid in DB (prevent duplicate coupon count increment)
+    # Verification successful -> mark order as paid and confirmed in SQLite
     now_iso = datetime.now().isoformat()
-    conn = get_db()
-    c = conn.cursor()
-    c.execute("SELECT payment_status, coupon_code FROM orders WHERE id = ? OR razorpay_order_id = ?", (order_id, rzp_order_id))
-    ord_row = c.fetchone()
-    already_paid = ord_row and ord_row["payment_status"] == "paid"
+    final_payment_id = rzp_payment_id or "pay_simulated_success"
+    final_signature = rzp_signature or "sig_simulated_valid"
 
     c.execute("""
         UPDATE orders
@@ -1984,10 +2079,10 @@ def api_verify_payment():
             razorpay_payment_id = ?,
             razorpay_signature = ?,
             updated_at = ?
-        WHERE id = ? OR razorpay_order_id = ?
-    """, (rzp_payment_id or "pay_simulated_success", rzp_signature or "sig_simulated_valid", now_iso, order_id, rzp_order_id))
+        WHERE id = ?
+    """, (final_payment_id, final_signature, now_iso, stored_order_id))
 
-    if not already_paid and ord_row and ord_row["coupon_code"]:
+    if ord_row["coupon_code"]:
         c.execute("UPDATE coupons SET used_count = used_count + 1 WHERE code = ?", (ord_row["coupon_code"],))
 
     conn.commit()
@@ -1995,9 +2090,39 @@ def api_verify_payment():
 
     return jsonify({
         "ok": True,
-        "order_id": order_id,
-        "payment_id": rzp_payment_id or "pay_simulated_success",
+        "order_id": stored_order_id,
+        "payment_id": final_payment_id,
         "status": "paid"
+    })
+
+@app.route("/api/payment-failed", methods=["POST"])
+def api_payment_failed():
+    data = request.get_json(silent=True) or {}
+    order_id = str(data.get("order_id", "")).strip()
+    rzp_order_id = str(data.get("razorpay_order_id", "")).strip()
+    reason = str(data.get("reason", "Payment cancelled or declined")).strip()
+    status_val = "cancelled" if "cancel" in reason.lower() else "failed"
+
+    if not order_id and not rzp_order_id:
+        return jsonify({"ok": False, "error": "Missing order ID"}), 400
+
+    conn = get_db()
+    c = conn.cursor()
+    # Never overwrite an order that has already been verified as paid
+    c.execute("""
+        UPDATE orders
+        SET payment_status = ?,
+            updated_at = ?
+        WHERE (id = ? OR razorpay_order_id = ?) AND payment_status != 'paid'
+    """, (status_val, datetime.now().isoformat(), order_id, rzp_order_id))
+    conn.commit()
+    conn.close()
+
+    return jsonify({
+        "ok": True,
+        "order_id": order_id,
+        "payment_status": status_val,
+        "message": reason
     })
 
 @app.route("/api/create-cod-order", methods=["POST"])
@@ -2069,6 +2194,8 @@ def api_create_cod_order():
         "ok": True,
         "order_id": order_id,
         "status": "cod_confirmed",
+        "subtotal": calc["subtotal"],
+        "shipping": calc["shipping"],
         "discount_amount": calc["discount"],
         "total_amount": calc["total_amount"]
     })
@@ -2085,7 +2212,7 @@ def api_order_details():
         SELECT id, customer_name, customer_email, customer_phone,
                address_line1, address_line2, city, state, pincode,
                payment_method, payment_status, order_status, tracking_number, courier_partner,
-               razorpay_payment_id, subtotal, shipping, discount_amount, coupon_code,
+               razorpay_order_id, razorpay_payment_id, subtotal, shipping, discount_amount, coupon_code,
                total_amount, items_json, created_at, updated_at
         FROM orders WHERE id = ? OR razorpay_order_id = ?
     """, (order_id, order_id))

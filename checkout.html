@@ -672,7 +672,11 @@
       banner.classList.add('hidden');
     }
 
+    let isOrderInFlight = false;
+    let pendingOrderId = null;
+
     function setSubmitting(isSubmitting) {
+      isOrderInFlight = isSubmitting;
       const btn = document.getElementById('place-order-btn');
       const spinner = document.getElementById('place-order-spinner');
       btn.disabled = isSubmitting;
@@ -687,6 +691,7 @@
     }
 
     async function handlePlaceOrder() {
+      if (isOrderInFlight) return;
       hideError();
       const cart = getCart();
       if (!cart || cart.length === 0) {
@@ -708,7 +713,7 @@
         // Cash on Delivery Order Flow
         try {
           let orderId = null;
-          let orderTotal = getCartTotal();
+          const { subtotal: clientSub, shipping: clientShip, discountAmount: clientDisc, finalTotal: clientTotal } = computeCheckoutAmounts();
 
           const activeCoupon = getActiveCoupon();
           const { res, data } = await safeFetchJson('/api/create-cod-order', {
@@ -726,7 +731,7 @@
           }
 
           orderId = data.order_id;
-          orderTotal = data.total_amount || orderTotal;
+          const serverTotal = data.total_amount ?? clientTotal;
 
           // Cache order details for confirmation page
           const confirmedOrder = {
@@ -741,9 +746,11 @@
             pincode: customerData.pincode,
             payment_method: 'cod',
             payment_status: 'cod_confirmed',
-            subtotal: orderTotal,
-            shipping: 0,
-            total_amount: orderTotal,
+            subtotal: data.subtotal ?? clientSub,
+            shipping: data.shipping ?? clientShip,
+            discount_amount: data.discount_amount ?? clientDisc,
+            coupon_code: activeCoupon ? activeCoupon.code : '',
+            total_amount: serverTotal,
             items: cart,
             created_at: new Date().toISOString()
           };
@@ -751,8 +758,9 @@
             localStorage.setItem('naari_last_order', JSON.stringify(confirmedOrder));
           } catch (e) {}
 
-          // Clear cart on confirmed order
+          // Clear cart and active coupon on confirmed order
           localStorage.removeItem('naari_cart_v1');
+          if (typeof setActiveCoupon === 'function') setActiveCoupon(null);
           updateHeaderBagCount();
           window.location.href = `order-confirmation.html?order_id=${encodeURIComponent(orderId)}`;
         } catch (err) {
@@ -760,13 +768,14 @@
           setSubmitting(false);
         }
       } else {
-        // Online Payment Flow
+        // Online Payment Flow (Razorpay Standard Checkout)
         try {
           const activeCoupon = getActiveCoupon();
           const { res: createRes, data: createData } = await safeFetchJson('/api/create-order', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
+              order_id: pendingOrderId || '',
               customer: customerData,
               items: cart,
               coupon_code: activeCoupon ? activeCoupon.code : ''
@@ -777,21 +786,28 @@
             throw new Error(createData?.error || 'Could not initiate online payment.');
           }
 
-          // If keys are placeholder, handle simulated test mode smoothly
+          pendingOrderId = createData.order_id;
+          const serverSubtotal = createData.subtotal ?? getCartTotal();
+          const serverShipping = createData.shipping ?? 0;
+          const serverDiscount = createData.discount_amount ?? 0;
+          const serverTotal = createData.total_amount ?? Math.round((createData.amount || 0) / 100);
+
+          // If Razorpay keys are not configured on the server, handle simulated dev/test mode smoothly
           if (createData.is_simulated) {
+            const simPayId = 'pay_test_' + Date.now().toString(36);
             const { res: verifyRes, data: verifyData } = await safeFetchJson('/api/verify-payment', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
                 order_id: createData.order_id,
                 razorpay_order_id: createData.razorpay_order_id,
-                razorpay_payment_id: 'pay_test_' + Date.now().toString(36),
+                razorpay_payment_id: simPayId,
                 razorpay_signature: 'simulated_test_signature',
                 is_simulated: true
               })
             });
 
-            if (!verifyRes.ok || !verifyData || !verifyData.ok) {
+            if (!verifyRes.ok || !verifyData || !verifyData.ok || verifyData.status !== 'paid') {
               throw new Error(verifyData?.error || 'Payment verification failed.');
             }
 
@@ -807,10 +823,13 @@
               pincode: customerData.pincode,
               payment_method: 'razorpay',
               payment_status: 'paid',
-              razorpay_payment_id: 'pay_test_' + Date.now().toString(36),
-              subtotal: getCartTotal(),
-              shipping: 0,
-              total_amount: getCartTotal(),
+              razorpay_order_id: createData.razorpay_order_id,
+              razorpay_payment_id: verifyData.payment_id || simPayId,
+              subtotal: serverSubtotal,
+              shipping: serverShipping,
+              discount_amount: serverDiscount,
+              coupon_code: createData.coupon_code || '',
+              total_amount: serverTotal,
               items: cart,
               created_at: new Date().toISOString()
             };
@@ -819,6 +838,7 @@
             } catch (e) {}
 
             localStorage.removeItem('naari_cart_v1');
+            if (typeof setActiveCoupon === 'function') setActiveCoupon(null);
             updateHeaderBagCount();
             window.location.href = `order-confirmation.html?order_id=${encodeURIComponent(createData.order_id)}`;
             return;
@@ -828,12 +848,17 @@
             throw new Error('Razorpay payment gateway failed to load. Please check your internet connection or select Cash on Delivery.');
           }
 
+          const publicKeyId = createData.key_id || serverConfig?.razorpay_key_id || '';
+          if (!publicKeyId) {
+            throw new Error('Razorpay public Key ID is missing from server configuration.');
+          }
+
           const options = {
-            key: createData.key_id,
+            key: publicKeyId,
             amount: createData.amount,
             currency: createData.currency || 'INR',
-            name: 'Naari',
-            description: 'Modern Kurtis Rooted in Craft',
+            name: serverConfig?.store_name || 'Matra Naari',
+            description: serverConfig?.store_description || 'Modern Kurtis Rooted in Craft',
             image: 'images/naari-logo.png',
             order_id: createData.razorpay_order_id,
             prefill: {
@@ -849,6 +874,15 @@
             },
             modal: {
               ondismiss: function() {
+                safeFetchJson('/api/payment-failed', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    order_id: createData.order_id,
+                    razorpay_order_id: createData.razorpay_order_id,
+                    reason: 'Payment cancelled by customer'
+                  })
+                }).catch(() => {});
                 setSubmitting(false);
                 getToast().show('Payment was cancelled. You can retry anytime or select Cash on Delivery.', 'info');
               }
@@ -866,7 +900,7 @@
                   })
                 });
 
-                if (!verifyRes.ok || !verifyData || !verifyData.ok) {
+                if (!verifyRes.ok || !verifyData || !verifyData.ok || verifyData.status !== 'paid') {
                   throw new Error(verifyData?.error || 'Payment signature verification failed.');
                 }
 
@@ -882,10 +916,13 @@
                   pincode: customerData.pincode,
                   payment_method: 'razorpay',
                   payment_status: 'paid',
+                  razorpay_order_id: response.razorpay_order_id,
                   razorpay_payment_id: response.razorpay_payment_id,
-                  subtotal: getCartTotal(),
-                  shipping: 0,
-                  total_amount: getCartTotal(),
+                  subtotal: serverSubtotal,
+                  shipping: serverShipping,
+                  discount_amount: serverDiscount,
+                  coupon_code: createData.coupon_code || '',
+                  total_amount: serverTotal,
                   items: cart,
                   created_at: new Date().toISOString()
                 };
@@ -894,6 +931,7 @@
                 } catch (e) {}
 
                 localStorage.removeItem('naari_cart_v1');
+                if (typeof setActiveCoupon === 'function') setActiveCoupon(null);
                 updateHeaderBagCount();
                 window.location.href = `order-confirmation.html?order_id=${encodeURIComponent(createData.order_id)}`;
               } catch (verifyErr) {
@@ -905,7 +943,17 @@
 
           const rzpInstance = new Razorpay(options);
           rzpInstance.on('payment.failed', function(response) {
-            showError(`Payment failed: ${response.error?.description || response.error?.message || 'Payment was declined.'}`);
+            const errDesc = response.error?.description || response.error?.message || 'Payment was declined.';
+            safeFetchJson('/api/payment-failed', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                order_id: createData.order_id,
+                razorpay_order_id: createData.razorpay_order_id,
+                reason: errDesc
+              })
+            }).catch(() => {});
+            showError(`Payment failed: ${errDesc}`);
             setSubmitting(false);
           });
           rzpInstance.open();

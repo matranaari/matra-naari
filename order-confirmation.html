@@ -165,7 +165,7 @@
             </div>
             <div class="flex justify-between text-muted-foreground">
               <span>Delivery</span>
-              <span class="text-primary font-medium">FREE ✿</span>
+              <span id="order-shipping-val" class="text-primary font-medium">FREE ✿</span>
             </div>
             <div class="flex justify-between items-baseline border-t border-border pt-3 text-base">
               <span class="font-semibold text-foreground">Total Paid / Payable</span>
@@ -428,6 +428,8 @@
         `).join('');
 
         document.getElementById('order-subtotal').textContent = formatPrice(order.subtotal);
+        const shipEl = document.getElementById('order-shipping-val');
+        if (shipEl) shipEl.textContent = (order.shipping && order.shipping > 0) ? formatPrice(order.shipping) : 'FREE ✿';
         document.getElementById('order-total-amount').textContent = formatPrice(order.total_amount);
 
         // Update WhatsApp support link with order ID prefilled

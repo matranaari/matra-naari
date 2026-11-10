@@ -107,6 +107,92 @@
       </button>
     </div>
 
+    <!-- Explore by Silhouette (Horizontal Side-Scrolling List Across All Layouts) -->
+    <section class="mb-8 border-y border-border/70 bg-card/40 py-5 px-4 rounded-xs">
+      <div class="flex items-center justify-between mb-3 gap-3">
+        <div>
+          <p class="font-hand text-xs text-primary">quick filter by cut</p>
+          <h2 class="font-display text-xl sm:text-2xl font-semibold">Explore by Silhouette</h2>
+        </div>
+        <div class="flex items-center gap-1.5">
+          <button type="button" aria-label="Scroll Silhouettes Left" onclick="document.getElementById('shop-silhouette-track').scrollBy({left: -340, behavior: 'smooth'})" class="silhouette-nav-btn">
+            ‹
+          </button>
+          <button type="button" aria-label="Scroll Silhouettes Right" onclick="document.getElementById('shop-silhouette-track').scrollBy({left: 340, behavior: 'smooth'})" class="silhouette-nav-btn">
+            ›
+          </button>
+        </div>
+      </div>
+
+      <div class="silhouette-scroll-wrapper">
+        <div id="shop-silhouette-track" class="silhouette-scroll-track">
+          <button type="button" data-sil-category="all" class="silhouette-scroll-item shop-silhouette-card active group cursor-pointer">
+            <div class="silhouette-img-ring">
+              <img src="assets/hero.jpg" alt="All Kurtis" class="h-full w-full object-cover group-hover:scale-110 transition duration-500" />
+            </div>
+            <span class="mt-2.5 font-display text-base font-semibold text-foreground group-hover:text-primary transition">All Kurtis</span>
+            <span class="text-[11px] text-muted-foreground font-sans">Complete Catalog</span>
+          </button>
+
+          <button type="button" data-sil-category="Straight Cut" class="silhouette-scroll-item shop-silhouette-card group cursor-pointer">
+            <div class="silhouette-img-ring">
+              <img src="assets/hero.jpg" alt="Straight Cut" class="h-full w-full object-cover group-hover:scale-110 transition duration-500" />
+            </div>
+            <span class="mt-2.5 font-display text-base font-semibold text-foreground group-hover:text-primary transition">Straight Cut</span>
+            <span class="text-[11px] text-muted-foreground font-sans">Everyday Tailored</span>
+          </button>
+
+          <button type="button" data-sil-category="A-Line" class="silhouette-scroll-item shop-silhouette-card group cursor-pointer">
+            <div class="silhouette-img-ring">
+              <img src="assets/k-aline.jpg" alt="A-Line" class="h-full w-full object-cover group-hover:scale-110 transition duration-500" />
+            </div>
+            <span class="mt-2.5 font-display text-base font-semibold text-foreground group-hover:text-primary transition">A-Line</span>
+            <span class="text-[11px] text-muted-foreground font-sans">Flared Grace</span>
+          </button>
+
+          <button type="button" data-sil-category="Anarkali" class="silhouette-scroll-item shop-silhouette-card group cursor-pointer">
+            <div class="silhouette-img-ring">
+              <img src="assets/k-anarkali.jpg" alt="Anarkali" class="h-full w-full object-cover group-hover:scale-110 transition duration-500" />
+            </div>
+            <span class="mt-2.5 font-display text-base font-semibold text-foreground group-hover:text-primary transition">Anarkali</span>
+            <span class="text-[11px] text-muted-foreground font-sans">16-Kali Festive</span>
+          </button>
+
+          <button type="button" data-sil-category="Short Kurti" class="silhouette-scroll-item shop-silhouette-card group cursor-pointer">
+            <div class="silhouette-img-ring">
+              <img src="assets/k-short.jpg" alt="Short Kurti" class="h-full w-full object-cover group-hover:scale-110 transition duration-500" />
+            </div>
+            <span class="mt-2.5 font-display text-base font-semibold text-foreground group-hover:text-primary transition">Short Kurtis</span>
+            <span class="text-[11px] text-muted-foreground font-sans">Breezy Tunics</span>
+          </button>
+
+          <button type="button" data-sil-category="Angrakha" class="silhouette-scroll-item shop-silhouette-card group cursor-pointer">
+            <div class="silhouette-img-ring">
+              <img src="assets/k-angrakha.jpg" alt="Angrakha" class="h-full w-full object-cover group-hover:scale-110 transition duration-500" />
+            </div>
+            <span class="mt-2.5 font-display text-base font-semibold text-foreground group-hover:text-primary transition">Angrakha</span>
+            <span class="text-[11px] text-muted-foreground font-sans">Artisan Tie-Wrap</span>
+          </button>
+
+          <button type="button" data-sil-category="Kaftan" class="silhouette-scroll-item shop-silhouette-card group cursor-pointer">
+            <div class="silhouette-img-ring">
+              <img src="assets/k-kaftan.jpg" alt="Kaftan" class="h-full w-full object-cover group-hover:scale-110 transition duration-500" />
+            </div>
+            <span class="mt-2.5 font-display text-base font-semibold text-foreground group-hover:text-primary transition">Kaftan</span>
+            <span class="text-[11px] text-muted-foreground font-sans">Relaxed Resort</span>
+          </button>
+
+          <button type="button" data-sil-category="Co-ord Set" class="silhouette-scroll-item shop-silhouette-card group cursor-pointer">
+            <div class="silhouette-img-ring">
+              <img src="assets/k-coord.jpg" alt="Co-ord Set" class="h-full w-full object-cover group-hover:scale-110 transition duration-500" />
+            </div>
+            <span class="mt-2.5 font-display text-base font-semibold text-foreground group-hover:text-primary transition">Co-ord Sets</span>
+            <span class="text-[11px] text-muted-foreground font-sans">Matched 2-Piece</span>
+          </button>
+        </div>
+      </div>
+    </section>
+
     <!-- AI Stylist Prompt Bar (Preserved and Refined) -->
     <section class="mb-8 bg-card/80 border border-border p-4 sm:p-5 rounded-xs" id="ai-stylist-box">
       <div class="flex items-center gap-2">
@@ -519,6 +605,12 @@
         if (breadEl) breadEl.textContent = 'All Kurtis';
       }
 
+      // Sync active state on horizontal Explore by Silhouette cards
+      document.querySelectorAll('.shop-silhouette-card').forEach(card => {
+        const cat = card.getAttribute('data-sil-category') || 'all';
+        card.classList.toggle('active', cat.toLowerCase() === (selectedCategory || 'all').toLowerCase());
+      });
+
       if (selectedCategory && selectedCategory.toLowerCase() !== 'all') {
         filtered = filtered.filter(p => (p.category || '').toLowerCase() === selectedCategory.toLowerCase());
       }
@@ -550,19 +642,19 @@
       }
 
       if (selectedFabric) {
-        filtered = filtered.filter(p => (p.fabric || '').toLowerCase() === selectedFabric.toLowerCase());
+        filtered = filtered.filter(p => (p.fabric || '').toLowerCase().includes(selectedFabric.toLowerCase()));
       }
 
       if (selectedOccasion) {
-        filtered = filtered.filter(p => (p.occasion || '').toLowerCase() === selectedOccasion.toLowerCase());
+        filtered = filtered.filter(p => (p.occasion || '').toLowerCase().includes(selectedOccasion.toLowerCase()));
       }
 
       if (selectedPattern) {
-        filtered = filtered.filter(p => (p.pattern || '').toLowerCase() === selectedPattern.toLowerCase());
+        filtered = filtered.filter(p => (p.pattern || '').toLowerCase().includes(selectedPattern.toLowerCase()));
       }
 
       if (selectedSleeve) {
-        filtered = filtered.filter(p => (p.sleeve_length || '').toLowerCase() === selectedSleeve.toLowerCase());
+        filtered = filtered.filter(p => (p.sleeve_length || '').toLowerCase().includes(selectedSleeve.toLowerCase()));
       }
 
       if (selectedNeck) {
@@ -788,6 +880,15 @@
 
     if (mobFilterClose) mobFilterClose.addEventListener('click', closeMobileFilters);
     if (mobFilterBackdrop) mobFilterBackdrop.addEventListener('click', closeMobileFilters);
+
+    // Attach click handlers for horizontal side-scrolling Explore by Silhouette cards
+    document.querySelectorAll('.shop-silhouette-card').forEach(card => {
+      card.addEventListener('click', () => {
+        selectedCategory = card.getAttribute('data-sil-category') || 'all';
+        renderFacetControls();
+        applyFiltersAndRender();
+      });
+    });
 
     document.addEventListener('DOMContentLoaded', initShop);
   </script>

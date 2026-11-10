@@ -1,19 +1,18 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <base href="/"/>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <link rel="icon" type="image/png" href="favicon.png"/>
+  <link rel="icon" type="image/png" href="../favicon.png"/>
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous"/>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Kalam:wght@300;400;700&family=Karla:wght@400;500;600&display=swap"/>
-  <link rel="stylesheet" href="assets/styles.css"/>
+  <link rel="stylesheet" href="../assets/styles.css"/>
   <title>Shop Indian Ethnic Kurtis &amp; Sets — Matra Naari</title>
   <meta name="description" content="Explore handcrafted Indian ethnic kurtis: straight, A-line, anarkali, angrakha, kaftans, and co-ord sets. Filter by size, color, price and silhouette."/>
   <style>
     body {
-      background-image: url('images/paper.jpg'), url('/images/paper.jpg');
+      background-image: url('../images/paper.jpg'), url('/images/paper.jpg');
       background-size: 700px;
     }
   </style>
@@ -32,14 +31,14 @@
   <!-- Sticky Header -->
   <header class="sticky top-0 z-40 border-b border-border/80 bg-background/90 backdrop-blur-md">
     <div class="mx-auto flex max-w-7xl items-center justify-between px-4 py-2.5 sm:px-6">
-      <a aria-label="Matra Naari Home" href="index.html" class="flex items-center gap-3">
-        <img src="images/naari-logo.png" alt="Matra Naari" class="h-10 w-auto sm:h-12 mix-blend-multiply"/>
+      <a aria-label="Matra Naari Home" href="../index.html" class="flex items-center gap-3">
+        <img src="../images/naari-logo.png" alt="Matra Naari" class="h-10 w-auto sm:h-12 mix-blend-multiply"/>
       </a>
       <nav class="hidden md:flex items-center gap-8 font-hand text-lg">
-        <a class="text-foreground/80 hover:text-primary transition" href="index.html">Home</a>
-        <a class="text-primary font-bold active" href="shop.html" aria-current="page">Collection</a>
-        <a class="text-foreground/80 hover:text-primary transition" href="story.html">Our Craft</a>
-        <a class="text-foreground/80 hover:text-primary transition" href="contact.html">Contact</a>
+        <a class="text-foreground/80 hover:text-primary transition" href="../index.html">Home</a>
+        <a class="text-primary font-bold active" href="../shop.html" aria-current="page">Collection</a>
+        <a class="text-foreground/80 hover:text-primary transition" href="../story.html">Our Craft</a>
+        <a class="text-foreground/80 hover:text-primary transition" href="../contact.html">Contact</a>
       </nav>
       <div class="flex items-center gap-3 sm:gap-5">
         <button type="button" class="open-search-modal-btn p-2 text-foreground/80 hover:text-primary transition cursor-pointer" aria-label="Search">
@@ -68,7 +67,7 @@
     <div class="mb-6 flex flex-col md:flex-row md:items-end justify-between border-b border-border/80 pb-4">
       <div>
         <div class="flex items-center gap-2 text-xs text-muted-foreground uppercase tracking-wider mb-1 font-sans">
-          <a href="index.html" class="hover:text-primary">Home</a>
+          <a href="../index.html" class="hover:text-primary">Home</a>
           <span>/</span>
           <span id="collection-breadcrumb-label" class="text-primary font-medium">All Kurtis</span>
         </div>
@@ -107,6 +106,92 @@
         Copy Code
       </button>
     </div>
+
+    <!-- Explore by Silhouette (Horizontal Side-Scrolling List Across All Layouts) -->
+    <section class="mb-8 border-y border-border/70 bg-card/40 py-5 px-4 rounded-xs">
+      <div class="flex items-center justify-between mb-3 gap-3">
+        <div>
+          <p class="font-hand text-xs text-primary">quick filter by cut</p>
+          <h2 class="font-display text-xl sm:text-2xl font-semibold">Explore by Silhouette</h2>
+        </div>
+        <div class="flex items-center gap-1.5">
+          <button type="button" aria-label="Scroll Silhouettes Left" onclick="document.getElementById('shop-silhouette-track').scrollBy({left: -340, behavior: 'smooth'})" class="silhouette-nav-btn">
+            ‹
+          </button>
+          <button type="button" aria-label="Scroll Silhouettes Right" onclick="document.getElementById('shop-silhouette-track').scrollBy({left: 340, behavior: 'smooth'})" class="silhouette-nav-btn">
+            ›
+          </button>
+        </div>
+      </div>
+
+      <div class="silhouette-scroll-wrapper">
+        <div id="shop-silhouette-track" class="silhouette-scroll-track">
+          <button type="button" data-sil-category="all" class="silhouette-scroll-item shop-silhouette-card active group cursor-pointer">
+            <div class="silhouette-img-ring">
+              <img src="../assets/hero.jpg" alt="All Kurtis" class="h-full w-full object-cover group-hover:scale-110 transition duration-500" />
+            </div>
+            <span class="mt-2.5 font-display text-base font-semibold text-foreground group-hover:text-primary transition">All Kurtis</span>
+            <span class="text-[11px] text-muted-foreground font-sans">Complete Catalog</span>
+          </button>
+
+          <button type="button" data-sil-category="Straight Cut" class="silhouette-scroll-item shop-silhouette-card group cursor-pointer">
+            <div class="silhouette-img-ring">
+              <img src="../assets/hero.jpg" alt="Straight Cut" class="h-full w-full object-cover group-hover:scale-110 transition duration-500" />
+            </div>
+            <span class="mt-2.5 font-display text-base font-semibold text-foreground group-hover:text-primary transition">Straight Cut</span>
+            <span class="text-[11px] text-muted-foreground font-sans">Everyday Tailored</span>
+          </button>
+
+          <button type="button" data-sil-category="A-Line" class="silhouette-scroll-item shop-silhouette-card group cursor-pointer">
+            <div class="silhouette-img-ring">
+              <img src="../assets/k-aline.jpg" alt="A-Line" class="h-full w-full object-cover group-hover:scale-110 transition duration-500" />
+            </div>
+            <span class="mt-2.5 font-display text-base font-semibold text-foreground group-hover:text-primary transition">A-Line</span>
+            <span class="text-[11px] text-muted-foreground font-sans">Flared Grace</span>
+          </button>
+
+          <button type="button" data-sil-category="Anarkali" class="silhouette-scroll-item shop-silhouette-card group cursor-pointer">
+            <div class="silhouette-img-ring">
+              <img src="../assets/k-anarkali.jpg" alt="Anarkali" class="h-full w-full object-cover group-hover:scale-110 transition duration-500" />
+            </div>
+            <span class="mt-2.5 font-display text-base font-semibold text-foreground group-hover:text-primary transition">Anarkali</span>
+            <span class="text-[11px] text-muted-foreground font-sans">16-Kali Festive</span>
+          </button>
+
+          <button type="button" data-sil-category="Short Kurti" class="silhouette-scroll-item shop-silhouette-card group cursor-pointer">
+            <div class="silhouette-img-ring">
+              <img src="../assets/k-short.jpg" alt="Short Kurti" class="h-full w-full object-cover group-hover:scale-110 transition duration-500" />
+            </div>
+            <span class="mt-2.5 font-display text-base font-semibold text-foreground group-hover:text-primary transition">Short Kurtis</span>
+            <span class="text-[11px] text-muted-foreground font-sans">Breezy Tunics</span>
+          </button>
+
+          <button type="button" data-sil-category="Angrakha" class="silhouette-scroll-item shop-silhouette-card group cursor-pointer">
+            <div class="silhouette-img-ring">
+              <img src="../assets/k-angrakha.jpg" alt="Angrakha" class="h-full w-full object-cover group-hover:scale-110 transition duration-500" />
+            </div>
+            <span class="mt-2.5 font-display text-base font-semibold text-foreground group-hover:text-primary transition">Angrakha</span>
+            <span class="text-[11px] text-muted-foreground font-sans">Artisan Tie-Wrap</span>
+          </button>
+
+          <button type="button" data-sil-category="Kaftan" class="silhouette-scroll-item shop-silhouette-card group cursor-pointer">
+            <div class="silhouette-img-ring">
+              <img src="../assets/k-kaftan.jpg" alt="Kaftan" class="h-full w-full object-cover group-hover:scale-110 transition duration-500" />
+            </div>
+            <span class="mt-2.5 font-display text-base font-semibold text-foreground group-hover:text-primary transition">Kaftan</span>
+            <span class="text-[11px] text-muted-foreground font-sans">Relaxed Resort</span>
+          </button>
+
+          <button type="button" data-sil-category="Co-ord Set" class="silhouette-scroll-item shop-silhouette-card group cursor-pointer">
+            <div class="silhouette-img-ring">
+              <img src="../assets/k-coord.jpg" alt="Co-ord Set" class="h-full w-full object-cover group-hover:scale-110 transition duration-500" />
+            </div>
+            <span class="mt-2.5 font-display text-base font-semibold text-foreground group-hover:text-primary transition">Co-ord Sets</span>
+            <span class="text-[11px] text-muted-foreground font-sans">Matched 2-Piece</span>
+          </button>
+        </div>
+      </div>
+    </section>
 
     <!-- AI Stylist Prompt Bar (Preserved and Refined) -->
     <section class="mb-8 bg-card/80 border border-border p-4 sm:p-5 rounded-xs" id="ai-stylist-box">
@@ -208,14 +293,14 @@
   <footer class="mt-20 border-t border-border bg-card/90">
     <div class="mx-auto grid max-w-7xl gap-8 px-4 py-12 sm:px-6 sm:grid-cols-3">
       <div>
-        <img src="images/naari-logo.png" alt="Matra Naari" class="h-14 w-auto mix-blend-multiply"/>
+        <img src="../images/naari-logo.png" alt="Matra Naari" class="h-14 w-auto mix-blend-multiply"/>
         <p class="mt-2 font-hand text-muted-foreground">Modern kurtis, woven with heritage.</p>
       </div>
       <div class="font-hand text-lg space-y-1">
-        <a class="block hover:text-primary transition" href="index.html">Home</a>
-        <a class="block hover:text-primary transition active text-primary" href="shop.html">Shop Catalog</a>
-        <a class="block hover:text-primary transition" href="story.html">Our Craft Story</a>
-        <a class="block hover:text-primary transition" href="contact.html">Studio Contact</a>
+        <a class="block hover:text-primary transition" href="../index.html">Home</a>
+        <a class="block hover:text-primary transition active text-primary" href="../shop.html">Shop Catalog</a>
+        <a class="block hover:text-primary transition" href="../story.html">Our Craft Story</a>
+        <a class="block hover:text-primary transition" href="../contact.html">Studio Contact</a>
       </div>
       <div class="text-xs text-muted-foreground font-sans space-y-1">
         <p>hello@naari.in · +91 88493 66915</p>
@@ -225,7 +310,7 @@
     </div>
   </footer>
 
-  <script src="assets/app.js"></script>
+  <script src="../assets/app.js"></script>
   <script>
     // Shop Page State (Libas-inspired comprehensive attribute facets)
     let allProducts = [];
@@ -520,6 +605,12 @@
         if (breadEl) breadEl.textContent = 'All Kurtis';
       }
 
+      // Sync active state on horizontal Explore by Silhouette cards
+      document.querySelectorAll('.shop-silhouette-card').forEach(card => {
+        const cat = card.getAttribute('data-sil-category') || 'all';
+        card.classList.toggle('active', cat.toLowerCase() === (selectedCategory || 'all').toLowerCase());
+      });
+
       if (selectedCategory && selectedCategory.toLowerCase() !== 'all') {
         filtered = filtered.filter(p => (p.category || '').toLowerCase() === selectedCategory.toLowerCase());
       }
@@ -551,19 +642,19 @@
       }
 
       if (selectedFabric) {
-        filtered = filtered.filter(p => (p.fabric || '').toLowerCase() === selectedFabric.toLowerCase());
+        filtered = filtered.filter(p => (p.fabric || '').toLowerCase().includes(selectedFabric.toLowerCase()));
       }
 
       if (selectedOccasion) {
-        filtered = filtered.filter(p => (p.occasion || '').toLowerCase() === selectedOccasion.toLowerCase());
+        filtered = filtered.filter(p => (p.occasion || '').toLowerCase().includes(selectedOccasion.toLowerCase()));
       }
 
       if (selectedPattern) {
-        filtered = filtered.filter(p => (p.pattern || '').toLowerCase() === selectedPattern.toLowerCase());
+        filtered = filtered.filter(p => (p.pattern || '').toLowerCase().includes(selectedPattern.toLowerCase()));
       }
 
       if (selectedSleeve) {
-        filtered = filtered.filter(p => (p.sleeve_length || '').toLowerCase() === selectedSleeve.toLowerCase());
+        filtered = filtered.filter(p => (p.sleeve_length || '').toLowerCase().includes(selectedSleeve.toLowerCase()));
       }
 
       if (selectedNeck) {
@@ -665,7 +756,7 @@
 
       return `
         <div class="group relative flex flex-col bg-card/70 border border-border/80 rounded-xs overflow-hidden transition-shadow hover:shadow-lg">
-          <div class="product-card-img-wrap aspect-[3/4] w-full cursor-pointer" onclick="window.location.href='product.html?id=${p.id}'">
+          <div class="product-card-img-wrap aspect-[3/4] w-full cursor-pointer" onclick="window.location.href='../product.html?id=${p.id}'">
             <img src="${imgSrc}" alt="${p.name}" onerror="this.onerror=null;this.src='assets/hero.jpg';" class="primary-img h-full w-full object-cover" loading="lazy"/>
             ${discountTag}
             ${statusTag}
@@ -683,7 +774,7 @@
           <div class="flex-1 p-3 sm:p-4 flex flex-col justify-between">
             <div>
               <p class="text-[11px] uppercase tracking-wider text-muted-foreground truncate">${[p.category, p.fabric].filter(Boolean).join(' · ')}</p>
-              <a href="product.html?id=${p.id}" class="truncate font-display text-base sm:text-lg font-semibold hover:text-primary transition block mt-0.5">${p.name}</a>
+              <a href="../product.html?id=${p.id}" class="truncate font-display text-base sm:text-lg font-semibold hover:text-primary transition block mt-0.5">${p.name}</a>
               ${p.occasion ? `<p class="mt-0.5 text-[11px] text-muted-foreground truncate">${p.occasion} · ${p.pattern || ''}</p>` : ''}
             </div>
 
@@ -696,7 +787,7 @@
             <div class="mt-3 pt-2 border-t border-border/60">
               <div class="flex items-center justify-between text-[11px] text-muted-foreground mb-1.5">
                 <span>Quick Add Size:</span>
-                <a href="product.html?id=${p.id}" class="text-primary hover:underline">view →</a>
+                <a href="../product.html?id=${p.id}" class="text-primary hover:underline">view →</a>
               </div>
               <div class="flex flex-wrap gap-1">
                 ${availSizes.map(sz => `
@@ -754,7 +845,7 @@
               <h4 class="font-display text-lg font-semibold">${match.name} (${formatPrice(match.price)})</h4>
               <p class="text-xs text-muted-foreground">${match.description}</p>
             </div>
-            <a href="product.html?id=${match.id}" class="bg-primary text-primary-foreground px-4 py-2 text-xs uppercase tracking-wider font-semibold whitespace-nowrap self-start sm:self-center">View Kurti →</a>
+            <a href="../product.html?id=${match.id}" class="bg-primary text-primary-foreground px-4 py-2 text-xs uppercase tracking-wider font-semibold whitespace-nowrap self-start sm:self-center">View Kurti →</a>
           </div>
         `;
       });
@@ -789,6 +880,15 @@
 
     if (mobFilterClose) mobFilterClose.addEventListener('click', closeMobileFilters);
     if (mobFilterBackdrop) mobFilterBackdrop.addEventListener('click', closeMobileFilters);
+
+    // Attach click handlers for horizontal side-scrolling Explore by Silhouette cards
+    document.querySelectorAll('.shop-silhouette-card').forEach(card => {
+      card.addEventListener('click', () => {
+        selectedCategory = card.getAttribute('data-sil-category') || 'all';
+        renderFacetControls();
+        applyFiltersAndRender();
+      });
+    });
 
     document.addEventListener('DOMContentLoaded', initShop);
   </script>

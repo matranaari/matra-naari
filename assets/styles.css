@@ -482,3 +482,135 @@ details[open].group .group-open\:rotate-180, details[open] .group-open\:rotate-1
     font-size: 16px;
   }
 }
+
+/* === Horizontal Side-Scrolling "Explore by Silhouette" Carousel (All Layouts) === */
+.silhouette-scroll-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.silhouette-scroll-track {
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
+  align-items: stretch;
+  gap: 1.25rem;
+  overflow-x: auto !important;
+  overflow-y: hidden;
+  scroll-behavior: smooth;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  padding: 0.5rem 0.25rem 1rem 0.25rem;
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in oklab, var(--primary) 45%, transparent) color-mix(in oklab, var(--border) 40%, transparent);
+}
+
+.silhouette-scroll-track::-webkit-scrollbar {
+  height: 6px;
+}
+
+.silhouette-scroll-track::-webkit-scrollbar-track {
+  background: color-mix(in oklab, var(--border) 40%, transparent);
+  border-radius: 9999px;
+}
+
+.silhouette-scroll-track::-webkit-scrollbar-thumb {
+  background: color-mix(in oklab, var(--primary) 50%, transparent);
+  border-radius: 9999px;
+}
+
+.silhouette-scroll-track::-webkit-scrollbar-thumb:hover {
+  background: var(--primary);
+}
+
+.silhouette-scroll-item {
+  flex: 0 0 auto !important;
+  width: 148px;
+  scroll-snap-align: start;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  background: color-mix(in oklab, var(--card) 85%, transparent);
+  border: 1px solid var(--border);
+  border-radius: 0.25rem;
+  padding: 0.875rem 0.75rem;
+  transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+  text-decoration: none;
+}
+
+@media (min-width: 640px) {
+  .silhouette-scroll-item {
+    width: 176px;
+    padding: 1rem 0.875rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .silhouette-scroll-item {
+    width: 196px;
+    padding: 1.125rem 1rem;
+  }
+}
+
+.silhouette-scroll-item:hover,
+.silhouette-scroll-item.active {
+  border-color: var(--primary);
+  transform: translateY(-3px);
+  box-shadow: 0 10px 24px -8px rgba(107, 45, 49, 0.22);
+}
+
+.silhouette-scroll-item.active {
+  background: color-mix(in oklab, var(--primary) 8%, var(--card));
+  box-shadow: 0 0 0 1px var(--primary);
+}
+
+.silhouette-img-ring {
+  width: 96px;
+  height: 96px;
+  border-radius: 9999px;
+  overflow: hidden;
+  border: 2px solid color-mix(in oklab, var(--primary) 25%, transparent);
+  transition: border-color 0.25s ease, transform 0.35s ease;
+  flex-shrink: 0;
+}
+
+@media (min-width: 640px) {
+  .silhouette-img-ring {
+    width: 112px;
+    height: 112px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .silhouette-img-ring {
+    width: 124px;
+    height: 124px;
+  }
+}
+
+.silhouette-scroll-item:hover .silhouette-img-ring,
+.silhouette-scroll-item.active .silhouette-img-ring {
+  border-color: var(--primary);
+}
+
+.silhouette-nav-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 9999px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--foreground);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+}
+
+.silhouette-nav-btn:hover {
+  border-color: var(--primary);
+  background: var(--primary);
+  color: var(--primary-foreground);
+}
