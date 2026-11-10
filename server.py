@@ -546,7 +546,9 @@ def init_db():
         "pattern": "TEXT DEFAULT ''",
         "sleeve_length": "TEXT DEFAULT ''",
         "neck_design": "TEXT DEFAULT ''",
-        "is_archived": "INTEGER DEFAULT 0"
+        "is_archived": "INTEGER DEFAULT 0",
+        "size_stock_json": "TEXT DEFAULT '{}'",
+        "sku": "TEXT DEFAULT ''"
     }
     for col, definition in prod_migrations.items():
         if col not in prod_cols:
@@ -655,6 +657,15 @@ def init_db():
         CREATE TABLE IF NOT EXISTS newsletter_subscribers (
             email TEXT PRIMARY KEY,
             created_at TEXT NOT NULL
+        )
+    """)
+
+    # 10. Admin Sessions table
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS admin_sessions (
+            token TEXT PRIMARY KEY,
+            created_at TEXT NOT NULL,
+            expires_at TEXT NOT NULL
         )
     """)
 
@@ -774,11 +785,96 @@ def format_product_row(row):
     d = dict(row)
     d["gallery"] = json.loads(d.get("gallery_json") or "[]")
     d["colors"] = json.loads(d.get("colors_json") or "[]")
-    d["sizes"] = json.loads(d.get("sizes_json") or "[]")
+    d["sizes"] = json.loads(d.get("sizes_json") or '["S", "M", "L", "XL"]')
     d["soldOutSizes"] = json.loads(d.get("sold_out_sizes_json") or "[]")
-    d["inStock"] = d.get("stock", 0) > 0 and not d.get("is_archived", 0)
+    d["sku"] = (d.get("sku") or d.get("id") or "").strip().upper()
+
+    raw_size_stock = {}
+    try:
+        raw_size_stock = json.loads(d.get("size_stock_json") or "{}")
+        if not isinstance(raw_size_stock, dict):
+            raw_size_stock = {}
+    except Exception:
+        raw_size_stock = {}
+
+    total_stock = max(0, int(d.get("stock", 0) or 0))
+    sizes_list = d["sizes"] if d["sizes"] else ["S", "M", "L", "XL"]
+    for core_sz in ("S", "M", "L", "XL"):
+        if core_sz not in sizes_list and "Free Size" not in sizes_list:
+            sizes_list.append(core_sz)
+
+    size_stock = {}
+    if raw_size_stock:
+        for sz in sizes_list:
+            qty_val = max(0, int(raw_size_stock.get(sz, 0) or 0))
+            if sz in d["soldOutSizes"]:
+                qty_val = 0
+            size_stock[sz] = qty_val
+        for sz, qv in raw_size_stock.items():
+            if sz not in size_stock:
+                size_stock[sz] = max(0, int(qv or 0))
+    else:
+        avail_sizes = [s for s in sizes_list if s not in d["soldOutSizes"]]
+        if avail_sizes and total_stock > 0:
+            base_q = total_stock // len(avail_sizes)
+            rem = total_stock % len(avail_sizes)
+            for idx, sz in enumerate(sizes_list):
+                if sz in d["soldOutSizes"]:
+                    size_stock[sz] = 0
+                else:
+                    avail_idx = avail_sizes.index(sz)
+                    size_stock[sz] = base_q + (1 if avail_idx < rem else 0)
+        else:
+            for sz in sizes_list:
+                size_stock[sz] = 0
+
+    d["sizeStock"] = size_stock
+    d["size_stock"] = size_stock
+    d["stock"] = total_stock
+    d["isArchived"] = bool(d.get("is_archived", 0))
+    d["isBestseller"] = bool(d.get("is_bestseller", 0))
+    d["lowStockSizes"] = [sz for sz, q in size_stock.items() if 0 < q <= 3]
+    d["isLowStock"] = (0 < total_stock <= 10) or len(d["lowStockSizes"]) > 0
+    d["inStock"] = total_stock > 0 and not d.get("is_archived", 0)
     d["discountPercent"] = int(round((d["mrp"] - d["price"]) / d["mrp"] * 100)) if d.get("mrp", 0) > d.get("price", 0) else 0
     return d
+
+def deduct_order_stock(computed_items):
+    """
+    Deducts purchased item quantities from both size-specific stock and total product stock.
+    Never allows stock to drop below 0.
+    """
+    if not computed_items:
+        return
+    conn = get_db()
+    c = conn.cursor()
+    for item in computed_items:
+        pid = str(item.get("id", "")).strip()
+        size = str(item.get("size", "")).strip()
+        qty = max(1, int(item.get("qty", 1) or 1))
+        c.execute("SELECT * FROM products WHERE id = ?", (pid,))
+        row = c.fetchone()
+        if not row:
+            continue
+        prod = format_product_row(row)
+        size_stock = dict(prod.get("sizeStock", {}))
+        sold_out = list(prod.get("soldOutSizes", []))
+        if size in size_stock:
+            size_stock[size] = max(0, int(size_stock[size]) - qty)
+            if size_stock[size] == 0 and size not in sold_out:
+                sold_out.append(size)
+            new_total_stock = sum(max(0, int(v)) for v in size_stock.values())
+        else:
+            new_total_stock = max(0, int(prod.get("stock", 0)) - qty)
+        c.execute("""
+            UPDATE products
+            SET stock = ?,
+                size_stock_json = ?,
+                sold_out_sizes_json = ?
+            WHERE id = ?
+        """, (new_total_stock, json.dumps(size_stock), json.dumps(sold_out), pid))
+    conn.commit()
+    conn.close()
 
 def get_product_from_db(pid):
     conn = get_db()
@@ -893,6 +989,12 @@ def validate_and_compute_totals(items, coupon_code=""):
                 return None, f"Only {prod['stock']} unit(s) of '{prod['name']}' available in stock."
             if size in prod.get("soldOutSizes", []):
                 return None, f"Size '{size}' for '{prod['name']}' is currently sold out."
+            size_stock_map = prod.get("sizeStock", {})
+            if size in size_stock_map:
+                if size_stock_map[size] <= 0:
+                    return None, f"Size '{size}' for '{prod['name']}' is currently out of stock."
+                if qty > size_stock_map[size]:
+                    return None, f"Only {size_stock_map[size]} unit(s) of '{prod['name']}' in Size {size} available in stock."
             name = prod["name"]
             category = prod.get("category", "")
             price = prod["price"]
@@ -1031,9 +1133,49 @@ def get_current_user():
     conn.close()
     return dict(user) if user else None
 
+def verify_admin_passkey_value(candidate):
+    if not candidate:
+        return False
+    cand = str(candidate).strip()
+    if hmac.compare_digest(cand.encode("utf-8"), ADMIN_SECRET_KEY.encode("utf-8")):
+        return True
+    settings = get_site_settings_dict()
+    stored_hash = str(settings.get("admin_passkey_hash") or "").strip()
+    stored_salt = str(settings.get("admin_passkey_salt") or "").strip()
+    if stored_hash and stored_salt:
+        return verify_password(cand, stored_salt, stored_hash)
+    return False
+
 def check_admin_auth():
+    # 1. Check session token (X-Admin-Token, Authorization: Bearer, or HttpOnly cookie)
+    token = request.headers.get("X-Admin-Token", "").strip()
+    if not token:
+        auth_hdr = request.headers.get("Authorization", "").strip()
+        if auth_hdr.startswith("Bearer "):
+            token = auth_hdr[7:].strip()
+    if not token and "naari_admin_token" in request.cookies:
+        token = request.cookies.get("naari_admin_token", "").strip()
+
+    if token:
+        try:
+            conn = get_db()
+            c = conn.cursor()
+            c.execute("SELECT token FROM admin_sessions WHERE token = ? AND expires_at > ?", (token, datetime.now().isoformat()))
+            row = c.fetchone()
+            conn.close()
+            if row:
+                return True
+        except Exception:
+            pass
+
+    # 2. Check passkey header, query arg, or JSON payload
     passkey = request.headers.get("X-Admin-Passkey", "").strip() or request.args.get("passkey", "").strip()
-    return passkey == ADMIN_SECRET_KEY
+    if not passkey and request.is_json:
+        body = request.get_json(silent=True) or {}
+        if isinstance(body, dict):
+            passkey = str(body.get("passkey", "")).strip()
+
+    return verify_admin_passkey_value(passkey)
 
 # ================= Initialize Flask App =================
 app = Flask(__name__, static_folder=BASE_DIR)
@@ -1052,7 +1194,7 @@ print(
 def add_cors_headers(response):
     response.headers["Access-Control-Allow-Origin"] = "*"
     response.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS, PUT, DELETE"
-    response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization, X-Admin-Passkey"
+    response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization, X-Admin-Passkey, X-Admin-Token"
     response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
     return response
 
@@ -1105,7 +1247,7 @@ def api_products():
     min_price = request.args.get("min_price", type=int)
     max_price = request.args.get("max_price", type=int)
     featured = request.args.get("featured", "").strip()
-    include_archived = request.args.get("include_archived", "").strip() == "1"
+    include_archived = (request.args.get("include_archived", "").strip() == "1") and check_admin_auth()
 
     conn = get_db()
     c = conn.cursor()
@@ -2074,6 +2216,11 @@ def api_verify_payment():
     conn.commit()
     conn.close()
 
+    try:
+        deduct_order_stock(json.loads(ord_row["items_json"] or "[]"))
+    except Exception:
+        pass
+
     print(
         f"[Razorpay] Payment verified & order marked paid: internal_order_id={stored_order_id}, rzp_order_id={rzp_order_id}, rzp_payment_id={rzp_payment_id}",
         flush=True
@@ -2181,6 +2328,11 @@ def api_create_cod_order():
     conn.commit()
     conn.close()
 
+    try:
+        deduct_order_stock(calc["items"])
+    except Exception:
+        pass
+
     return jsonify({
         "ok": True,
         "order_id": order_id,
@@ -2223,7 +2375,57 @@ def api_order_details():
 def api_admin_verify():
     if not check_admin_auth():
         return jsonify({"ok": False, "error": "Invalid admin passkey"}), 401
-    return jsonify({"ok": True, "message": "Admin authenticated successfully."})
+
+    token = secrets.token_hex(32)
+    now_dt = datetime.now()
+    exp_dt = now_dt + timedelta(hours=24)
+    try:
+        conn = get_db()
+        c = conn.cursor()
+        c.execute("DELETE FROM admin_sessions WHERE expires_at <= ?", (now_dt.isoformat(),))
+        c.execute(
+            "INSERT INTO admin_sessions (token, created_at, expires_at) VALUES (?, ?, ?)",
+            (token, now_dt.isoformat(), exp_dt.isoformat())
+        )
+        conn.commit()
+        conn.close()
+    except Exception:
+        pass
+
+    resp = jsonify({
+        "ok": True,
+        "authenticated": True,
+        "token": token,
+        "expires_at": exp_dt.isoformat(),
+        "message": "Admin authenticated successfully."
+    })
+    resp.set_cookie(
+        "naari_admin_token",
+        token,
+        httponly=True,
+        samesite="Lax",
+        max_age=86400
+    )
+    return resp
+
+@app.route("/api/admin/logout", methods=["POST"])
+def api_admin_logout():
+    token = (
+        request.headers.get("X-Admin-Token", "").strip()
+        or request.cookies.get("naari_admin_token", "").strip()
+    )
+    if token:
+        try:
+            conn = get_db()
+            c = conn.cursor()
+            c.execute("DELETE FROM admin_sessions WHERE token = ?", (token,))
+            conn.commit()
+            conn.close()
+        except Exception:
+            pass
+    resp = jsonify({"ok": True, "message": "Admin session logged out."})
+    resp.delete_cookie("naari_admin_token")
+    return resp
 
 @app.route("/api/admin/stats", methods=["GET"])
 def api_admin_stats():
@@ -2243,35 +2445,143 @@ def api_admin_stats():
     totals["verified_paid_revenue"] = paid_row["verified_paid_revenue"]
     totals["paid_revenue"] = totals["total_revenue"]
 
-    c.execute("SELECT COUNT(*) AS cod_orders FROM orders WHERE payment_method = 'cod' AND order_status != 'cancelled'")
-    cod_cnt = c.fetchone()["cod_orders"]
-    totals["cod_orders"] = cod_cnt
-    totals["cod_count"] = cod_cnt
+    c.execute("SELECT COUNT(*) AS cod_orders, COALESCE(SUM(total_amount), 0) AS cod_revenue FROM orders WHERE payment_method = 'cod' AND order_status != 'cancelled'")
+    cod_row = dict(c.fetchone())
+    totals["cod_orders"] = cod_row["cod_orders"]
+    totals["cod_count"] = cod_row["cod_orders"]
+    totals["cod_revenue"] = cod_row["cod_revenue"]
+
+    c.execute("SELECT COUNT(*) AS pending_orders FROM orders WHERE order_status IN ('placed', 'confirmed', 'pending_payment', 'processing')")
+    totals["pending_orders"] = c.fetchone()["pending_orders"]
+
+    c.execute("SELECT COUNT(*) AS shipped_orders FROM orders WHERE order_status = 'shipped'")
+    totals["shipped_orders"] = c.fetchone()["shipped_orders"]
+
+    c.execute("SELECT COUNT(*) AS delivered_orders FROM orders WHERE order_status = 'delivered'")
+    totals["delivered_orders"] = c.fetchone()["delivered_orders"]
+
+    c.execute("SELECT COUNT(*) AS cancelled_orders FROM orders WHERE order_status = 'cancelled'")
+    totals["cancelled_orders"] = c.fetchone()["cancelled_orders"]
 
     c.execute("SELECT COUNT(*) AS pending_returns FROM return_requests WHERE status = 'pending'")
     totals["pending_returns"] = c.fetchone()["pending_returns"]
 
-    c.execute("SELECT COUNT(*) AS total_products FROM products WHERE is_archived = 0")
-    prod_cnt = c.fetchone()["total_products"]
-    totals["total_products"] = prod_cnt
-    totals["active_products"] = prod_cnt
+    c.execute("SELECT * FROM products ORDER BY created_at DESC")
+    all_product_rows = [format_product_row(r) for r in c.fetchall()]
+
+    active_prods = [p for p in all_product_rows if not p.get("is_archived", 0)]
+    archived_prods = [p for p in all_product_rows if p.get("is_archived", 0)]
+    low_stock_alerts = [
+        {
+            "id": p["id"],
+            "sku": p.get("sku") or p["id"].upper(),
+            "name": p["name"],
+            "category": p["category"],
+            "image": p.get("relative_image") or p.get("image"),
+            "stock": p["stock"],
+            "sizeStock": p.get("sizeStock", {}),
+            "size_stock": p.get("sizeStock", {}),
+            "lowStockSizes": p.get("lowStockSizes", []),
+            "soldOutSizes": p.get("soldOutSizes", []),
+            "isOutOfStock": p["stock"] <= 0
+        }
+        for p in active_prods
+        if p["stock"] <= 10 or len(p.get("lowStockSizes", [])) > 0 or len(p.get("soldOutSizes", [])) > 0
+    ]
+    out_of_stock_cnt = sum(1 for p in active_prods if p["stock"] <= 0)
+
+    c.execute("SELECT COUNT(*) AS active_coupons FROM coupons WHERE is_active = 1")
+    active_coupons_cnt = c.fetchone()["active_coupons"]
+
+    totals["total_products"] = len(active_prods)
+    totals["active_products"] = len(active_prods)
+    totals["archived_products"] = len(archived_prods)
+    totals["low_stock_count"] = len(low_stock_alerts)
+    totals["out_of_stock_count"] = out_of_stock_cnt
+    totals["active_coupons"] = active_coupons_cnt
 
     c.execute("SELECT COUNT(*) AS total_users FROM users")
     totals["total_users"] = c.fetchone()["total_users"]
 
+    # Calculate best-selling products from actual non-cancelled orders in SQLite
+    c.execute("SELECT items_json FROM orders WHERE order_status != 'cancelled' AND payment_status NOT IN ('failed', 'cancelled')")
+    sales_by_pid = {}
+    prod_lookup = {p["id"]: p for p in all_product_rows}
+    for orow in c.fetchall():
+        try:
+            items = json.loads(orow["items_json"] or "[]")
+        except Exception:
+            items = []
+        for item in items:
+            pid = str(item.get("id", "")).strip()
+            if not pid:
+                continue
+            qty = max(1, int(item.get("qty", 1) or 1))
+            line_rev = int(item.get("subtotal") or (int(item.get("price", 0) or 0) * qty))
+            if pid not in sales_by_pid:
+                p_meta = prod_lookup.get(pid, {})
+                sales_by_pid[pid] = {
+                    "id": pid,
+                    "sku": p_meta.get("sku") or pid.upper(),
+                    "name": p_meta.get("name") or item.get("name") or pid,
+                    "category": p_meta.get("category") or item.get("category") or "Kurti",
+                    "image": p_meta.get("relative_image") or p_meta.get("image") or item.get("image") or "assets/hero.jpg",
+                    "price": p_meta.get("price") or int(item.get("price", 0) or 0),
+                    "stock": p_meta.get("stock", 0),
+                    "units_sold": 0,
+                    "revenue": 0,
+                    "orders_count": 0
+                }
+            sales_by_pid[pid]["units_sold"] += qty
+            sales_by_pid[pid]["revenue"] += line_rev
+            sales_by_pid[pid]["orders_count"] += 1
+
+    best_selling = sorted(
+        sales_by_pid.values(),
+        key=lambda x: (x["units_sold"], x["revenue"]),
+        reverse=True
+    )[:6]
+
     # Recent orders
-    c.execute("SELECT id, customer_name, total_amount, payment_status, order_status, created_at FROM orders ORDER BY created_at DESC LIMIT 10")
-    recent_orders = [dict(r) for r in c.fetchall()]
+    c.execute("""
+        SELECT id, customer_name, customer_email, customer_phone,
+               payment_method, payment_status, order_status,
+               total_amount, items_json, created_at
+        FROM orders
+        ORDER BY created_at DESC LIMIT 10
+    """)
+    recent_orders = []
+    for r in c.fetchall():
+        rd = dict(r)
+        rd["order_id"] = rd["id"]
+        try:
+            rd["items"] = json.loads(rd.pop("items_json", "[]"))
+        except Exception:
+            rd["items"] = []
+        recent_orders.append(rd)
+
+    totals["best_selling_products"] = best_selling
+    totals["low_stock_alerts"] = low_stock_alerts
 
     conn.close()
-    return jsonify({"ok": True, "stats": totals, "recent_orders": recent_orders})
+    return jsonify({
+        "ok": True,
+        "stats": totals,
+        "recent_orders": recent_orders,
+        "best_selling_products": best_selling,
+        "low_stock_alerts": low_stock_alerts
+    })
 
 @app.route("/api/admin/orders", methods=["GET"])
 def api_admin_orders():
     if not check_admin_auth():
         return jsonify({"ok": False, "error": "Unauthorized"}), 401
 
-    status = request.args.get("status", "").strip()
+    status = request.args.get("status", "").strip().lower()
+    payment_method = request.args.get("payment_method", "").strip().lower()
+    payment_status = request.args.get("payment_status", "").strip().lower()
+    date_from = request.args.get("date_from", "").strip()
+    date_to = request.args.get("date_to", "").strip()
     search = request.args.get("search", "").strip().lower()
 
     conn = get_db()
@@ -2284,11 +2594,47 @@ def api_admin_orders():
     for r in rows:
         od = dict(r)
         od["order_id"] = od["id"]
+        od.pop("razorpay_signature", None)
         od["items"] = json.loads(od.pop("items_json", "[]"))
-        if status and od.get("order_status") != status:
+        addr_parts = [
+            od.get("address_line1", ""),
+            od.get("address_line2", ""),
+            od.get("city", ""),
+            od.get("state", ""),
+            od.get("pincode", "")
+        ]
+        od["customer_address"] = ", ".join([p for p in addr_parts if p and str(p).strip()])
+        od["courier_name"] = od.get("courier_partner", "")
+        od["customer"] = {
+            "name": od.get("customer_name", "Guest"),
+            "email": od.get("customer_email", ""),
+            "phone": od.get("customer_phone", ""),
+            "address": od.get("address_line1", ""),
+            "city": od.get("city", ""),
+            "state": od.get("state", ""),
+            "pincode": od.get("pincode", "")
+        }
+        od["pricing"] = {
+            "subtotal": od.get("subtotal", 0),
+            "discount": od.get("discount", 0),
+            "shipping": od.get("shipping", 0),
+            "total": od.get("total_amount", 0),
+            "coupon_code": od.get("coupon_code", "")
+        }
+
+        if status and status != "all" and (od.get("order_status") or "").lower() != status:
+            continue
+        if payment_method and payment_method != "all" and (od.get("payment_method") or "").lower() != payment_method:
+            continue
+        if payment_status and payment_status != "all" and (od.get("payment_status") or "").lower() != payment_status:
+            continue
+        created_date = str(od.get("created_at") or "")[:10]
+        if date_from and len(date_from) == 10 and created_date and created_date < date_from:
+            continue
+        if date_to and len(date_to) == 10 and created_date and created_date > date_to:
             continue
         if search:
-            q = f"{od['id']} {od['customer_name']} {od['customer_phone']} {od['customer_email']}".lower()
+            q = f"{od['id']} {od['customer_name']} {od['customer_phone']} {od['customer_email']} {od.get('tracking_number', '')} {od.get('razorpay_order_id', '')} {od.get('razorpay_payment_id', '')}".lower()
             if search not in q:
                 continue
         orders.append(od)
@@ -2302,15 +2648,36 @@ def api_admin_order_status():
 
     data = request.get_json(silent=True) or {}
     order_id = str(data.get("order_id", "")).strip()
-    new_status = str(data.get("order_status", "")).strip()
+    new_status = str(data.get("order_status", "")).strip().lower()
     tracking_no = str(data.get("tracking_number", "")).strip()
-    courier = str(data.get("courier_partner", "")).strip()
+    courier = str(data.get("courier_partner") or data.get("courier_name") or "").strip()
+    req_payment_status = str(data.get("payment_status", "")).strip().lower()
 
     if not order_id or not new_status:
         return jsonify({"ok": False, "error": "Order ID and status required."}), 400
 
+    valid_statuses = {
+        "placed", "confirmed", "packed", "processing",
+        "shipped", "out for delivery", "out_for_delivery",
+        "delivered", "cancelled", "pending_payment"
+    }
+    if new_status not in valid_statuses:
+        return jsonify({"ok": False, "error": f"Invalid order status '{new_status}'."}), 400
+
     conn = get_db()
     c = conn.cursor()
+    c.execute("SELECT id, payment_method, payment_status, razorpay_payment_id, razorpay_signature FROM orders WHERE id = ?", (order_id,))
+    ord_row = c.fetchone()
+
+    # Never allow marking a Razorpay order as paid without verified signature
+    if req_payment_status == "paid" and ord_row and str(ord_row["payment_method"] or "").lower() == "razorpay":
+        if ord_row["payment_status"] != "paid" or not ord_row["razorpay_signature"]:
+            conn.close()
+            return jsonify({
+                "ok": False,
+                "error": "Security restriction: Razorpay orders cannot be manually marked as paid without cryptographic signature verification."
+            }), 400
+
     c.execute("""
         UPDATE orders
         SET order_status = ?,
@@ -2324,20 +2691,42 @@ def api_admin_order_status():
 
     return jsonify({"ok": True, "message": f"Order {order_id} updated to '{new_status}'."})
 
-@app.route("/api/admin/products", methods=["POST"])
+@app.route("/api/admin/products", methods=["GET", "POST"])
 def api_admin_product_save():
     if not check_admin_auth():
         return jsonify({"ok": False, "error": "Unauthorized"}), 401
+
+    if request.method == "GET":
+        conn = get_db()
+        c = conn.cursor()
+        c.execute("SELECT * FROM products ORDER BY created_at DESC")
+        prods = [format_product_row(r) for r in c.fetchall()]
+        conn.close()
+        return jsonify({"ok": True, "count": len(prods), "products": prods})
 
     p = request.get_json(silent=True) or {}
     pid = str(p.get("id", "")).strip() or f"prod_{secrets.token_hex(4)}"
 
     existing = get_product_from_db(pid)
     name = str(p.get("name", existing["name"] if existing else "")).strip()
-    category = str(p.get("category", existing["category"] if existing else "Straight")).strip()
-    style = str(p.get("style", existing.get("style", "") if existing else "")).strip()
-    price = int(p.get("price", existing["price"] if existing else 0))
-    mrp = int(p.get("mrp", existing["mrp"] if existing else price))
+    if not name:
+        return jsonify({"ok": False, "error": "Product name is required."}), 400
+
+    sku = str(p.get("sku", existing.get("sku", pid.upper()) if existing else pid.upper())).strip().upper()
+    category = str(p.get("category", existing["category"] if existing else "Straight Cut")).strip()
+    style = str(p.get("style", existing.get("style", category) if existing else category)).strip()
+
+    try:
+        price = int(p.get("price", existing["price"] if existing else 0))
+        mrp = int(p.get("mrp", existing["mrp"] if existing else price))
+    except (ValueError, TypeError):
+        return jsonify({"ok": False, "error": "Price and MRP must be valid numbers."}), 400
+
+    if price <= 0:
+        return jsonify({"ok": False, "error": "Product sale price must be greater than ₹0."}), 400
+    if mrp < price:
+        mrp = price
+
     desc = str(p.get("description", existing.get("description", "") if existing else "")).strip()
     fabric = str(p.get("fabric", existing.get("fabric", "") if existing else "")).strip()
     occasion = str(p.get("occasion", existing.get("occasion", "") if existing else "")).strip()
@@ -2347,7 +2736,6 @@ def api_admin_product_save():
     care = str(p.get("care", existing.get("care", "") if existing else "")).strip()
 
     raw_img = str(p.get("image", existing["image"] if existing else "assets/hero.jpg")).strip()
-    # Ensure non-existent test placeholder like assets/k-straight.jpg falls back to existing or assets/hero.jpg
     if raw_img and not raw_img.startswith("http"):
         check_path = os.path.join(BASE_DIR, raw_img.lstrip("/"))
         if not os.path.isfile(check_path):
@@ -2355,7 +2743,58 @@ def api_admin_product_save():
     image = raw_img or "assets/hero.jpg"
     rel_img = str(p.get("relative_image", image)).strip()
 
-    stock = int(p.get("stock", existing["stock"] if existing else 50))
+    sizes_list = p.get("sizes") if isinstance(p.get("sizes"), list) and p.get("sizes") else (existing["sizes"] if existing else ["S", "M", "L", "XL"])
+    for core_sz in ("S", "M", "L", "XL"):
+        if core_sz not in sizes_list and "Free Size" not in sizes_list:
+            sizes_list.append(core_sz)
+
+    # Size-wise stock handling & negative stock prevention
+    incoming_size_stock = p.get("size_stock") if isinstance(p.get("size_stock"), dict) else (p.get("sizeStock") if isinstance(p.get("sizeStock"), dict) else None)
+    size_stock_map = {}
+
+    if incoming_size_stock is not None:
+        for sz in sizes_list:
+            raw_q = incoming_size_stock.get(sz, 0)
+            try:
+                q_val = int(raw_q)
+            except (ValueError, TypeError):
+                return jsonify({"ok": False, "error": f"Invalid stock quantity for size {sz}."}), 400
+            if q_val < 0:
+                return jsonify({"ok": False, "error": f"Stock quantity for size {sz} cannot be negative."}), 400
+            size_stock_map[sz] = q_val
+        for sz, raw_q in incoming_size_stock.items():
+            if sz not in size_stock_map:
+                q_val = int(raw_q)
+                if q_val < 0:
+                    return jsonify({"ok": False, "error": f"Stock quantity for size {sz} cannot be negative."}), 400
+                size_stock_map[sz] = q_val
+        stock = sum(size_stock_map.values())
+        sold_out_list = [sz for sz in sizes_list if size_stock_map.get(sz, 0) <= 0]
+    else:
+        try:
+            stock = int(p.get("stock", existing["stock"] if existing else 40))
+        except (ValueError, TypeError):
+            return jsonify({"ok": False, "error": "Stock must be a valid integer."}), 400
+        if stock < 0:
+            return jsonify({"ok": False, "error": "Stock quantity cannot be negative."}), 400
+
+        sold_out_list = p.get("soldOutSizes") if "soldOutSizes" in p else (existing["soldOutSizes"] if existing else [])
+        avail_sizes = [s for s in sizes_list if s not in sold_out_list]
+        if avail_sizes and stock > 0:
+            base_q = stock // len(avail_sizes)
+            rem = stock % len(avail_sizes)
+            for sz in sizes_list:
+                if sz in sold_out_list:
+                    size_stock_map[sz] = 0
+                else:
+                    avail_idx = avail_sizes.index(sz)
+                    size_stock_map[sz] = base_q + (1 if avail_idx < rem else 0)
+        else:
+            for sz in sizes_list:
+                size_stock_map[sz] = 0
+            if stock == 0:
+                sold_out_list = list(sizes_list)
+
     is_feat = int(bool(p.get("is_featured", existing.get("is_featured", 0) if existing else 0)))
     is_new = int(bool(p.get("is_new", existing.get("is_new", 0) if existing else 0)))
     is_best = int(bool(p.get("is_bestseller", existing.get("is_bestseller", 0) if existing else 0)))
@@ -2363,19 +2802,21 @@ def api_admin_product_save():
 
     gallery = json.dumps(p["gallery"]) if "gallery" in p else (existing["gallery_json"] if existing else json.dumps([image]))
     colors = json.dumps(p["colors"]) if "colors" in p else (existing["colors_json"] if existing else json.dumps([{"name": "Maroon", "swatch": "#6B2D31"}]))
-    sizes = json.dumps(p["sizes"]) if "sizes" in p else (existing["sizes_json"] if existing else json.dumps(["XS", "S", "M", "L", "XL", "XXL"]))
-    sold_out = json.dumps(p["soldOutSizes"]) if "soldOutSizes" in p else (existing["sold_out_sizes_json"] if existing else json.dumps([]))
+    sizes_json_str = json.dumps(sizes_list)
+    sold_out_json_str = json.dumps(sold_out_list)
+    size_stock_json_str = json.dumps(size_stock_map)
 
     conn = get_db()
     c = conn.cursor()
     c.execute("""
         INSERT INTO products (
-            id, name, category, style, price, mrp, description, fabric,
+            id, sku, name, category, style, price, mrp, description, fabric,
             occasion, pattern, sleeve_length, neck_design, care,
             image, relative_image, gallery_json, colors_json, sizes_json,
-            sold_out_sizes_json, stock, is_featured, is_new, is_bestseller, is_archived, created_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            sold_out_sizes_json, size_stock_json, stock, is_featured, is_new, is_bestseller, is_archived, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(id) DO UPDATE SET
+            sku=excluded.sku,
             name=excluded.name,
             category=excluded.category,
             style=excluded.style,
@@ -2394,21 +2835,197 @@ def api_admin_product_save():
             colors_json=excluded.colors_json,
             sizes_json=excluded.sizes_json,
             sold_out_sizes_json=excluded.sold_out_sizes_json,
+            size_stock_json=excluded.size_stock_json,
             stock=excluded.stock,
             is_featured=excluded.is_featured,
             is_new=excluded.is_new,
             is_bestseller=excluded.is_bestseller,
             is_archived=excluded.is_archived
     """, (
-        pid, name, category, style, price, mrp, desc, fabric,
+        pid, sku, name, category, style, price, mrp, desc, fabric,
         occasion, pattern, sleeve_length, neck_design, care,
-        image, rel_img, gallery, colors, sizes,
-        sold_out, stock, is_feat, is_new, is_best, is_arch, datetime.now().isoformat()
+        image, rel_img, gallery, colors, sizes_json_str,
+        sold_out_json_str, size_stock_json_str, stock, is_feat, is_new, is_best, is_arch,
+        existing["created_at"] if existing and existing.get("created_at") else datetime.now().isoformat()
     ))
     conn.commit()
     conn.close()
 
-    return jsonify({"ok": True, "message": f"Product '{name}' saved successfully.", "id": pid})
+    return jsonify({
+        "ok": True,
+        "message": f"Product '{name}' saved successfully.",
+        "id": pid,
+        "stock": stock,
+        "size_stock": size_stock_map
+    })
+
+@app.route("/api/admin/products/visibility", methods=["POST"])
+def api_admin_product_visibility():
+    if not check_admin_auth():
+        return jsonify({"ok": False, "error": "Unauthorized"}), 401
+
+    data = request.get_json(silent=True) or {}
+    pid = str(data.get("id", "")).strip()
+    if not pid:
+        return jsonify({"ok": False, "error": "Product ID is required."}), 400
+
+    conn = get_db()
+    c = conn.cursor()
+    c.execute("SELECT id, name, is_archived FROM products WHERE id = ?", (pid,))
+    row = c.fetchone()
+    if not row:
+        conn.close()
+        return jsonify({"ok": False, "error": f"Product '{pid}' not found."}), 404
+
+    if "is_archived" in data:
+        new_arch = 1 if bool(data.get("is_archived")) else 0
+    else:
+        new_arch = 0 if row["is_archived"] else 1
+
+    c.execute("UPDATE products SET is_archived = ? WHERE id = ?", (new_arch, pid))
+    conn.commit()
+    conn.close()
+
+    state_label = "archived (hidden from storefront)" if new_arch else "published to storefront"
+    return jsonify({
+        "ok": True,
+        "id": pid,
+        "is_archived": new_arch,
+        "message": f"'{row['name']}' is now {state_label}."
+    })
+
+@app.route("/api/admin/inventory/update", methods=["POST"])
+def api_admin_inventory_update():
+    if not check_admin_auth():
+        return jsonify({"ok": False, "error": "Unauthorized"}), 401
+
+    data = request.get_json(silent=True) or {}
+    pid = str(data.get("id", "")).strip()
+    if not pid:
+        return jsonify({"ok": False, "error": "Product ID is required."}), 400
+
+    prod = get_product_from_db(pid)
+    if not prod:
+        return jsonify({"ok": False, "error": f"Product '{pid}' not found."}), 404
+
+    sizes_list = prod.get("sizes") or ["S", "M", "L", "XL"]
+    for core_sz in ("S", "M", "L", "XL"):
+        if core_sz not in sizes_list and "Free Size" not in sizes_list:
+            sizes_list.append(core_sz)
+
+    size_stock_map = dict(prod.get("sizeStock", {}))
+    incoming_sizes = data.get("size_stock") if isinstance(data.get("size_stock"), dict) else (data.get("sizeStock") if isinstance(data.get("sizeStock"), dict) else None)
+
+    if incoming_sizes is not None:
+        for sz, raw_val in incoming_sizes.items():
+            try:
+                q_val = int(raw_val)
+            except (ValueError, TypeError):
+                return jsonify({"ok": False, "error": f"Invalid stock number for size {sz}."}), 400
+            if q_val < 0:
+                return jsonify({"ok": False, "error": f"Stock quantity for size {sz} cannot be negative."}), 400
+            size_stock_map[sz] = q_val
+            if sz not in sizes_list:
+                sizes_list.append(sz)
+        total_stock = sum(size_stock_map.values())
+    elif "stock" in data:
+        try:
+            total_stock = int(data.get("stock", 0))
+        except (ValueError, TypeError):
+            return jsonify({"ok": False, "error": "Stock must be a valid integer."}), 400
+        if total_stock < 0:
+            return jsonify({"ok": False, "error": "Stock quantity cannot be negative."}), 400
+        base_q = total_stock // len(sizes_list) if sizes_list else 0
+        rem = total_stock % len(sizes_list) if sizes_list else 0
+        for idx, sz in enumerate(sizes_list):
+            size_stock_map[sz] = base_q + (1 if idx < rem else 0)
+    else:
+        return jsonify({"ok": False, "error": "Provide size_stock or stock to update inventory."}), 400
+
+    sold_out_list = [sz for sz in sizes_list if size_stock_map.get(sz, 0) <= 0]
+
+    conn = get_db()
+    c = conn.cursor()
+    c.execute("""
+        UPDATE products
+        SET stock = ?,
+            sizes_json = ?,
+            size_stock_json = ?,
+            sold_out_sizes_json = ?
+        WHERE id = ?
+    """, (total_stock, json.dumps(sizes_list), json.dumps(size_stock_map), json.dumps(sold_out_list), pid))
+    conn.commit()
+    conn.close()
+
+    return jsonify({
+        "ok": True,
+        "id": pid,
+        "stock": total_stock,
+        "size_stock": size_stock_map,
+        "sold_out_sizes": sold_out_list,
+        "message": f"Inventory updated for '{prod['name']}' (Total: {total_stock} units)."
+    })
+
+@app.route("/api/admin/upload-image", methods=["POST"])
+def api_admin_upload_image():
+    if not check_admin_auth():
+        return jsonify({"ok": False, "error": "Unauthorized"}), 401
+
+    allowed_exts = {".jpg", ".jpeg", ".png", ".webp"}
+    max_bytes = 5 * 1024 * 1024  # 5 MB
+    raw_bytes = None
+    orig_filename = ""
+
+    if "file" in request.files or "image" in request.files:
+        f = request.files.get("file") or request.files.get("image")
+        orig_filename = f.filename or ""
+        raw_bytes = f.read()
+    elif request.is_json:
+        body = request.get_json(silent=True) or {}
+        orig_filename = str(body.get("filename", "kurti.jpg")).strip()
+        data_url = str(body.get("data_url") or body.get("data") or "").strip()
+        if "," in data_url:
+            data_url = data_url.split(",", 1)[1]
+        if data_url:
+            try:
+                raw_bytes = base64.b64decode(data_url)
+            except Exception:
+                return jsonify({"ok": False, "error": "Invalid base64 image payload."}), 400
+
+    if not raw_bytes:
+        return jsonify({"ok": False, "error": "No image file provided."}), 400
+    if len(raw_bytes) > max_bytes:
+        return jsonify({"ok": False, "error": "Image file exceeds 5MB limit."}), 400
+
+    _, ext = os.path.splitext(orig_filename.lower())
+    if ext not in allowed_exts:
+        return jsonify({"ok": False, "error": "Only .jpg, .jpeg, .png, and .webp images are allowed."}), 400
+
+    # Verify image magic bytes to prevent disguised executable uploads
+    is_valid_magic = (
+        raw_bytes.startswith(b"\xff\xd8\xff")
+        or raw_bytes.startswith(b"\x89PNG\r\n\x1a\n")
+        or (raw_bytes[:4] == b"RIFF" and raw_bytes[8:12] == b"WEBP")
+    )
+    if not is_valid_magic:
+        return jsonify({"ok": False, "error": "Uploaded file is not a valid JPEG, PNG, or WebP image."}), 400
+
+    safe_stem = "".join(ch if ch.isalnum() or ch in ("-", "_") else "-" for ch in os.path.splitext(os.path.basename(orig_filename))[0]).strip("-") or "kurti"
+    safe_stem = safe_stem[:32].lower()
+    unique_name = f"{safe_stem}-{secrets.token_hex(4)}{ext}"
+
+    uploads_dir = os.path.join(BASE_DIR, "assets", "uploads")
+    os.makedirs(uploads_dir, exist_ok=True)
+    dest_path = os.path.join(uploads_dir, unique_name)
+    with open(dest_path, "wb") as out_f:
+        out_f.write(raw_bytes)
+
+    rel_path = f"assets/uploads/{unique_name}"
+    return jsonify({
+        "ok": True,
+        "image_path": rel_path,
+        "message": "Product image uploaded successfully."
+    })
 
 @app.route("/api/admin/products/<pid>", methods=["DELETE"])
 def api_admin_product_delete(pid):
@@ -2433,21 +3050,55 @@ def api_admin_coupons():
     if request.method == "POST":
         data = request.get_json(silent=True) or {}
         code = str(data.get("code", "")).strip().upper()
-        dtype = str(data.get("discount_type", "percentage")).strip()
-        val = int(data.get("discount_value", 10))
-        min_ord = int(data.get("min_order_value", 0))
-        max_disc = int(data.get("max_discount", 0))
+        dtype = str(data.get("discount_type", "percentage")).strip().lower()
+        if dtype not in ("percentage", "fixed"):
+            conn.close()
+            return jsonify({"ok": False, "error": "Discount type must be 'percentage' or 'fixed'."}), 400
+        try:
+            val = int(data.get("discount_value", 0))
+            min_ord = int(data.get("min_order_value", data.get("min_order", 0)) or 0)
+            max_disc = int(data.get("max_discount", 0) or 0)
+            limit = int(data.get("usage_limit", 1000) or 1000)
+        except (ValueError, TypeError):
+            conn.close()
+            return jsonify({"ok": False, "error": "Coupon numeric values must be valid integers."}), 400
+
         start_dt = str(data.get("start_date", "")).strip()
         exp = str(data.get("expiry_date", "2028-12-31")).strip()
-        limit = int(data.get("usage_limit", 1000))
-        app_cats = str(data.get("applicable_categories", "")).strip()
-        app_prods = str(data.get("applicable_products", "")).strip()
-        is_auto = 1 if data.get("is_auto_apply") else 0
+        raw_cats = data.get("applicable_categories", "")
+        if isinstance(raw_cats, list):
+            app_cats = ", ".join(str(x).strip() for x in raw_cats if str(x).strip())
+        else:
+            app_cats = str(raw_cats or "").strip()
+        if app_cats.lower() == "all":
+            app_cats = ""
+
+        raw_prods = data.get("applicable_products", "")
+        if isinstance(raw_prods, list):
+            app_prods = ", ".join(str(x).strip() for x in raw_prods if str(x).strip())
+        else:
+            app_prods = str(raw_prods or "").strip()
+        if app_prods.lower() == "all":
+            app_prods = ""
+
+        is_auto = 1 if (data.get("is_auto_apply") or data.get("auto_apply")) else 0
+        if "is_active" in data:
+            is_act = 0 if data.get("is_active") is False else 1
+        elif "active" in data:
+            is_act = 0 if data.get("active") is False else 1
+        else:
+            is_act = 1
         desc = str(data.get("description", "")).strip()
 
         if not code or val <= 0:
             conn.close()
-            return jsonify({"ok": False, "error": "Valid code and discount value required."}), 400
+            return jsonify({"ok": False, "error": "Valid code and positive discount value required."}), 400
+        if dtype == "percentage" and val > 95:
+            conn.close()
+            return jsonify({"ok": False, "error": "Percentage discount cannot exceed 95%."}), 400
+        if min_ord < 0 or max_disc < 0 or limit < 0:
+            conn.close()
+            return jsonify({"ok": False, "error": "Minimum order, max discount, and usage limit must be non-negative."}), 400
 
         c.execute("""
             INSERT INTO coupons (
@@ -2455,7 +3106,7 @@ def api_admin_coupons():
                 start_date, expiry_date, usage_limit, applicable_categories,
                 applicable_products, is_auto_apply, is_active, description, created_at
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(code) DO UPDATE SET
                 discount_type=excluded.discount_type,
                 discount_value=excluded.discount_value,
@@ -2467,8 +3118,9 @@ def api_admin_coupons():
                 applicable_categories=excluded.applicable_categories,
                 applicable_products=excluded.applicable_products,
                 is_auto_apply=excluded.is_auto_apply,
+                is_active=excluded.is_active,
                 description=excluded.description
-        """, (code, dtype, val, min_ord, max_disc, start_dt, exp, limit, app_cats, app_prods, is_auto, desc, datetime.now().isoformat()))
+        """, (code, dtype, val, min_ord, max_disc, start_dt, exp, limit, app_cats, app_prods, is_auto, is_act, desc, datetime.now().isoformat()))
         conn.commit()
 
     c.execute("SELECT * FROM coupons ORDER BY created_at DESC")
@@ -2476,6 +3128,9 @@ def api_admin_coupons():
     for r in c.fetchall():
         d = dict(r)
         d["times_used"] = d.get("used_count", 0)
+        d["active"] = bool(d.get("is_active", 1))
+        d["min_order"] = d.get("min_order_value", 0)
+        d["auto_apply"] = bool(d.get("is_auto_apply", 0))
         rows.append(d)
     conn.close()
     return jsonify({"ok": True, "coupons": rows})
@@ -2494,6 +3149,19 @@ def api_admin_coupon_toggle():
     conn.close()
     return jsonify({"ok": True, "message": f"Coupon {code} status toggled."})
 
+@app.route("/api/admin/coupons/<code>", methods=["DELETE"])
+def api_admin_coupon_delete(code):
+    if not check_admin_auth():
+        return jsonify({"ok": False, "error": "Unauthorized"}), 401
+
+    clean_code = str(code or "").strip().upper()
+    conn = get_db()
+    c = conn.cursor()
+    c.execute("DELETE FROM coupons WHERE code = ?", (clean_code,))
+    conn.commit()
+    conn.close()
+    return jsonify({"ok": True, "message": f"Coupon {clean_code} deleted."})
+
 @app.route("/api/admin/settings", methods=["GET", "POST"])
 def api_admin_settings():
     if not check_admin_auth():
@@ -2504,12 +3172,26 @@ def api_admin_settings():
 
     if request.method == "POST":
         data = request.get_json(silent=True) or {}
+        if "new_admin_passkey" in data:
+            new_pk = str(data.pop("new_admin_passkey") or "").strip()
+            if new_pk:
+                if len(new_pk) < 8:
+                    conn.close()
+                    return jsonify({"ok": False, "error": "New admin passkey must be at least 8 characters."}), 400
+                pk_hash, pk_salt = hash_password(new_pk)
+                c.execute("INSERT OR REPLACE INTO site_settings (key, value) VALUES (?, ?)", ("admin_passkey_hash", pk_hash))
+                c.execute("INSERT OR REPLACE INTO site_settings (key, value) VALUES (?, ?)", ("admin_passkey_salt", pk_salt))
+
         if "announcement_text" in data and "announcements" not in data:
             txt = str(data["announcement_text"]).strip()
             data["announcements"] = [x.strip() for x in txt.split("|") if x.strip()] if txt else DEFAULT_ANNOUNCEMENTS
         if "standard_shipping_fee" in data and "shipping_fee" not in data:
             data["shipping_fee"] = data["standard_shipping_fee"]
+
+        forbidden_setting_keys = {"admin_passkey_hash", "admin_passkey_salt", "razorpay_key_secret"}
         for k, v in data.items():
+            if k in forbidden_setting_keys:
+                continue
             val_str = json.dumps(v) if isinstance(v, (list, dict)) else str(v)
             c.execute("INSERT OR REPLACE INTO site_settings (key, value) VALUES (?, ?)", (k, val_str))
         conn.commit()
@@ -2518,8 +3200,23 @@ def api_admin_settings():
     rows = c.fetchall()
     conn.close()
 
-    settings = {}
+    cfg = load_config()
+    settings = {
+        "store_name": cfg.get("store_name", "Matra Naari"),
+        "store_description": cfg.get("store_description", "Modern Kurtis Rooted in Craft"),
+        "support_phone": cfg.get("support_phone", "+91 88493 66915"),
+        "support_email": cfg.get("support_email", "hello@naari.in"),
+        "free_shipping_threshold": cfg.get("free_shipping_threshold", 999),
+        "shipping_fee": cfg.get("shipping_fee", 99),
+        "standard_shipping_fee": cfg.get("shipping_fee", 99),
+        "cod_enabled": cfg.get("cod_enabled", True),
+        "gst_percentage": cfg.get("gst_percentage", 5),
+        "return_window_days": cfg.get("return_window_days", 7),
+        "courier_provider": cfg.get("courier_provider", "Indian Postal Circle / Standard Courier")
+    }
     for r in rows:
+        if r["key"] in ("admin_passkey_hash", "admin_passkey_salt", "razorpay_key_secret"):
+            continue
         val = r["value"]
         try:
             settings[r["key"]] = json.loads(val)
