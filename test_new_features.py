@@ -108,7 +108,7 @@ def main():
     assert status == 200 and me_res.get("ok") and me_res["user"]["email"] == test_email
     print(" [PASS] 8. GET /api/auth/me -> 200 OK (Session validated)")
 
-    # 9. Return Request Filing
+    # 9. Return Request Filing (Authenticated)
     status, ret_res = req("/api/customer/returns", "POST", {
         "order_id": "NAARI-20261029-SAMPLE",
         "customer_email": test_email,
@@ -116,8 +116,8 @@ def main():
         "item_name": "Gulmohar Straight Kurti",
         "action_type": "exchange",
         "reason": "Size is too large, need size M instead of L"
-    })
-    assert status == 200 and ret_res.get("ok")
+    }, headers={"Authorization": f"Bearer {token}"})
+    assert status == 200 and ret_res.get("ok"), f"Return filing failed: {ret_res}"
     print(f" [PASS] 9. POST /api/customer/returns -> 200 OK (Return ID: {ret_res['return_id']})")
 
     # 10. Admin Stats

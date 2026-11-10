@@ -423,11 +423,25 @@
       return 'http://localhost:8000' + cleanPath;
     }
 
+    const CHECKOUT_DRAFT_KEY = 'naari_checkout_draft_v1';
+
+    function buildCustomerFetchOptions(options = {}) {
+      const mergedHeaders = typeof getCustomerAuthHeaders === 'function'
+        ? getCustomerAuthHeaders(options.headers || {})
+        : { ...(options.headers || {}) };
+      return {
+        ...options,
+        headers: mergedHeaders,
+        credentials: options.credentials || 'same-origin'
+      };
+    }
+
     async function safeFetchJson(endpoint, options = {}) {
       const url = getApiUrl(endpoint);
+      const fetchOptions = buildCustomerFetchOptions(options);
       let res;
       try {
-        res = await fetch(url, options);
+        res = await fetch(url, fetchOptions);
       } catch (netErr) {
         throw new Error('Unable to connect to Naari API server. Please check your network connection or verify that the server is online.');
       }
@@ -451,6 +465,72 @@
       }
 
       return { res, data };
+    }
+
+    function saveCheckoutFormDraft() {
+      try {
+        const form = document.getElementById('checkout-form');
+        if (!form) return;
+        const draft = getCustomerFormData();
+        const hasAnyValue = Object.values(draft).some(v => Boolean(v));
+        if (hasAnyValue) {
+          sessionStorage.setItem(CHECKOUT_DRAFT_KEY, JSON.stringify(draft));
+        }
+      } catch (e) {}
+    }
+
+    function restoreCheckoutFormDraft() {
+      try {
+        const raw = sessionStorage.getItem(CHECKOUT_DRAFT_KEY);
+        if (!raw) return;
+        const draft = JSON.parse(raw);
+        if (!draft || typeof draft !== 'object') return;
+        const fieldMap = {
+          name: 'cust-name',
+          phone: 'cust-phone',
+          email: 'cust-email',
+          address_line1: 'cust-address1',
+          address_line2: 'cust-address2',
+          city: 'cust-city',
+          state: 'cust-state',
+          pincode: 'cust-pincode'
+        };
+        Object.entries(fieldMap).forEach(([key, id]) => {
+          const el = document.getElementById(id);
+          if (el && draft[key] && !el.value) {
+            el.value = draft[key];
+          }
+        });
+      } catch (e) {}
+    }
+
+    function redirectToLoginForCheckout() {
+      saveCheckoutFormDraft();
+      window.location.replace('account.html?redirect=checkout.html');
+    }
+
+    async function ensureCheckoutAuthenticated() {
+      const localSession = getUserSession();
+      try {
+        const { res, data } = await safeFetchJson('/api/auth/me', {
+          method: 'GET',
+          headers: getCustomerAuthHeaders(),
+          credentials: 'same-origin'
+        });
+        if (res.ok && data && data.ok && data.user) {
+          setUserSession((localSession && localSession.token) || '', data.user);
+          return data.user;
+        }
+        clearUserSession();
+        redirectToLoginForCheckout();
+        return null;
+      } catch (err) {
+        if (localSession && localSession.user && localSession.token) {
+          return localSession.user;
+        }
+        redirectToLoginForCheckout();
+        return null;
+      }
     }
 
     async function loadServerConfig() {
@@ -693,6 +773,13 @@
     async function handlePlaceOrder() {
       if (isOrderInFlight) return;
       hideError();
+
+      const session = getUserSession();
+      if (!session || !session.user) {
+        redirectToLoginForCheckout();
+        return;
+      }
+
       const cart = getCart();
       if (!cart || cart.length === 0) {
         showError('Your bag is empty.');
@@ -718,13 +805,20 @@
           const activeCoupon = getActiveCoupon();
           const { res, data } = await safeFetchJson('/api/create-cod-order', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: getCustomerAuthHeaders({ 'Content-Type': 'application/json' }),
+            credentials: 'same-origin',
             body: JSON.stringify({
               customer: customerData,
               items: cart,
               coupon_code: activeCoupon ? activeCoupon.code : ''
             })
           });
+
+          if (res.status === 401 || data?.auth_required) {
+            clearUserSession();
+            redirectToLoginForCheckout();
+            return;
+          }
 
           if (!res.ok || !data || !data.ok || !data.order_id) {
             throw new Error(data?.error || 'Failed to place COD order on server.');
@@ -736,6 +830,7 @@
           // Cache order details for confirmation page
           const confirmedOrder = {
             id: orderId,
+            user_id: session.user.id || null,
             customer_name: customerData.name,
             customer_phone: customerData.phone,
             customer_email: customerData.email,
@@ -756,6 +851,7 @@
           };
           try {
             localStorage.setItem('naari_last_order', JSON.stringify(confirmedOrder));
+            sessionStorage.removeItem(CHECKOUT_DRAFT_KEY);
           } catch (e) {}
 
           // Clear cart and active coupon on confirmed order
@@ -773,7 +869,8 @@
           const activeCoupon = getActiveCoupon();
           const { res: createRes, data: createData } = await safeFetchJson('/api/create-order', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: getCustomerAuthHeaders({ 'Content-Type': 'application/json' }),
+            credentials: 'same-origin',
             body: JSON.stringify({
               order_id: pendingOrderId || '',
               customer: customerData,
@@ -781,6 +878,12 @@
               coupon_code: activeCoupon ? activeCoupon.code : ''
             })
           });
+
+          if (createRes.status === 401 || createData?.auth_required) {
+            clearUserSession();
+            redirectToLoginForCheckout();
+            return;
+          }
 
           if (!createRes.ok || !createData || !createData.ok) {
             throw new Error(createData?.error || 'Could not initiate online payment.');
@@ -829,7 +932,8 @@
               ondismiss: function() {
                 safeFetchJson('/api/payment-failed', {
                   method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
+                  headers: getCustomerAuthHeaders({ 'Content-Type': 'application/json' }),
+                  credentials: 'same-origin',
                   body: JSON.stringify({
                     order_id: createData.order_id,
                     razorpay_order_id: rzpOrderId,
@@ -848,7 +952,8 @@
 
                 const { res: verifyRes, data: verifyData } = await safeFetchJson('/api/verify-payment', {
                   method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
+                  headers: getCustomerAuthHeaders({ 'Content-Type': 'application/json' }),
+                  credentials: 'same-origin',
                   body: JSON.stringify({
                     order_id: createData.order_id,
                     razorpay_order_id: response.razorpay_order_id,
@@ -863,6 +968,7 @@
 
                 const confirmedOrder = {
                   id: createData.order_id,
+                  user_id: session.user.id || null,
                   customer_name: customerData.name,
                   customer_phone: customerData.phone,
                   customer_email: customerData.email,
@@ -885,6 +991,7 @@
                 };
                 try {
                   localStorage.setItem('naari_last_order', JSON.stringify(confirmedOrder));
+                  sessionStorage.removeItem(CHECKOUT_DRAFT_KEY);
                 } catch (e) {}
 
                 localStorage.removeItem('naari_cart_v1');
@@ -903,7 +1010,8 @@
             const errDesc = response.error?.description || response.error?.message || 'Payment was declined.';
             safeFetchJson('/api/payment-failed', {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
+              headers: getCustomerAuthHeaders({ 'Content-Type': 'application/json' }),
+              credentials: 'same-origin',
               body: JSON.stringify({
                 order_id: createData.order_id,
                 razorpay_order_id: rzpOrderId,
@@ -921,10 +1029,107 @@
       }
     }
 
+    async function prefillAuthenticatedCustomer(user) {
+      if (!user) return;
+      const nameInput = document.getElementById('cust-name');
+      const emailInput = document.getElementById('cust-email');
+      const phoneInput = document.getElementById('cust-phone');
+
+      if (nameInput && !nameInput.value && user.name) {
+        nameInput.value = user.name;
+      }
+      if (emailInput && !emailInput.value && user.email) {
+        emailInput.value = user.email;
+      }
+      if (phoneInput && !phoneInput.value && user.phone) {
+        const cleanPhone = String(user.phone).replace(/[\s\-\+]/g, '').slice(-10);
+        if (/^\d{10}$/.test(cleanPhone)) {
+          phoneInput.value = cleanPhone;
+        } else {
+          phoneInput.value = user.phone;
+        }
+      }
+
+      restoreCheckoutFormDraft();
+
+      // Load saved addresses for 1-click fill (supports both Bearer token and HttpOnly cookie)
+      try {
+        const { res, data } = await safeFetchJson('/api/customer/addresses', {
+          method: 'GET',
+          headers: getCustomerAuthHeaders(),
+          credentials: 'same-origin'
+        });
+        if (res.ok && data && Array.isArray(data.addresses) && data.addresses.length > 0) {
+          const quickWrap = document.getElementById('saved-addresses-quickfill');
+          const chipsWrap = document.getElementById('saved-addresses-chips');
+          if (quickWrap && chipsWrap) {
+            quickWrap.classList.remove('hidden');
+            chipsWrap.innerHTML = data.addresses.map((addr, idx) => `
+              <button type="button" data-addr-idx="${idx}" class="saved-addr-chip text-left border border-border bg-background hover:border-primary px-3 py-2 rounded-xs text-xs transition cursor-pointer">
+                <span class="font-semibold text-foreground block">${addr.name} ${addr.is_default ? '<span class="text-[10px] text-primary">(Default)</span>' : ''}</span>
+                <span class="text-muted-foreground text-[11px] block">${addr.address_line1}, ${addr.city} - ${addr.pincode}</span>
+              </button>
+            `).join('');
+
+            const fillAddress = (addr) => {
+              if (nameInput) nameInput.value = addr.name || user.name || '';
+              if (phoneInput && (addr.phone || user.phone)) {
+                phoneInput.value = String(addr.phone || user.phone).replace(/[\s\-\+]/g, '').slice(-10) || addr.phone || user.phone || '';
+              }
+              const a1 = document.getElementById('cust-address1');
+              const a2 = document.getElementById('cust-address2');
+              const cityEl = document.getElementById('cust-city');
+              const stateEl = document.getElementById('cust-state');
+              const pinEl = document.getElementById('cust-pincode');
+              if (a1) a1.value = addr.address_line1 || '';
+              if (a2) a2.value = addr.address_line2 || '';
+              if (cityEl) cityEl.value = addr.city || '';
+              if (stateEl && addr.state) stateEl.value = addr.state;
+              if (pinEl) pinEl.value = addr.pincode || '';
+            };
+
+            // Auto-fill default address on load if address_line1 is not already filled
+            const a1El = document.getElementById('cust-address1');
+            const defAddr = data.addresses.find(a => a.is_default) || data.addresses[0];
+            if (defAddr && (!a1El || !a1El.value)) {
+              fillAddress(defAddr);
+            }
+
+            chipsWrap.querySelectorAll('.saved-addr-chip').forEach(btn => {
+              btn.addEventListener('click', () => {
+                const addr = data.addresses[Number(btn.dataset.addrIdx)];
+                if (addr) {
+                  fillAddress(addr);
+                  getToast().info('Delivery address filled!');
+                }
+              });
+            });
+          }
+        }
+      } catch (e) {}
+    }
+
     document.addEventListener('DOMContentLoaded', async () => {
+      // Immediately redirect logged-out customers opening checkout.html directly
+      const initialSession = getUserSession();
+      if (!initialSession || !initialSession.user) {
+        const mainGrid = document.getElementById('checkout-main-grid');
+        if (mainGrid) mainGrid.classList.add('hidden');
+      }
+
+      const authUser = await ensureCheckoutAuthenticated();
+      if (!authUser) return;
+
+      window.addEventListener('naari:authChanged', (e) => {
+        if (!e.detail || !e.detail.user) {
+          redirectToLoginForCheckout();
+        }
+      });
+
       await loadServerConfig();
       renderOrderSummary();
       setupPaymentMethodRadios();
+      await prefillAuthenticatedCustomer(authUser);
 
       const placeBtn = document.getElementById('place-order-btn');
       if (placeBtn) {
@@ -937,69 +1142,6 @@
           e.preventDefault();
           handlePlaceOrder();
         });
-      }
-
-      // Pre-fill user profile & saved addresses if logged in
-      const session = getUserSession();
-      if (session && session.user) {
-        const u = session.user;
-        const nameInput = document.getElementById('cust-name');
-        const emailInput = document.getElementById('cust-email');
-        const phoneInput = document.getElementById('cust-phone');
-        if (nameInput && !nameInput.value) nameInput.value = u.name || '';
-        if (emailInput && !emailInput.value) emailInput.value = u.email || '';
-        if (phoneInput && !phoneInput.value) phoneInput.value = u.phone || '';
-
-        // Load saved addresses for 1-click fill
-        if (session.token) {
-          try {
-            const { res, data } = await safeFetchJson('/api/customer/addresses', {
-              headers: { 'Authorization': `Bearer ${session.token}` }
-            });
-            if (res.ok && data && Array.isArray(data.addresses) && data.addresses.length > 0) {
-              const quickWrap = document.getElementById('saved-addresses-quickfill');
-              const chipsWrap = document.getElementById('saved-addresses-chips');
-              if (quickWrap && chipsWrap) {
-                quickWrap.classList.remove('hidden');
-                chipsWrap.innerHTML = data.addresses.map((addr, idx) => `
-                  <button type="button" data-addr-idx="${idx}" class="saved-addr-chip text-left border border-border bg-background hover:border-primary px-3 py-2 rounded-xs text-xs transition cursor-pointer">
-                    <span class="font-semibold text-foreground block">${addr.name} ${addr.is_default ? '<span class="text-[10px] text-primary">(Default)</span>' : ''}</span>
-                    <span class="text-muted-foreground text-[11px] block">${addr.address_line1}, ${addr.city} - ${addr.pincode}</span>
-                  </button>
-                `).join('');
-
-                const fillAddress = (addr) => {
-                  if (nameInput) nameInput.value = addr.name || u.name || '';
-                  if (phoneInput) phoneInput.value = addr.phone || u.phone || '';
-                  const a1 = document.getElementById('cust-address1');
-                  const a2 = document.getElementById('cust-address2');
-                  const cityEl = document.getElementById('cust-city');
-                  const stateEl = document.getElementById('cust-state');
-                  const pinEl = document.getElementById('cust-pincode');
-                  if (a1) a1.value = addr.address_line1 || '';
-                  if (a2) a2.value = addr.address_line2 || '';
-                  if (cityEl) cityEl.value = addr.city || '';
-                  if (stateEl && addr.state) stateEl.value = addr.state;
-                  if (pinEl) pinEl.value = addr.pincode || '';
-                };
-
-                // Auto-fill default address on load
-                const defAddr = data.addresses.find(a => a.is_default) || data.addresses[0];
-                if (defAddr) fillAddress(defAddr);
-
-                chipsWrap.querySelectorAll('.saved-addr-chip').forEach(btn => {
-                  btn.addEventListener('click', () => {
-                    const addr = data.addresses[Number(btn.dataset.addrIdx)];
-                    if (addr) {
-                      fillAddress(addr);
-                      getToast().info('Delivery address filled!');
-                    }
-                  });
-                });
-              }
-            }
-          } catch (e) {}
-        }
       }
 
       // Respect COD availability from serverConfig

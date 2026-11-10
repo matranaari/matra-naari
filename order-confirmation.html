@@ -215,6 +215,9 @@
           </a>
         </div>
       </div>
+    </section>
+  </main>
+
   <!-- Return & Exchange Modal -->
   <div id="return-modal" class="fixed inset-0 z-50 invisible opacity-0 transition-opacity duration-200 flex items-center justify-center p-4">
     <div id="return-modal-backdrop" class="drawer-backdrop absolute inset-0"></div>
@@ -319,11 +322,29 @@
       return 'http://localhost:8000' + cleanPath;
     }
 
+    function buildOrderAuthHeaders(extraHeaders = {}) {
+      const headers = typeof getCustomerAuthHeaders === 'function'
+        ? getCustomerAuthHeaders(extraHeaders)
+        : { ...extraHeaders };
+      try {
+        const adminToken = sessionStorage.getItem('naari_admin_token_v1') || '';
+        const adminPasskey = sessionStorage.getItem('naari_admin_passkey_v1') || '';
+        if (adminToken) headers['X-Admin-Token'] = adminToken;
+        if (adminPasskey) headers['X-Admin-Passkey'] = adminPasskey;
+      } catch (e) {}
+      return headers;
+    }
+
     async function safeFetchJson(endpoint, options = {}) {
       const url = getApiUrl(endpoint);
+      const fetchOptions = {
+        ...options,
+        headers: buildOrderAuthHeaders(options.headers || {}),
+        credentials: options.credentials || 'same-origin'
+      };
       let res;
       try {
-        res = await fetch(url, options);
+        res = await fetch(url, fetchOptions);
       } catch (netErr) {
         throw new Error('Unable to connect to Naari API server. Please check your network connection or verify that the server is online.');
       }
@@ -360,11 +381,55 @@
         return;
       }
 
+      let serverResponded = false;
       try {
-        const { res, data } = await safeFetchJson(`/api/order-details?order_id=${encodeURIComponent(orderId)}`);
+        const { res, data } = await safeFetchJson(`/api/order-details?order_id=${encodeURIComponent(orderId)}`, {
+          method: 'GET',
+          headers: buildOrderAuthHeaders(),
+          credentials: 'same-origin'
+        });
+        serverResponded = true;
+
+        if (res.status === 401) {
+          loadingEl.classList.add('hidden');
+          contentEl.classList.add('hidden');
+          const redirectUrl = `account.html?redirect=${encodeURIComponent('order-confirmation.html?order_id=' + orderId)}`;
+          errorEl.innerHTML = `
+            <p class="font-hand text-2xl text-primary">Login Required</p>
+            <p class="mt-2 text-sm text-muted-foreground">Please sign in to the customer account that placed this order to view confirmation details.</p>
+            <a href="${redirectUrl}"
+              class="mt-6 inline-block bg-primary px-7 py-3 text-sm uppercase tracking-[0.2em] text-primary-foreground hover:opacity-90 transition">
+              Login to View Order
+            </a>
+          `;
+          errorEl.classList.remove('hidden');
+          return;
+        }
+
+        if (res.status === 403) {
+          loadingEl.classList.add('hidden');
+          contentEl.classList.add('hidden');
+          errorEl.innerHTML = `
+            <p class="font-hand text-2xl text-destructive">Access Denied</p>
+            <p id="order-access-denied-msg" class="mt-2 text-sm text-muted-foreground"></p>
+            <a href="account.html"
+              class="mt-6 inline-block bg-primary px-7 py-3 text-sm uppercase tracking-[0.2em] text-primary-foreground hover:opacity-90 transition">
+              Go to My Account
+            </a>
+          `;
+          const deniedMsgEl = document.getElementById('order-access-denied-msg');
+          if (deniedMsgEl) {
+            deniedMsgEl.textContent = data?.error || 'You can only view order confirmations belonging to your own account.';
+          }
+          errorEl.classList.remove('hidden');
+          return;
+        }
 
         if (!res.ok || !data || !data.ok || !data.order) {
-          throw new Error(data?.error || 'Order details could not be found.');
+          loadingEl.classList.add('hidden');
+          contentEl.classList.add('hidden');
+          errorEl.classList.remove('hidden');
+          return;
         }
 
         const order = data.order;
@@ -511,17 +576,24 @@
         loadingEl.classList.add('hidden');
         contentEl.classList.remove('hidden');
       } catch (err) {
-        console.warn('Could not fetch from server, checking local order backup:', err);
-        try {
-          const cachedRaw = localStorage.getItem('naari_last_order');
-          if (cachedRaw) {
-            const cachedOrder = JSON.parse(cachedRaw);
-            if (cachedOrder && (cachedOrder.id === orderId || cachedOrder.order_id === orderId)) {
-              renderOrderFromData(cachedOrder);
-              return;
+        if (!serverResponded) {
+          console.warn('Could not reach server, checking authenticated local order backup:', err);
+          try {
+            const session = getUserSession();
+            const cachedRaw = localStorage.getItem('naari_last_order');
+            if (session && session.user && cachedRaw) {
+              const cachedOrder = JSON.parse(cachedRaw);
+              const ownsCachedOrder = cachedOrder &&
+                (cachedOrder.id === orderId || cachedOrder.order_id === orderId) &&
+                cachedOrder.user_id &&
+                Number(cachedOrder.user_id) === Number(session.user.id);
+              if (ownsCachedOrder) {
+                renderOrderFromData(cachedOrder);
+                return;
+              }
             }
-          }
-        } catch (storageErr) {}
+          } catch (storageErr) {}
+        }
 
         loadingEl.classList.add('hidden');
         errorEl.classList.remove('hidden');
@@ -653,10 +725,10 @@
           try {
             const { res, data } = await safeFetchJson('/api/customer/orders/cancel', {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
+              headers: buildOrderAuthHeaders({ 'Content-Type': 'application/json' }),
+              credentials: 'same-origin',
               body: JSON.stringify({
                 order_id: currentOrderForReturn.id || currentOrderForReturn.order_id,
-                customer_email: currentOrderForReturn.customer_email,
                 reason: 'Customer requested cancellation'
               })
             });
@@ -686,10 +758,10 @@
           try {
             const { res, data } = await safeFetchJson('/api/customer/returns', {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
+              headers: buildOrderAuthHeaders({ 'Content-Type': 'application/json' }),
+              credentials: 'same-origin',
               body: JSON.stringify({
                 order_id: currentOrderForReturn.id || currentOrderForReturn.order_id,
-                customer_email: currentOrderForReturn.customer_email,
                 customer_phone: currentOrderForReturn.customer_phone,
                 item_name: itemName,
                 action_type: actionType,

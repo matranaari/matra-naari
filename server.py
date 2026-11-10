@@ -1117,9 +1117,7 @@ def get_current_user():
     if auth_header.startswith("Bearer "):
         token = auth_header[7:].strip()
     elif "user_token" in request.cookies:
-        token = request.cookies.get("user_token")
-    elif request.args.get("token"):
-        token = request.args.get("token").strip()
+        token = (request.cookies.get("user_token") or "").strip()
 
     if not token:
         return None
@@ -1135,6 +1133,34 @@ def get_current_user():
     user = c.fetchone()
     conn.close()
     return dict(user) if user else None
+
+
+def user_owns_order(user, order_row):
+    if not user or not order_row:
+        return False
+    order_user_id = str(order_row.get("user_id") or "").strip()
+    if order_user_id:
+        return order_user_id == str(user.get("id") or "").strip()
+    order_email = str(order_row.get("customer_email") or "").strip().lower()
+    user_email = str(user.get("email") or "").strip().lower()
+    return bool(order_email and user_email and order_email == user_email)
+
+
+def set_customer_auth_cookie(resp, token):
+    is_https = bool(
+        request.is_secure
+        or request.headers.get("X-Forwarded-Proto", "").lower() == "https"
+    )
+    resp.set_cookie(
+        "user_token",
+        token,
+        max_age=30 * 86400,
+        httponly=True,
+        secure=is_https,
+        samesite="Lax",
+        path="/"
+    )
+    return resp
 
 def get_expected_admin_passkey():
     for env_name in ("ADMIN_SECRET_KEY", "ADMIN_PASSKEY", "ADMIN_PASSWORD"):
@@ -1668,18 +1694,27 @@ def api_auth_register():
     phone = str(data.get("phone", "")).strip()
     password = str(data.get("password", "")).strip()
 
+    if "@" not in email or "." not in email or len(email) < 5:
+        return jsonify({"ok": False, "error": "Please enter a valid email address."}), 400
+    if not name:
+        name = email.split("@")[0].replace(".", " ").replace("_", " ").title()
     if len(name) < 2:
         return jsonify({"ok": False, "error": "Please enter your name."}), 400
-    if "@" not in email or "." not in email:
-        return jsonify({"ok": False, "error": "Please enter a valid email address."}), 400
-    if len(phone) < 10:
-        return jsonify({"ok": False, "error": "Please enter a valid 10-digit mobile number."}), 400
+    if phone:
+        clean_phone = phone.replace(" ", "").replace("-", "")
+        if clean_phone.startswith("+91"):
+            clean_phone = clean_phone[3:]
+        elif clean_phone.startswith("91") and len(clean_phone) == 12:
+            clean_phone = clean_phone[2:]
+        if not (clean_phone.isdigit() and len(clean_phone) == 10):
+            return jsonify({"ok": False, "error": "Please enter a valid 10-digit mobile number."}), 400
+        phone = clean_phone
     if len(password) < 6:
         return jsonify({"ok": False, "error": "Password must be at least 6 characters long."}), 400
 
     conn = get_db()
     c = conn.cursor()
-    c.execute("SELECT id FROM users WHERE email = ?", (email,))
+    c.execute("SELECT id FROM users WHERE LOWER(email) = ?", (email,))
     if c.fetchone():
         conn.close()
         return jsonify({"ok": False, "error": "An account with this email already exists. Please log in."}), 400
@@ -1693,6 +1728,13 @@ def api_auth_register():
         VALUES (?, ?, ?, ?, ?, ?, ?)
     """, (user_id, name, email, phone, pw_hash, salt, now_iso))
 
+    # Associate any pre-existing unlinked orders placed with this email
+    c.execute("""
+        UPDATE orders
+        SET user_id = ?
+        WHERE (user_id IS NULL OR user_id = '') AND LOWER(customer_email) = ?
+    """, (user_id, email))
+
     token = secrets.token_hex(32)
     expires = (datetime.now() + timedelta(days=30)).isoformat()
     c.execute("INSERT INTO user_sessions (token, user_id, created_at, expires_at) VALUES (?, ?, ?, ?)",
@@ -1700,7 +1742,7 @@ def api_auth_register():
     conn.commit()
     conn.close()
 
-    return jsonify({
+    resp = jsonify({
         "ok": True,
         "token": token,
         "user": {
@@ -1710,6 +1752,7 @@ def api_auth_register():
             "phone": phone
         }
     })
+    return set_customer_auth_cookie(resp, token)
 
 @app.route("/api/auth/login", methods=["POST"])
 def api_auth_login():
@@ -1722,27 +1765,28 @@ def api_auth_login():
 
     conn = get_db()
     c = conn.cursor()
-    c.execute("SELECT * FROM users WHERE email = ?", (email,))
+    c.execute("SELECT * FROM users WHERE LOWER(email) = ?", (email,))
     row = c.fetchone()
 
     if not row:
         conn.close()
-        return jsonify({"ok": False, "error": "No account found with this email."}), 400
+        return jsonify({"ok": False, "error": "Invalid email or password."}), 401
 
     user = dict(row)
     if not verify_password(password, user["salt"], user["password_hash"]):
         conn.close()
-        return jsonify({"ok": False, "error": "Incorrect password. Please try again."}), 400
+        return jsonify({"ok": False, "error": "Invalid email or password."}), 401
 
     token = secrets.token_hex(32)
     now_iso = datetime.now().isoformat()
     expires = (datetime.now() + timedelta(days=30)).isoformat()
+    c.execute("DELETE FROM user_sessions WHERE expires_at <= ?", (now_iso,))
     c.execute("INSERT INTO user_sessions (token, user_id, created_at, expires_at) VALUES (?, ?, ?, ?)",
               (token, user["id"], now_iso, expires))
     conn.commit()
     conn.close()
 
-    return jsonify({
+    resp = jsonify({
         "ok": True,
         "token": token,
         "user": {
@@ -1752,6 +1796,7 @@ def api_auth_login():
             "phone": user["phone"]
         }
     })
+    return set_customer_auth_cookie(resp, token)
 
 @app.route("/api/auth/logout", methods=["POST"])
 def api_auth_logout():
@@ -1763,7 +1808,9 @@ def api_auth_logout():
         c.execute("DELETE FROM user_sessions WHERE token = ?", (token,))
         conn.commit()
         conn.close()
-    return jsonify({"ok": True, "message": "Logged out successfully."})
+    resp = jsonify({"ok": True, "message": "Logged out successfully."})
+    resp.delete_cookie("user_token", path="/", samesite="Lax")
+    return resp
 
 @app.route("/api/auth/me", methods=["GET"])
 def api_auth_me():
@@ -1779,9 +1826,18 @@ def api_auth_profile():
         return jsonify({"ok": False, "error": "Unauthorized"}), 401
     data = request.get_json(silent=True) or {}
     name = str(data.get("name", "")).strip() or user["name"]
-    phone = str(data.get("phone", "")).strip() or user["phone"]
-    if len(name) < 2 or len(phone) < 10:
-        return jsonify({"ok": False, "error": "Please enter a valid name and 10-digit mobile number."}), 400
+    phone = str(data.get("phone", "")).strip() if "phone" in data else user["phone"]
+    if len(name) < 2:
+        return jsonify({"ok": False, "error": "Please enter a valid name."}), 400
+    if phone:
+        clean_phone = phone.replace(" ", "").replace("-", "")
+        if clean_phone.startswith("+91"):
+            clean_phone = clean_phone[3:]
+        elif clean_phone.startswith("91") and len(clean_phone) == 12:
+            clean_phone = clean_phone[2:]
+        if not (clean_phone.isdigit() and len(clean_phone) == 10):
+            return jsonify({"ok": False, "error": "Please enter a valid 10-digit mobile number."}), 400
+        phone = clean_phone
     conn = get_db()
     c = conn.cursor()
     c.execute("UPDATE users SET name = ?, phone = ? WHERE id = ?", (name, phone, user["id"]))
@@ -1845,18 +1901,21 @@ def api_customer_address_delete(aid):
 @app.route("/api/customer/orders", methods=["GET"])
 def api_customer_orders():
     user = get_current_user()
-    email = user["email"] if user else request.args.get("email", "").strip().lower()
-
-    if not email:
-        return jsonify({"ok": False, "error": "Email is required to retrieve orders."}), 400
+    if not user:
+        return jsonify({
+            "ok": False,
+            "error": "Authentication required. Please log in to view your orders.",
+            "auth_required": True
+        }), 401
 
     conn = get_db()
     c = conn.cursor()
     c.execute("""
         SELECT * FROM orders
-        WHERE LOWER(customer_email) = ?
+        WHERE user_id = ?
+           OR ((user_id IS NULL OR user_id = '') AND LOWER(customer_email) = LOWER(?))
         ORDER BY created_at DESC
-    """, (email,))
+    """, (user["id"], user["email"]))
     rows = c.fetchall()
     conn.close()
 
@@ -1864,17 +1923,24 @@ def api_customer_orders():
     for r in rows:
         od = dict(r)
         od["items"] = json.loads(od.pop("items_json", "[]"))
+        od.pop("razorpay_signature", None)
         orders.append(od)
 
     return jsonify({"ok": True, "orders": orders})
 
 @app.route("/api/customer/orders/cancel", methods=["POST"])
 def api_customer_order_cancel():
+    user = get_current_user()
+    if not user:
+        return jsonify({
+            "ok": False,
+            "error": "Authentication required. Please log in to manage your orders.",
+            "auth_required": True
+        }), 401
+
     data = request.get_json(silent=True) or {}
     order_id = str(data.get("order_id", "")).strip()
     reason = str(data.get("reason", "Cancelled by customer")).strip()
-    user = get_current_user()
-    email = user["email"] if user else str(data.get("customer_email", "")).strip().lower()
 
     if not order_id:
         return jsonify({"ok": False, "error": "Order ID is required."}), 400
@@ -1888,9 +1954,9 @@ def api_customer_order_cancel():
         return jsonify({"ok": False, "error": "Order not found."}), 404
 
     od = dict(row)
-    if email and od["customer_email"].lower() != email.lower():
+    if not user_owns_order(user, od):
         conn.close()
-        return jsonify({"ok": False, "error": "Order email does not match."}), 403
+        return jsonify({"ok": False, "error": "Access denied. You can only cancel your own orders."}), 403
 
     curr_status = (od.get("order_status") or "confirmed").lower()
     if curr_status in ("shipped", "out_for_delivery", "delivered", "cancelled"):
@@ -1910,24 +1976,38 @@ def api_customer_order_cancel():
 
 @app.route("/api/customer/returns", methods=["POST", "GET"])
 def api_customer_returns():
+    user = get_current_user()
+    if not user:
+        return jsonify({
+            "ok": False,
+            "error": "Authentication required. Please log in to access returns and exchanges.",
+            "auth_required": True
+        }), 401
+
     if request.method == "POST":
         data = request.get_json(silent=True) or {}
         order_id = str(data.get("order_id", "")).strip()
-        email = str(data.get("customer_email", "")).strip().lower()
-        phone = str(data.get("customer_phone", "")).strip()
+        email = user["email"].strip().lower()
+        phone = str(data.get("customer_phone") or user.get("phone") or "").strip()
         item_name = str(data.get("item_name", "")).strip()
         action_type = str(data.get("action_type") or data.get("request_type") or "return").strip().lower()
         reason = str(data.get("reason", "")).strip()
         notes = str(data.get("notes") or data.get("details") or "").strip()
 
-        if not order_id or not email or not reason or not item_name:
-            return jsonify({"ok": False, "error": "Please provide Order ID, email, item, and return reason."}), 400
+        if not order_id or not reason or not item_name:
+            return jsonify({"ok": False, "error": "Please provide Order ID, item, and return reason."}), 400
+
+        conn = get_db()
+        c = conn.cursor()
+        c.execute("SELECT * FROM orders WHERE id = ?", (order_id,))
+        ord_row = c.fetchone()
+        if ord_row and not user_owns_order(user, dict(ord_row)):
+            conn.close()
+            return jsonify({"ok": False, "error": "Access denied. You can only request returns for your own orders."}), 403
 
         ret_id = f"RET-{datetime.now().strftime('%Y%m%d')}-{secrets.token_hex(2).upper()}"
         now_iso = datetime.now().isoformat()
 
-        conn = get_db()
-        c = conn.cursor()
         c.execute("""
             INSERT INTO return_requests (id, order_id, customer_email, customer_phone, item_name, action_type, reason, notes, status, created_at, updated_at)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?)
@@ -1942,18 +2022,14 @@ def api_customer_returns():
             "message": f"Your {action_type} request ({ret_id}) has been submitted. Our concierge will review it within 24 hours."
         })
 
-    # GET requests for a customer
-    email = request.args.get("email", "").strip().lower()
-    user = get_current_user()
-    if user:
-        email = user["email"]
-
-    if not email:
-        return jsonify({"ok": False, "error": "Customer email is required."}), 400
-
     conn = get_db()
     c = conn.cursor()
-    c.execute("SELECT * FROM return_requests WHERE LOWER(customer_email) = ? ORDER BY created_at DESC", (email,))
+    c.execute("""
+        SELECT * FROM return_requests
+        WHERE LOWER(customer_email) = LOWER(?)
+           OR order_id IN (SELECT id FROM orders WHERE user_id = ?)
+        ORDER BY created_at DESC
+    """, (user["email"], user["id"]))
     rows = []
     for r in c.fetchall():
         d = dict(r)
@@ -1967,11 +2043,26 @@ def api_customer_returns():
 
 @app.route("/api/create-order", methods=["POST"])
 def api_create_order():
+    user = get_current_user()
+    if not user:
+        return jsonify({
+            "ok": False,
+            "error": "Please log in or sign up before placing an order.",
+            "auth_required": True
+        }), 401
+
     data = request.get_json(silent=True)
     if not data:
         return jsonify({"ok": False, "error": "Invalid request body (JSON expected)"}), 400
 
-    cust = data.get("customer", {})
+    cust = dict(data.get("customer") or {})
+    if not cust.get("name") and user.get("name"):
+        cust["name"] = user["name"]
+    if not cust.get("email") and user.get("email"):
+        cust["email"] = user["email"]
+    if not cust.get("phone") and user.get("phone"):
+        cust["phone"] = user["phone"]
+
     err = validate_customer_info(cust)
     if err:
         return jsonify({"ok": False, "error": err}), 400
@@ -1984,20 +2075,19 @@ def api_create_order():
     cfg = load_config()
     configured = is_razorpay_configured(cfg)
     amount_paise = int(calc["total_amount"]) * 100
-    user = get_current_user()
-    user_id = user["id"] if user else None
+    user_id = user["id"]
     items_json_str = json.dumps(calc["items"])
 
-    # Check if an existing pending order was passed for retry or if a duplicate request arrived within 15 seconds
+    # Check if an existing pending order owned by this user was passed for retry
     existing_order_id = str(data.get("order_id", "")).strip()
     order_id = None
     if existing_order_id:
         conn = get_db()
         c = conn.cursor()
-        c.execute("SELECT id, payment_status, razorpay_order_id, total_amount FROM orders WHERE id = ?", (existing_order_id,))
+        c.execute("SELECT id, user_id, customer_email, payment_status, razorpay_order_id, total_amount FROM orders WHERE id = ?", (existing_order_id,))
         existing_row = c.fetchone()
         conn.close()
-        if existing_row and existing_row["payment_status"] in ("pending", "failed", "cancelled"):
+        if existing_row and user_owns_order(user, dict(existing_row)) and existing_row["payment_status"] in ("pending", "failed", "cancelled"):
             order_id = existing_row["id"]
 
     if not order_id:
@@ -2129,6 +2219,14 @@ def api_create_order():
 
 @app.route("/api/verify-payment", methods=["POST"])
 def api_verify_payment():
+    user = get_current_user()
+    if not user:
+        return jsonify({
+            "ok": False,
+            "error": "Authentication required to verify payment.",
+            "auth_required": True
+        }), 401
+
     data = request.get_json(silent=True)
     if not data:
         return jsonify({"ok": False, "error": "Invalid request body (JSON expected)"}), 400
@@ -2171,6 +2269,10 @@ def api_verify_payment():
     if not ord_row:
         conn.close()
         return jsonify({"ok": False, "error": "Order not found for verification."}), 404
+
+    if not user_owns_order(user, dict(ord_row)):
+        conn.close()
+        return jsonify({"ok": False, "error": "Access denied. This order belongs to another customer."}), 403
 
     stored_order_id = ord_row["id"]
     stored_rzp_order_id = (ord_row["razorpay_order_id"] or "").strip()
@@ -2259,6 +2361,14 @@ def api_verify_payment():
 
 @app.route("/api/payment-failed", methods=["POST"])
 def api_payment_failed():
+    user = get_current_user()
+    if not user:
+        return jsonify({
+            "ok": False,
+            "error": "Authentication required.",
+            "auth_required": True
+        }), 401
+
     data = request.get_json(silent=True) or {}
     order_id = str(data.get("order_id", "")).strip()
     rzp_order_id = str(data.get("razorpay_order_id", "")).strip()
@@ -2270,13 +2380,31 @@ def api_payment_failed():
 
     conn = get_db()
     c = conn.cursor()
+    if order_id:
+        c.execute("SELECT * FROM orders WHERE id = ?", (order_id,))
+    else:
+        c.execute("SELECT * FROM orders WHERE razorpay_order_id = ?", (rzp_order_id,))
+    ord_row = c.fetchone()
+    if ord_row and not user_owns_order(user, dict(ord_row)):
+        conn.close()
+        return jsonify({"ok": False, "error": "Access denied."}), 403
+
+    target_id = ord_row["id"] if ord_row else order_id
     # Never overwrite an order that has already been verified as paid
-    c.execute("""
-        UPDATE orders
-        SET payment_status = ?,
-            updated_at = ?
-        WHERE (id = ? OR razorpay_order_id = ?) AND payment_status != 'paid'
-    """, (status_val, datetime.now().isoformat(), order_id, rzp_order_id))
+    if target_id:
+        c.execute("""
+            UPDATE orders
+            SET payment_status = ?,
+                updated_at = ?
+            WHERE id = ? AND payment_status != 'paid'
+        """, (status_val, datetime.now().isoformat(), target_id))
+    else:
+        c.execute("""
+            UPDATE orders
+            SET payment_status = ?,
+                updated_at = ?
+            WHERE razorpay_order_id = ? AND payment_status != 'paid'
+        """, (status_val, datetime.now().isoformat(), rzp_order_id))
     conn.commit()
     conn.close()
 
@@ -2289,6 +2417,14 @@ def api_payment_failed():
 
 @app.route("/api/create-cod-order", methods=["POST"])
 def api_create_cod_order():
+    user = get_current_user()
+    if not user:
+        return jsonify({
+            "ok": False,
+            "error": "Please log in or sign up before placing an order.",
+            "auth_required": True
+        }), 401
+
     data = request.get_json(silent=True)
     if not data:
         return jsonify({"ok": False, "error": "Invalid request body (JSON expected)"}), 400
@@ -2297,7 +2433,14 @@ def api_create_cod_order():
     if not cfg.get("cod_enabled", True):
         return jsonify({"ok": False, "error": "Cash on Delivery is currently disabled. Please use online payment."}), 400
 
-    cust = data.get("customer", {})
+    cust = dict(data.get("customer") or {})
+    if not cust.get("name") and user.get("name"):
+        cust["name"] = user["name"]
+    if not cust.get("email") and user.get("email"):
+        cust["email"] = user["email"]
+    if not cust.get("phone") and user.get("phone"):
+        cust["phone"] = user["phone"]
+
     err = validate_customer_info(cust)
     if err:
         return jsonify({"ok": False, "error": err}), 400
@@ -2309,8 +2452,7 @@ def api_create_cod_order():
 
     order_id = generate_order_id()
     now_iso = datetime.now().isoformat()
-    user = get_current_user()
-    user_id = user["id"] if user else None
+    user_id = user["id"]
 
     conn = get_db()
     c = conn.cursor()
@@ -2369,6 +2511,15 @@ def api_create_cod_order():
 
 @app.route("/api/order-details", methods=["GET"])
 def api_order_details():
+    user = get_current_user()
+    is_admin = check_admin_auth()
+    if not user and not is_admin:
+        return jsonify({
+            "ok": False,
+            "error": "Authentication required. Please log in to view order details.",
+            "auth_required": True
+        }), 401
+
     order_id = request.args.get("order_id", "").strip()
     if not order_id:
         return jsonify({"ok": False, "error": "Order ID is required"}), 400
@@ -2376,7 +2527,7 @@ def api_order_details():
     conn = get_db()
     c = conn.cursor()
     c.execute("""
-        SELECT id, customer_name, customer_email, customer_phone,
+        SELECT id, user_id, customer_name, customer_email, customer_phone,
                address_line1, address_line2, city, state, pincode,
                payment_method, payment_status, order_status, tracking_number, courier_partner,
                razorpay_order_id, razorpay_payment_id, subtotal, shipping, discount_amount, coupon_code,
@@ -2390,6 +2541,12 @@ def api_order_details():
         return jsonify({"ok": False, "error": f"Order not found: {order_id}"}), 404
 
     order_dict = dict(row)
+    if not is_admin and not user_owns_order(user, order_dict):
+        return jsonify({
+            "ok": False,
+            "error": "Access denied. You do not have permission to view this order."
+        }), 403
+
     order_dict["items"] = json.loads(order_dict.pop("items_json", "[]"))
     return jsonify({"ok": True, "order": order_dict})
 

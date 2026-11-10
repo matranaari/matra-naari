@@ -153,6 +153,15 @@ function formatPrice(amount) {
   return '₹' + Math.round(amount || 0).toLocaleString('en-IN');
 }
 
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 // ================= Toast Notification System =================
 class ToastManager {
   constructor() {
@@ -176,7 +185,14 @@ class ToastManager {
     } translate-y-4 opacity-0`;
 
     const icon = type === 'error' ? '⚠ ' : type === 'success' ? '✓ ' : '✿ ';
-    toast.innerHTML = `<span class="shrink-0 text-base font-bold">${icon}</span><span class="flex-1 font-medium">${message}</span>`;
+    const iconSpan = document.createElement('span');
+    iconSpan.className = 'shrink-0 text-base font-bold';
+    iconSpan.textContent = icon;
+    const msgSpan = document.createElement('span');
+    msgSpan.className = 'flex-1 font-medium';
+    msgSpan.textContent = String(message ?? '');
+    toast.appendChild(iconSpan);
+    toast.appendChild(msgSpan);
     this.container.appendChild(toast);
 
     requestAnimationFrame(() => {
@@ -522,13 +538,78 @@ function setUserSession(token, user) {
     localStorage.setItem(USER_STORAGE_KEY, JSON.stringify({ token, user }));
   } catch (e) {}
   updateHeaderBadges();
+  window.dispatchEvent(new CustomEvent('naari:authChanged', { detail: { user } }));
 }
 
 function clearUserSession() {
   try {
     localStorage.removeItem(USER_STORAGE_KEY);
+    localStorage.removeItem('naari_last_order');
   } catch (e) {}
   updateHeaderBadges();
+  window.dispatchEvent(new CustomEvent('naari:authChanged', { detail: { user: null } }));
+}
+
+function getCustomerAuthHeaders(extraHeaders = {}) {
+  const headers = { ...extraHeaders };
+  const session = getUserSession();
+  if (session && session.token) {
+    headers['Authorization'] = `Bearer ${session.token}`;
+  }
+  return headers;
+}
+
+function navigateToCheckout(e) {
+  const session = getUserSession();
+  if (!session || !session.user) {
+    if (e && typeof e.preventDefault === 'function') e.preventDefault();
+    window.location.href = 'account.html?redirect=checkout.html';
+    return false;
+  }
+  return true;
+}
+
+async function logoutCustomer(redirectUrl = '') {
+  try {
+    await fetch(`${API_BASE}/api/auth/logout`, {
+      method: 'POST',
+      headers: getCustomerAuthHeaders({ 'Content-Type': 'application/json' }),
+      credentials: 'same-origin'
+    });
+  } catch (e) {}
+  clearUserSession();
+  getToast().info('You have been signed out.');
+  const path = (window.location.pathname || '').toLowerCase();
+  if (redirectUrl) {
+    window.location.href = redirectUrl;
+  } else if (path.endsWith('checkout.html') || path.endsWith('/checkout')) {
+    window.location.href = 'account.html?redirect=checkout.html';
+  } else if (path.endsWith('order-confirmation.html') || path.endsWith('/order-confirmation')) {
+    window.location.reload();
+  } else if (path.endsWith('account.html') || path.endsWith('/account')) {
+    window.location.reload();
+  }
+}
+
+async function syncCustomerSessionWithServer() {
+  const session = getUserSession();
+  try {
+    const res = await fetch(`${API_BASE}/api/auth/me`, {
+      method: 'GET',
+      headers: getCustomerAuthHeaders(),
+      credentials: 'same-origin'
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (data && data.ok && data.user) {
+        setUserSession((session && session.token) || '', data.user);
+        return data.user;
+      }
+    } else if (res.status === 401 && session) {
+      clearUserSession();
+    }
+  } catch (e) {}
+  return session ? session.user : null;
 }
 
 // ================= Active Coupon State =================
@@ -558,6 +639,10 @@ function updateHeaderBadges() {
   const bagCount = getCartCount();
   const wishCount = getWishlist().length;
   const userSession = getUserSession();
+  const isLoggedIn = Boolean(userSession && userSession.user);
+  const firstName = isLoggedIn && userSession.user.name
+    ? userSession.user.name.trim().split(/\s+/)[0]
+    : 'Account';
 
   // Bag counters
   document.querySelectorAll('.bag-count-badge, #header-bag-count').forEach(b => {
@@ -571,14 +656,88 @@ function updateHeaderBadges() {
     b.style.display = wishCount > 0 ? 'inline-flex' : 'none';
   });
 
-  // User label
+  // User label (visible on desktop & mobile)
   document.querySelectorAll('.header-user-label').forEach(el => {
-    if (userSession && userSession.user && userSession.user.name) {
-      el.textContent = userSession.user.name.split(' ')[0];
+    el.classList.remove('hidden', 'sm:inline');
+    el.classList.add('inline');
+    if (isLoggedIn) {
+      el.textContent = `Account (${firstName})`;
     } else {
-      el.textContent = 'Account';
+      el.textContent = 'Login / Sign Up';
     }
   });
+
+  // Header Logout quick button next to account button when logged in
+  document.querySelectorAll('.open-auth-modal-btn').forEach(btn => {
+    btn.setAttribute('aria-label', isLoggedIn ? `Account (${firstName})` : 'Login / Sign Up');
+    let logoutBtn = btn.parentElement ? btn.parentElement.querySelector('.header-logout-btn') : null;
+    if (isLoggedIn) {
+      if (!logoutBtn && btn.parentElement) {
+        logoutBtn = document.createElement('button');
+        logoutBtn.type = 'button';
+        logoutBtn.className = 'header-logout-btn text-[11px] font-sans uppercase tracking-wider text-muted-foreground hover:text-destructive transition cursor-pointer px-1.5 py-1 border-l border-border/60';
+        logoutBtn.textContent = 'Logout';
+        logoutBtn.title = 'Sign Out';
+        logoutBtn.addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          logoutCustomer();
+        });
+        btn.insertAdjacentElement('afterend', logoutBtn);
+      }
+    } else if (logoutBtn) {
+      logoutBtn.remove();
+    }
+  });
+
+  // Mobile navigation drawer auth card
+  const mobileAuthBox = document.getElementById('mobile-nav-auth-section');
+  if (mobileAuthBox) {
+    if (isLoggedIn) {
+      mobileAuthBox.innerHTML = `
+        <div class="bg-primary/5 border border-primary/20 p-3.5 rounded-xs space-y-2">
+          <div>
+            <p class="text-[10px] uppercase tracking-widest text-primary font-semibold">Signed In</p>
+            <p id="mobile-auth-user-name" class="font-display text-base font-semibold text-foreground truncate"></p>
+            <p id="mobile-auth-user-email" class="text-[11px] text-muted-foreground truncate"></p>
+          </div>
+          <div class="grid grid-cols-2 gap-2 pt-1">
+            <a href="account.html" class="bg-primary text-primary-foreground text-center py-2 text-[11px] uppercase tracking-wider font-medium hover:opacity-90 transition">My Account</a>
+            <button type="button" id="mobile-drawer-logout-btn" class="border border-border bg-background text-foreground text-center py-2 text-[11px] uppercase tracking-wider hover:border-destructive hover:text-destructive transition cursor-pointer">Logout</button>
+          </div>
+        </div>
+      `;
+      const mobNameEl = document.getElementById('mobile-auth-user-name');
+      const mobEmailEl = document.getElementById('mobile-auth-user-email');
+      if (mobNameEl) mobNameEl.textContent = `Account (${userSession.user.name || userSession.user.email || ''})`;
+      if (mobEmailEl) mobEmailEl.textContent = userSession.user.email || '';
+      const mobLogoutBtn = document.getElementById('mobile-drawer-logout-btn');
+      if (mobLogoutBtn) {
+        mobLogoutBtn.addEventListener('click', () => {
+          closeMobileNavDrawer();
+          logoutCustomer();
+        });
+      }
+    } else {
+      mobileAuthBox.innerHTML = `
+        <div class="bg-primary/5 border border-primary/20 p-3.5 rounded-xs space-y-2">
+          <p class="font-display text-base font-semibold text-foreground">Welcome to Matra Naari</p>
+          <p class="text-[11px] text-muted-foreground">Sign in or create an account to place orders and track deliveries.</p>
+          <div class="grid grid-cols-2 gap-2 pt-1">
+            <a href="account.html" class="bg-primary text-primary-foreground text-center py-2 text-[11px] uppercase tracking-wider font-medium hover:opacity-90 transition">Login / Sign Up</a>
+            <button type="button" id="mobile-drawer-modal-login-btn" class="border border-primary text-primary text-center py-2 text-[11px] uppercase tracking-wider hover:bg-primary/5 transition cursor-pointer">Quick Sign In</button>
+          </div>
+        </div>
+      `;
+      const quickBtn = document.getElementById('mobile-drawer-modal-login-btn');
+      if (quickBtn) {
+        quickBtn.addEventListener('click', () => {
+          closeMobileNavDrawer();
+          openAuthModal('login');
+        });
+      }
+    }
+  }
 }
 
 // Backwards-compatible alias used by checkout.html
@@ -586,26 +745,45 @@ function updateHeaderBagCount() {
   updateHeaderBadges();
 }
 
-// Ensure every storefront header has a mobile hamburger trigger on < 768px screens
+// Ensure every storefront header has a mobile hamburger trigger on < 768px screens and a Login / Sign Up / Account trigger
 function ensureMobileMenuTriggerInHeader() {
   const headerContainer = document.querySelector('header > div');
   if (!headerContainer) return;
-  if (headerContainer.querySelector('.open-mobile-menu-btn')) return;
 
-  const firstLink = headerContainer.querySelector('a[href*="index.html"], a[href="/"]');
-  if (!firstLink) return;
+  if (!headerContainer.querySelector('.open-mobile-menu-btn')) {
+    const firstLink = headerContainer.querySelector('a[href*="index.html"], a[href="/"]');
+    if (firstLink) {
+      const leftWrap = document.createElement('div');
+      leftWrap.className = 'flex items-center gap-2';
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'open-mobile-menu-btn md:hidden p-2 -ml-2 text-foreground hover:text-primary transition cursor-pointer';
+      btn.setAttribute('aria-label', 'Open Navigation Menu');
+      btn.innerHTML = `<svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M4 6h16M4 12h16M4 18h16"/></svg>`;
 
-  const leftWrap = document.createElement('div');
-  leftWrap.className = 'flex items-center gap-2';
-  const btn = document.createElement('button');
-  btn.type = 'button';
-  btn.className = 'open-mobile-menu-btn md:hidden p-2 -ml-2 text-foreground hover:text-primary transition cursor-pointer';
-  btn.setAttribute('aria-label', 'Open Navigation Menu');
-  btn.innerHTML = `<svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M4 6h16M4 12h16M4 18h16"/></svg>`;
+      headerContainer.insertBefore(leftWrap, firstLink);
+      leftWrap.appendChild(btn);
+      leftWrap.appendChild(firstLink);
+    }
+  }
 
-  headerContainer.insertBefore(leftWrap, firstLink);
-  leftWrap.appendChild(btn);
-  leftWrap.appendChild(firstLink);
+  // Ensure every page header has the Login / Sign Up / Account button
+  if (!headerContainer.querySelector('.open-auth-modal-btn')) {
+    const targetNav = headerContainer.querySelector('nav') || headerContainer.lastElementChild;
+    if (targetNav) {
+      const authBtn = document.createElement('button');
+      authBtn.type = 'button';
+      authBtn.className = 'open-auth-modal-btn p-1.5 text-foreground/85 hover:text-primary transition flex items-center gap-1.5 cursor-pointer font-sans text-xs font-medium';
+      authBtn.setAttribute('aria-label', 'Login / Sign Up');
+      authBtn.innerHTML = `
+        <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+        </svg>
+        <span class="header-user-label inline text-xs font-sans font-medium text-foreground/85">Login / Sign Up</span>
+      `;
+      targetNav.insertBefore(authBtn, targetNav.firstElementChild);
+    }
+  }
 }
 
 // ================= Global Shell: Announcement, Drawers, Modals =================
@@ -634,6 +812,9 @@ function injectGlobalStorefrontShell() {
         </div>
 
         <div class="flex-1 overflow-y-auto px-5 py-4 space-y-5">
+          <!-- Mobile Customer Auth Section (Login / Sign Up or Account / Logout) -->
+          <div id="mobile-nav-auth-section"></div>
+
           <div class="space-y-1">
             <p class="text-[10px] uppercase tracking-[0.2em] text-muted-foreground font-semibold mb-2">Explore Store</p>
             <a href="index.html" class="flex items-center justify-between py-2.5 text-sm font-medium border-b border-border/50 hover:text-primary">Home <span>→</span></a>
@@ -752,6 +933,7 @@ function injectGlobalStorefrontShell() {
               View Bag
             </a>
             <a
+              id="drawer-checkout-btn"
               href="checkout.html"
               class="bg-primary py-3 text-center text-xs uppercase tracking-[0.15em] text-primary-foreground hover:opacity-90 transition font-medium shadow"
             >
@@ -863,8 +1045,8 @@ function injectGlobalStorefrontShell() {
             <input type="email" id="reg-email" required placeholder="ananya@example.com" class="w-full border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"/>
           </div>
           <div>
-            <label class="block text-xs uppercase tracking-wider text-muted-foreground mb-1">Mobile Phone (10 digits)</label>
-            <input type="tel" id="reg-phone" maxlength="10" required placeholder="9876543210" class="w-full border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"/>
+            <label class="block text-xs uppercase tracking-wider text-muted-foreground mb-1">Mobile Phone (Optional, 10 digits)</label>
+            <input type="tel" id="reg-phone" maxlength="10" placeholder="9876543210" class="w-full border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"/>
           </div>
           <div>
             <label class="block text-xs uppercase tracking-wider text-muted-foreground mb-1">Create Password</label>
@@ -1258,6 +1440,13 @@ function attachGlobalShellEvents() {
   if (closeCartBtn) closeCartBtn.addEventListener('click', closeCartDrawer);
   if (cartBackdrop) cartBackdrop.addEventListener('click', closeCartDrawer);
 
+  const drawerCheckoutBtn = document.getElementById('drawer-checkout-btn');
+  if (drawerCheckoutBtn) {
+    drawerCheckoutBtn.addEventListener('click', (e) => {
+      navigateToCheckout(e);
+    });
+  }
+
   // Wishlist drawer triggers
   document.querySelectorAll('.open-wishlist-drawer-btn').forEach(btn => {
     btn.addEventListener('click', (e) => {
@@ -1322,7 +1511,7 @@ function attachGlobalShellEvents() {
           if (items.length === 0) {
             searchResults.innerHTML = `
               <div class="py-6 text-center text-sm text-muted-foreground">
-                <p>No kurtis matching "${query}".</p>
+                <p>No kurtis matching "${escapeHtml(query)}".</p>
                 <a href="shop.html" class="mt-2 inline-block font-hand text-primary underline">View all kurtis →</a>
               </div>
             `;
@@ -1356,7 +1545,7 @@ function attachGlobalShellEvents() {
     btn.addEventListener('click', (e) => {
       e.preventDefault();
       const userSession = getUserSession();
-      if (userSession) {
+      if (userSession && userSession.user) {
         window.location.href = 'account.html';
       } else {
         openAuthModal('login');
@@ -1388,6 +1577,7 @@ function attachGlobalShellEvents() {
         const resp = await fetch(`${API_BASE}/api/auth/login`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
+          credentials: 'same-origin',
           body: JSON.stringify({ email, password })
         });
         const data = await resp.json();
@@ -1395,6 +1585,11 @@ function attachGlobalShellEvents() {
           setUserSession(data.token, data.user);
           getToast().success(`Welcome back, ${data.user.name}!`);
           closeAuthModal();
+          if (window.__NAARI_AUTH_REDIRECT__) {
+            const target = window.__NAARI_AUTH_REDIRECT__;
+            window.__NAARI_AUTH_REDIRECT__ = '';
+            window.location.href = target;
+          }
         } else {
           errBox.textContent = data.error || 'Login failed.';
           errBox.classList.remove('hidden');
@@ -1421,6 +1616,7 @@ function attachGlobalShellEvents() {
         const resp = await fetch(`${API_BASE}/api/auth/register`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
+          credentials: 'same-origin',
           body: JSON.stringify({ name, email, phone, password })
         });
         const data = await resp.json();
@@ -1428,6 +1624,11 @@ function attachGlobalShellEvents() {
           setUserSession(data.token, data.user);
           getToast().success(`Welcome to Matra Naari, ${data.user.name}!`);
           closeAuthModal();
+          if (window.__NAARI_AUTH_REDIRECT__) {
+            const target = window.__NAARI_AUTH_REDIRECT__;
+            window.__NAARI_AUTH_REDIRECT__ = '';
+            window.location.href = target;
+          }
         } else {
           errBox.textContent = data.error || 'Registration failed.';
           errBox.classList.remove('hidden');
@@ -1566,4 +1767,5 @@ document.addEventListener('DOMContentLoaded', () => {
   updateHeaderBadges();
   updateWishlistHeartButtons();
   initAnnouncementBar();
+  syncCustomerSessionWithServer();
 });

@@ -251,7 +251,8 @@
 
             <!-- Checkout CTA -->
             <a
-              href="checkout.html"
+              id="cart-proceed-checkout-btn"
+              href="${(getUserSession() && getUserSession().user) ? 'checkout.html' : 'account.html?redirect=checkout.html'}"
               class="block w-full bg-primary py-4 text-center text-xs uppercase tracking-[0.2em] font-semibold text-primary-foreground hover:opacity-90 transition shadow-sm"
             >
               Proceed to Checkout →
@@ -264,6 +265,13 @@
           </div>
         </div>
       `;
+
+      const proceedBtn = document.getElementById('cart-proceed-checkout-btn');
+      if (proceedBtn) {
+        proceedBtn.addEventListener('click', (e) => {
+          navigateToCheckout(e);
+        });
+      }
 
       // Attach Steppers
       container.querySelectorAll('.page-cart-dec').forEach(btn => {
@@ -330,6 +338,8 @@
 
     document.addEventListener('DOMContentLoaded', renderFullCartPage);
     window.addEventListener('naari:cartUpdated', renderFullCartPage);
+    window.addEventListener('naari:couponUpdated', renderFullCartPage);
+    window.addEventListener('naari:authChanged', renderFullCartPage);
   </script>
 </body>
 </html>
