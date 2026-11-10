@@ -50,13 +50,23 @@ def test_admin_flow():
     total += 1
     code, res = make_req("/api/admin/verify", method="POST", data={"passkey": "wrong_key"}, passkey="wrong_key")
     code_stats, _ = make_req("/api/admin/stats", passkey=None)
+    code_cust_noauth, _ = make_req("/api/admin/customers", passkey=None)
+    code_cust_badkey, _ = make_req("/api/admin/customers", passkey="wrong_key")
     code_inv, _ = make_req("/api/admin/inventory/update", method="POST", data={"id": "straight", "stock": 10}, passkey="wrong")
     code_upl, _ = make_req("/api/admin/upload-image", method="POST", data={"filename": "a.png", "data": "abc"}, passkey=None)
-    if code == 401 and code_stats == 401 and code_inv == 401 and code_upl == 401 and not res.get("ok"):
-        print("✓ Test 1 Passed: Unauthorized access rejected with 401 across all admin endpoints")
+    if (
+        code == 401
+        and code_stats == 401
+        and code_cust_noauth == 401
+        and code_cust_badkey == 401
+        and code_inv == 401
+        and code_upl == 401
+        and not res.get("ok")
+    ):
+        print("✓ Test 1 Passed: Unauthorized access rejected with 401 across all admin endpoints (including /api/admin/customers)")
         passed += 1
     else:
-        print(f"✗ Test 1 Failed: verify={code}, stats={code_stats}, inv={code_inv}, upl={code_upl}")
+        print(f"✗ Test 1 Failed: verify={code}, stats={code_stats}, cust={code_cust_noauth}/{code_cust_badkey}, inv={code_inv}, upl={code_upl}")
 
     # 2. Valid Passkey Verification & Session Token Issuance
     total += 1
@@ -277,14 +287,89 @@ def test_admin_flow():
     else:
         print(f"✗ Test 13 Failed: {code} {res}")
 
+    # 14. Customer Management Endpoint: Admin Authorization, Search, Secret Redaction & UI Wiring
+    total += 1
+    test_email = f"admin_cust_test_{os.urandom(3).hex()}@naari.in"
+    reg_code, reg_res = make_req("/api/auth/register", method="POST", data={
+        "name": "Aaradhya Verma",
+        "email": test_email,
+        "phone": "9812345670",
+        "password": "SuperSecretPassword123!"
+    }, passkey=None)
+    cust_token = reg_res.get("token", "")
+
+    # Verify customer token cannot access /api/admin/customers
+    req_cust_try = urllib.request.Request(
+        f"{BASE_URL}/api/admin/customers",
+        headers={"Authorization": f"Bearer {cust_token}"}
+    )
+    try:
+        with urllib.request.urlopen(req_cust_try) as resp:
+            cust_auth_code = resp.status
+    except urllib.error.HTTPError as e:
+        cust_auth_code = e.code
+
+    # Authorized admin fetch of all customers & filtered search
+    c_cust_all, r_cust_all = make_req("/api/admin/customers", passkey=None, token=session_token)
+    c_cust_search, r_cust_search = make_req(f"/api/admin/customers?search={test_email}", passkey=None, token=session_token)
+
+    customers_list = r_cust_all.get("customers", [])
+    search_list = r_cust_search.get("customers", [])
+    matched_cust = next((c for c in search_list if c.get("email") == test_email), None)
+
+    forbidden_fields = {"password", "password_hash", "salt", "token", "session_token"}
+    leaked_fields = any(
+        any(f in c for f in forbidden_fields)
+        for c in customers_list
+    )
+
+    with open("admin.html", "r", encoding="utf-8") as af:
+        admin_html = af.read()
+    ui_wired = (
+        'data-tab="customers"' in admin_html
+        and 'id="tab-customers"' in admin_html
+        and 'id="customer-search-input"' in admin_html
+        and 'id="customers-total-count"' in admin_html
+        and 'id="admin-customers-tbody"' in admin_html
+        and 'fetch("/api/admin/customers"' in admin_html
+    )
+
+    if (
+        reg_code == 200
+        and cust_auth_code == 401
+        and c_cust_all == 200
+        and r_cust_all.get("ok")
+        and r_cust_all.get("total_customers", 0) >= 1
+        and c_cust_search == 200
+        and matched_cust is not None
+        and matched_cust.get("name") == "Aaradhya Verma"
+        and matched_cust.get("phone") == "9812345670"
+        and bool(matched_cust.get("created_at"))
+        and not leaked_fields
+        and ui_wired
+    ):
+        print(
+            f"✓ Test 14 Passed: Customer Management verified "
+            f"(Total Customers: {r_cust_all.get('total_customers')}, search & secret redaction verified)"
+        )
+        passed += 1
+    else:
+        print(
+            f"✗ Test 14 Failed: reg={reg_code}, cust_auth={cust_auth_code}, "
+            f"all={c_cust_all}, matched={matched_cust}, leaked={leaked_fields}, ui={ui_wired}"
+        )
+
     print("==================================================")
     print(f"Summary: {passed}/{total} Admin Portal Tests Passed")
     print("==================================================")
-    if passed == total:
-        print("All Admin Management APIs are 100% OPERATIONAL!")
-        return 0
-    return 1
+    assert passed == total, f"Expected all {total} tests to pass, but only {passed} passed"
+    print("All Admin Management APIs are 100% OPERATIONAL!")
+    return None
 
 
 if __name__ == "__main__":
-    sys.exit(test_admin_flow())
+    try:
+        test_admin_flow()
+        sys.exit(0)
+    except AssertionError:
+        sys.exit(1)

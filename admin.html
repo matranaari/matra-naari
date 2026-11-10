@@ -135,6 +135,11 @@
           <span class="flex-1">Orders</span>
           <span id="sidebar-pending-orders-badge" class="hidden rounded-full bg-primary text-white px-1.5 py-0.5 text-[10px] font-bold">0</span>
         </button>
+        <button type="button" data-tab="customers" class="admin-tab-btn admin-sidebar-btn">
+          <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+          <span class="flex-1">Customers</span>
+          <span id="sidebar-customers-badge" class="hidden rounded-full bg-primary/15 text-primary px-1.5 py-0.5 text-[10px] font-bold">0</span>
+        </button>
         <button type="button" data-tab="coupons" class="admin-tab-btn admin-sidebar-btn">
           <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
           <span>Coupons</span>
@@ -180,7 +185,7 @@
         </div>
 
         <!-- KPI Summary Cards -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
           <div class="bg-card/90 border border-border p-5">
             <p class="text-xs uppercase tracking-wider text-muted-foreground font-semibold">Total Store Revenue</p>
             <p id="stat-revenue" class="font-display text-3xl font-bold text-primary mt-1">₹0</p>
@@ -191,6 +196,13 @@
             <p id="stat-orders" class="font-display text-3xl font-bold mt-1">0</p>
             <p class="text-xs text-muted-foreground mt-1">
               Pending Fulfillment: <span id="stat-pending-orders" class="font-semibold text-amber-700">0</span>
+            </p>
+          </div>
+          <div class="bg-card/90 border border-border p-5">
+            <p class="text-xs uppercase tracking-wider text-muted-foreground font-semibold">Registered Customers</p>
+            <p id="stat-customers" class="font-display text-3xl font-bold text-primary mt-1">0</p>
+            <p class="text-xs text-muted-foreground mt-1">
+              <button type="button" onclick="switchTab('customers')" class="text-primary font-semibold hover:underline cursor-pointer">View Customer Directory →</button>
             </p>
           </div>
           <div class="bg-card/90 border border-border p-5">
@@ -467,6 +479,52 @@
               </thead>
               <tbody id="admin-orders-tbody" class="divide-y divide-border">
                 <tr><td colspan="8" class="py-8 text-center text-muted-foreground">Loading orders...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================== -->
+      <!-- 4B. CUSTOMER MANAGEMENT TAB                                    -->
+      <!-- ============================================================== -->
+      <section id="tab-customers" class="admin-tab-panel hidden space-y-6">
+        <div class="bg-card/90 border border-border p-5">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-5">
+            <div>
+              <h2 class="font-display text-2xl font-bold">Registered Customers</h2>
+              <p class="text-xs text-muted-foreground">Live directory of registered customer accounts stored in the production database.</p>
+            </div>
+            <div class="bg-primary/5 border border-primary/20 px-4 py-2.5 rounded-xs text-right">
+              <p class="text-[10px] uppercase tracking-widest text-muted-foreground font-semibold">Total Registered Customers</p>
+              <p id="customers-total-count" class="font-display text-2xl font-bold text-primary leading-tight">0</p>
+            </div>
+          </div>
+
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
+            <input
+              type="text"
+              id="customer-search-input"
+              placeholder="Search customers by Name, Email, Phone, or Customer ID..."
+              class="w-full sm:w-96 bg-background border border-border px-3.5 py-2 text-xs focus:outline-none focus:border-primary"
+            />
+            <span id="customer-showing-label" class="text-xs text-muted-foreground">Showing 0 customers</span>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse text-sm">
+              <thead>
+                <tr class="border-b border-border text-xs uppercase tracking-wider text-muted-foreground">
+                  <th class="py-3 px-3">Customer ID</th>
+                  <th class="py-3 px-3">Full Name</th>
+                  <th class="py-3 px-3">Email Address</th>
+                  <th class="py-3 px-3">Phone</th>
+                  <th class="py-3 px-3">Orders / Spent</th>
+                  <th class="py-3 px-3">Account Created</th>
+                </tr>
+              </thead>
+              <tbody id="admin-customers-tbody" class="divide-y divide-border">
+                <tr><td colspan="6" class="py-8 text-center text-muted-foreground">Loading registered customers...</td></tr>
               </tbody>
             </table>
           </div>
@@ -955,6 +1013,8 @@
       let currentToken = sessionStorage.getItem(TOKEN_STORAGE_KEY) || "";
       let allOrders = [];
       let allProducts = [];
+      let allCustomers = [];
+      let totalRegisteredCustomers = 0;
       let allCoupons = [];
       let allReturns = [];
       let activeStatusFilter = "ALL";
@@ -1079,6 +1139,7 @@
         await Promise.all([
           loadProducts(),
           loadOrders(),
+          loadCustomers(),
           loadCoupons(),
           loadReturns(),
           loadSettings(),
@@ -1101,6 +1162,9 @@
           document.getElementById("stat-paid-revenue").textContent = formatINR(s.paid_revenue);
           document.getElementById("stat-orders").textContent = s.total_orders;
           document.getElementById("stat-pending-orders").textContent = s.pending_orders ?? 0;
+          const custCount = s.total_customers ?? s.total_users ?? totalRegisteredCustomers ?? allCustomers.length;
+          const statCustEl = document.getElementById("stat-customers");
+          if (statCustEl) statCustEl.textContent = custCount;
           document.getElementById("stat-products").textContent = s.total_products ?? allProducts.length;
           document.getElementById("stat-low-stock").textContent = s.low_stock_count ?? 0;
           document.getElementById("stat-out-of-stock").textContent = s.out_of_stock_count ?? 0;
@@ -1113,6 +1177,12 @@
             const pCount = Number(s.pending_orders || 0);
             pendingBadge.textContent = pCount;
             pendingBadge.classList.toggle("hidden", pCount === 0);
+          }
+          const custBadge = document.getElementById("sidebar-customers-badge");
+          if (custBadge) {
+            const cCount = Number(custCount || 0);
+            custBadge.textContent = cCount;
+            custBadge.classList.toggle("hidden", cCount === 0);
           }
           const lowStockBadge = document.getElementById("sidebar-low-stock-badge");
           if (lowStockBadge) {
@@ -1831,6 +1901,86 @@
           alert(data.error || "Failed to update order status.");
         }
       });
+
+      // ==============================================================
+      // 4B. CUSTOMER MANAGEMENT
+      // ==============================================================
+      async function loadCustomers() {
+        try {
+          const res = await fetch("/api/admin/customers", { headers: getAdminHeaders() });
+          if (res.status === 401) return lockWorkspace();
+          const data = await res.json();
+          allCustomers = data.customers || [];
+          totalRegisteredCustomers = Number(data.total_customers ?? allCustomers.length);
+          const totalEl = document.getElementById("customers-total-count");
+          if (totalEl) totalEl.textContent = totalRegisteredCustomers;
+          const statCustEl = document.getElementById("stat-customers");
+          if (statCustEl) statCustEl.textContent = totalRegisteredCustomers;
+          const custBadge = document.getElementById("sidebar-customers-badge");
+          if (custBadge) {
+            custBadge.textContent = totalRegisteredCustomers;
+            custBadge.classList.toggle("hidden", totalRegisteredCustomers === 0);
+          }
+          renderCustomersTable();
+        } catch (err) {
+          console.error("Failed loading customers:", err);
+        }
+      }
+
+      function renderCustomersTable() {
+        const tbody = document.getElementById("admin-customers-tbody");
+        if (!tbody) return;
+        const searchQ = (document.getElementById("customer-search-input")?.value || "").trim().toLowerCase();
+
+        const filtered = allCustomers.filter((c) => {
+          if (!searchQ) return true;
+          const hay = [
+            c.id,
+            c.name,
+            c.email,
+            c.phone,
+            c.created_at,
+          ].join(" ").toLowerCase();
+          return hay.includes(searchQ);
+        });
+
+        const showingLabel = document.getElementById("customer-showing-label");
+        if (showingLabel) {
+          showingLabel.textContent = searchQ
+            ? `Showing ${filtered.length} of ${totalRegisteredCustomers} customers`
+            : `Showing ${filtered.length} registered customer${filtered.length === 1 ? "" : "s"}`;
+        }
+
+        if (!filtered.length) {
+          tbody.innerHTML = `<tr><td colspan="6" class="py-8 text-center text-muted-foreground">${searchQ ? "No customers match your search." : "No registered customers found yet."}</td></tr>`;
+          return;
+        }
+
+        tbody.innerHTML = filtered.map((c) => {
+          const dateStr = c.created_at
+            ? new Date(c.created_at).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })
+            : "-";
+          const phoneDisplay = c.phone ? escapeHtml(c.phone) : `<span class="text-muted-foreground italic">Not provided</span>`;
+          const ordersCount = Number(c.orders_count || 0);
+          const totalSpent = Number(c.total_spent || 0);
+
+          return `
+            <tr class="hover:bg-primary/5 transition">
+              <td class="py-3 px-3 font-mono text-xs font-semibold text-primary">${escapeHtml(c.id)}</td>
+              <td class="py-3 px-3 font-medium">${escapeHtml(c.name || "Customer")}</td>
+              <td class="py-3 px-3 text-xs">${escapeHtml(c.email)}</td>
+              <td class="py-3 px-3 text-xs font-mono">${phoneDisplay}</td>
+              <td class="py-3 px-3 text-xs">
+                <span class="font-semibold">${ordersCount} order${ordersCount === 1 ? "" : "s"}</span>
+                ${totalSpent > 0 ? `<span class="text-muted-foreground"> · ${formatINR(totalSpent)}</span>` : ""}
+              </td>
+              <td class="py-3 px-3 text-xs text-muted-foreground">${escapeHtml(dateStr)}</td>
+            </tr>
+          `;
+        }).join("");
+      }
+
+      document.getElementById("customer-search-input")?.addEventListener("input", renderCustomersTable);
 
       // ==============================================================
       // 5. COUPONS & DISCOUNTS

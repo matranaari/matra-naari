@@ -2683,6 +2683,7 @@ def api_admin_stats():
 
     c.execute("SELECT COUNT(*) AS total_users FROM users")
     totals["total_users"] = c.fetchone()["total_users"]
+    totals["total_customers"] = totals["total_users"]
 
     # Calculate best-selling products from actual non-cancelled orders in SQLite
     c.execute("SELECT items_json FROM orders WHERE order_status != 'cancelled' AND payment_status NOT IN ('failed', 'cancelled')")
@@ -2751,6 +2752,71 @@ def api_admin_stats():
         "recent_orders": recent_orders,
         "best_selling_products": best_selling,
         "low_stock_alerts": low_stock_alerts
+    })
+
+@app.route("/api/admin/customers", methods=["GET"])
+def api_admin_customers():
+    if not check_admin_auth():
+        return jsonify({"ok": False, "error": "Unauthorized"}), 401
+
+    search = request.args.get("search", "").strip().lower()
+
+    conn = get_db()
+    c = conn.cursor()
+    c.execute("""
+        SELECT
+            u.id,
+            u.name,
+            u.email,
+            u.phone,
+            u.created_at,
+            (
+                SELECT COUNT(*)
+                FROM orders o
+                WHERE (
+                    o.user_id = u.id
+                    OR ((o.user_id IS NULL OR o.user_id = '') AND LOWER(o.customer_email) = LOWER(u.email))
+                )
+                AND o.order_status != 'cancelled'
+            ) AS orders_count,
+            (
+                SELECT COALESCE(SUM(o.total_amount), 0)
+                FROM orders o
+                WHERE (
+                    o.user_id = u.id
+                    OR ((o.user_id IS NULL OR o.user_id = '') AND LOWER(o.customer_email) = LOWER(u.email))
+                )
+                AND o.order_status != 'cancelled'
+            ) AS total_spent
+        FROM users u
+        ORDER BY u.created_at DESC
+    """)
+    rows = c.fetchall()
+    conn.close()
+
+    total_customers = len(rows)
+    customers = []
+    for r in rows:
+        cust = {
+            "id": r["id"],
+            "name": r["name"] or "",
+            "email": r["email"] or "",
+            "phone": r["phone"] or "",
+            "created_at": r["created_at"] or "",
+            "orders_count": int(r["orders_count"] or 0),
+            "total_spent": int(r["total_spent"] or 0),
+        }
+        if search:
+            haystack = f"{cust['id']} {cust['name']} {cust['email']} {cust['phone']} {cust['created_at']}".lower()
+            if search not in haystack:
+                continue
+        customers.append(cust)
+
+    return jsonify({
+        "ok": True,
+        "total_customers": total_customers,
+        "count": len(customers),
+        "customers": customers
     })
 
 @app.route("/api/admin/orders", methods=["GET"])
