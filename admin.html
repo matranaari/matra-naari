@@ -990,7 +990,10 @@
       async function verifyPasskey(key) {
         const res = await fetch("/api/admin/verify", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            "X-Admin-Passkey": key,
+          },
           body: JSON.stringify({ passkey: key }),
         });
         if (!res.ok) return null;
@@ -1026,7 +1029,7 @@
         const key = passkeyInput.value.trim();
         if (!key) return;
         const verified = await verifyPasskey(key);
-        if (verified && verified.authenticated) {
+        if (verified && (verified.authenticated || verified.ok)) {
           await unlockWorkspace(key, verified.token || "");
         } else {
           loginError.textContent = "Invalid administrative passkey. Access denied.";
@@ -2127,7 +2130,7 @@
       (async function init() {
         if (currentPasskey) {
           const verified = await verifyPasskey(currentPasskey);
-          if (verified && verified.authenticated) {
+          if (verified && (verified.authenticated || verified.ok)) {
             await unlockWorkspace(currentPasskey, verified.token || currentToken);
           } else {
             lockWorkspace();
