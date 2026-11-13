@@ -14,16 +14,26 @@ const WISHLIST_STORAGE_KEY = 'naari_wishlist_v1';
 const USER_STORAGE_KEY = 'naari_user_v1';
 const COUPON_STORAGE_KEY = 'naari_coupon_v1';
 const RECENTLY_VIEWED_KEY = 'naari_recently_viewed_v1';
+const STORE_SETTINGS_SESSION_KEY = 'naari_store_settings_v1';
 
-// Dynamic Storefront Settings Cache (hydrated from /api/banners & /api/config)
-window.NAARI_STORE_SETTINGS = {
-  free_shipping_threshold: 999,
-  shipping_fee: 99,
-  cod_enabled: true,
-  announcement_enabled: true,
-  promo_banner_enabled: true,
-  active_promo_coupon: null
-};
+// Dynamic Storefront Settings Cache (hydrated from sessionStorage, /api/banners & /api/config)
+window.NAARI_STORE_SETTINGS = (() => {
+  const defaults = {
+    free_shipping_threshold: 999,
+    shipping_fee: 99,
+    cod_enabled: true,
+    announcement_enabled: true,
+    promo_banner_enabled: true,
+    active_promo_coupon: null
+  };
+  try {
+    const cached = sessionStorage.getItem(STORE_SETTINGS_SESSION_KEY);
+    if (cached) {
+      return { ...defaults, ...JSON.parse(cached) };
+    }
+  } catch (e) {}
+  return defaults;
+})();
 
 // Default Fallback Products Catalog
 const PRODUCTS = [
@@ -534,20 +544,35 @@ function getUserSession() {
 }
 
 function setUserSession(token, user) {
+  const prev = getUserSession();
+  const prevUser = prev && prev.user ? prev.user : null;
+  const userChanged = !prevUser || !user ||
+    prevUser.id !== user.id ||
+    prevUser.email !== user.email ||
+    prevUser.name !== user.name ||
+    prevUser.phone !== user.phone;
   try {
     localStorage.setItem(USER_STORAGE_KEY, JSON.stringify({ token, user }));
+    sessionStorage.removeItem('naari_guest_checked_v1');
   } catch (e) {}
   updateHeaderBadges();
-  window.dispatchEvent(new CustomEvent('naari:authChanged', { detail: { user } }));
+  if (userChanged) {
+    window.dispatchEvent(new CustomEvent('naari:authChanged', { detail: { user } }));
+  }
 }
 
 function clearUserSession() {
+  const prev = getUserSession();
+  const hadUser = Boolean(prev && prev.user);
   try {
     localStorage.removeItem(USER_STORAGE_KEY);
     localStorage.removeItem('naari_last_order');
+    sessionStorage.setItem('naari_guest_checked_v1', '1');
   } catch (e) {}
   updateHeaderBadges();
-  window.dispatchEvent(new CustomEvent('naari:authChanged', { detail: { user: null } }));
+  if (hadUser) {
+    window.dispatchEvent(new CustomEvent('naari:authChanged', { detail: { user: null } }));
+  }
 }
 
 function getCustomerAuthHeaders(extraHeaders = {}) {
@@ -594,6 +619,11 @@ async function logoutCustomer(redirectUrl = '') {
 async function syncCustomerSessionWithServer() {
   const session = getUserSession();
   try {
+    if (!session && sessionStorage.getItem('naari_guest_checked_v1') === '1') {
+      return null;
+    }
+  } catch (e) {}
+  try {
     const res = await fetch(`${API_BASE}/api/auth/me`, {
       method: 'GET',
       headers: getCustomerAuthHeaders(),
@@ -605,8 +635,12 @@ async function syncCustomerSessionWithServer() {
         setUserSession((session && session.token) || '', data.user);
         return data.user;
       }
-    } else if (res.status === 401 && session) {
-      clearUserSession();
+    } else if (res.status === 401) {
+      if (session) {
+        clearUserSession();
+      } else {
+        try { sessionStorage.setItem('naari_guest_checked_v1', '1'); } catch (e) {}
+      }
     }
   } catch (e) {}
   return session ? session.user : null;
@@ -1774,6 +1808,9 @@ async function initAnnouncementBar() {
         promo_banner_enabled: data.promo_banner_enabled ?? true,
         active_promo_coupon: data.active_promo_coupon || null
       };
+      try {
+        sessionStorage.setItem(STORE_SETTINGS_SESSION_KEY, JSON.stringify(window.NAARI_STORE_SETTINGS));
+      } catch (e) {}
       renderCartDrawerContent();
       window.dispatchEvent(new CustomEvent('naari:settingsLoaded', { detail: window.NAARI_STORE_SETTINGS }));
 
@@ -1824,10 +1861,23 @@ async function initAnnouncementBar() {
 }
 
 // ================= Auto Initialization on Page Load =================
-document.addEventListener('DOMContentLoaded', () => {
+function initStorefrontApp() {
+  if (window.__NAARI_APP_INITIALIZED__) return;
+  if (!document.body) return;
+  window.__NAARI_APP_INITIALIZED__ = true;
   injectGlobalStorefrontShell();
   updateHeaderBadges();
   updateWishlistHeartButtons();
   initAnnouncementBar();
   syncCustomerSessionWithServer();
-});
+}
+
+if (document.readyState === 'loading') {
+  if (document.body) {
+    initStorefrontApp();
+  } else {
+    document.addEventListener('DOMContentLoaded', initStorefrontApp);
+  }
+} else {
+  initStorefrontApp();
+}

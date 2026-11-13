@@ -188,35 +188,35 @@
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
           <div class="bg-card/90 border border-border p-5">
             <p class="text-xs uppercase tracking-wider text-muted-foreground font-semibold">Total Store Revenue</p>
-            <p id="stat-revenue" class="font-display text-3xl font-bold text-primary mt-1">₹0</p>
-            <p class="text-xs text-muted-foreground mt-1">Online Paid: <span id="stat-paid-revenue" class="font-semibold text-foreground">₹0</span></p>
+            <p id="stat-revenue" class="font-display text-3xl font-bold text-primary mt-1">—</p>
+            <p class="text-xs text-muted-foreground mt-1">Online Paid: <span id="stat-paid-revenue" class="font-semibold text-foreground">—</span></p>
           </div>
           <div class="bg-card/90 border border-border p-5">
             <p class="text-xs uppercase tracking-wider text-muted-foreground font-semibold">Orders &amp; Fulfillment</p>
-            <p id="stat-orders" class="font-display text-3xl font-bold mt-1">0</p>
+            <p id="stat-orders" class="font-display text-3xl font-bold mt-1">—</p>
             <p class="text-xs text-muted-foreground mt-1">
-              Pending Fulfillment: <span id="stat-pending-orders" class="font-semibold text-amber-700">0</span>
+              Pending Fulfillment: <span id="stat-pending-orders" class="font-semibold text-amber-700">—</span>
             </p>
           </div>
           <div class="bg-card/90 border border-border p-5">
             <p class="text-xs uppercase tracking-wider text-muted-foreground font-semibold">Registered Customers</p>
-            <p id="stat-customers" class="font-display text-3xl font-bold text-primary mt-1">0</p>
+            <p id="stat-customers" class="font-display text-3xl font-bold text-primary mt-1">—</p>
             <p class="text-xs text-muted-foreground mt-1">
               <button type="button" onclick="switchTab('customers')" class="text-primary font-semibold hover:underline cursor-pointer">View Customer Directory →</button>
             </p>
           </div>
           <div class="bg-card/90 border border-border p-5">
             <p class="text-xs uppercase tracking-wider text-muted-foreground font-semibold">Products &amp; Stock</p>
-            <p id="stat-products" class="font-display text-3xl font-bold mt-1">0</p>
+            <p id="stat-products" class="font-display text-3xl font-bold mt-1">—</p>
             <p class="text-xs text-muted-foreground mt-1">
-              Low Stock: <span id="stat-low-stock" class="font-semibold text-amber-700">0</span> · Out of Stock: <span id="stat-out-of-stock" class="font-semibold text-destructive">0</span>
+              Low Stock: <span id="stat-low-stock" class="font-semibold text-amber-700">—</span> · Out of Stock: <span id="stat-out-of-stock" class="font-semibold text-destructive">—</span>
             </p>
           </div>
           <div class="bg-card/90 border border-border p-5">
             <p class="text-xs uppercase tracking-wider text-muted-foreground font-semibold">Coupons &amp; Returns</p>
-            <p id="stat-returns" class="font-display text-3xl font-bold mt-1">0</p>
+            <p id="stat-returns" class="font-display text-3xl font-bold mt-1">—</p>
             <p class="text-xs text-muted-foreground mt-1">
-              Pending Returns · Active Coupons: <span id="stat-coupons" class="font-semibold text-foreground">0</span>
+              Pending Returns · Active Coupons: <span id="stat-coupons" class="font-semibold text-foreground">—</span>
             </p>
           </div>
         </div>
@@ -497,7 +497,7 @@
             </div>
             <div class="bg-primary/5 border border-primary/20 px-4 py-2.5 rounded-xs text-right">
               <p class="text-[10px] uppercase tracking-widest text-muted-foreground font-semibold">Total Registered Customers</p>
-              <p id="customers-total-count" class="font-display text-2xl font-bold text-primary leading-tight">0</p>
+              <p id="customers-total-count" class="font-display text-2xl font-bold text-primary leading-tight">—</p>
             </div>
           </div>
 
@@ -508,7 +508,7 @@
               placeholder="Search customers by Name, Email, Phone, or Customer ID..."
               class="w-full sm:w-96 bg-background border border-border px-3.5 py-2 text-xs focus:outline-none focus:border-primary"
             />
-            <span id="customer-showing-label" class="text-xs text-muted-foreground">Showing 0 customers</span>
+            <span id="customer-showing-label" class="text-xs text-muted-foreground"></span>
           </div>
 
           <div class="overflow-x-auto">
@@ -1138,8 +1138,87 @@
         refreshAllBtn.addEventListener("click", loadAllAdminData);
       }
 
+      function applyStatsPayload(data) {
+        if (!data || !data.stats) return;
+        const s = data.stats;
+
+        document.getElementById("stat-revenue").textContent = formatINR(s.total_revenue);
+        document.getElementById("stat-paid-revenue").textContent = formatINR(s.verified_paid_revenue ?? s.paid_revenue);
+        document.getElementById("stat-orders").textContent = s.total_orders;
+        document.getElementById("stat-pending-orders").textContent = s.pending_orders ?? 0;
+        const custCount = s.total_customers ?? s.total_users ?? totalRegisteredCustomers ?? allCustomers.length;
+        const statCustEl = document.getElementById("stat-customers");
+        if (statCustEl) statCustEl.textContent = custCount;
+        document.getElementById("stat-products").textContent = s.total_products ?? allProducts.length;
+        document.getElementById("stat-low-stock").textContent = s.low_stock_count ?? 0;
+        document.getElementById("stat-out-of-stock").textContent = s.out_of_stock_count ?? 0;
+        document.getElementById("stat-returns").textContent = s.pending_returns ?? 0;
+        document.getElementById("stat-coupons").textContent = s.active_coupons ?? 0;
+
+        // Sidebar badges
+        const pendingBadge = document.getElementById("sidebar-pending-orders-badge");
+        if (pendingBadge) {
+          const pCount = Number(s.pending_orders || 0);
+          pendingBadge.textContent = pCount;
+          pendingBadge.classList.toggle("hidden", pCount === 0);
+        }
+        const custBadge = document.getElementById("sidebar-customers-badge");
+        if (custBadge) {
+          const cCount = Number(custCount || 0);
+          custBadge.textContent = cCount;
+          custBadge.classList.toggle("hidden", cCount === 0);
+        }
+        const lowStockBadge = document.getElementById("sidebar-low-stock-badge");
+        if (lowStockBadge) {
+          const lCount = Number(s.low_stock_count || 0) + Number(s.out_of_stock_count || 0);
+          lowStockBadge.textContent = lCount;
+          lowStockBadge.classList.toggle("hidden", lCount === 0);
+        }
+
+        renderDashboardBestSellers(s.best_selling_products || []);
+        renderDashboardLowStock(s.low_stock_alerts || []);
+        const recentList = (Array.isArray(data.recent_orders) && data.recent_orders.length)
+          ? data.recent_orders.slice(0, 6)
+          : allOrders.slice(0, 6);
+        renderDashboardRecentOrders(recentList);
+      }
+
       async function loadAllAdminData() {
+        try {
+          const res = await fetch("/api/admin/stats?include_all=1", { headers: getAdminHeaders() });
+          if (res.status === 401) return lockWorkspace();
+          if (res.ok) {
+            const data = await res.json();
+            if (data && data.ok && data.stats && Array.isArray(data.products)) {
+              allProducts = data.products || [];
+              allOrders = data.orders || [];
+              allCustomers = data.customers || [];
+              totalRegisteredCustomers = Number(data.total_customers ?? allCustomers.length);
+              allCoupons = data.coupons || [];
+              allReturns = data.returns || [];
+
+              applyStatsPayload(data);
+              renderProductsTable();
+              renderInventoryTable();
+              renderOrdersTable();
+
+              const totalEl = document.getElementById("customers-total-count");
+              if (totalEl) totalEl.textContent = totalRegisteredCustomers;
+              renderCustomersTable();
+              renderCouponsTable();
+              renderReturnsTable();
+              if (data.settings) {
+                applySettingsToForm(data.settings);
+              }
+              return;
+            }
+          }
+        } catch (err) {
+          console.error("Bootstrap admin fetch fallback:", err);
+        }
+
         await Promise.all([
+          loadStats(),
           loadProducts(),
           loadOrders(),
           loadCustomers(),
@@ -1147,7 +1226,6 @@
           loadReturns(),
           loadSettings(),
         ]);
-        await loadStats();
       }
 
       // ==============================================================
@@ -1158,45 +1236,7 @@
           const res = await fetch("/api/admin/stats", { headers: getAdminHeaders() });
           if (res.status === 401) return lockWorkspace();
           const data = await res.json();
-          if (!data.stats) return;
-          const s = data.stats;
-
-          document.getElementById("stat-revenue").textContent = formatINR(s.total_revenue);
-          document.getElementById("stat-paid-revenue").textContent = formatINR(s.verified_paid_revenue ?? s.paid_revenue);
-          document.getElementById("stat-orders").textContent = s.total_orders;
-          document.getElementById("stat-pending-orders").textContent = s.pending_orders ?? 0;
-          const custCount = s.total_customers ?? s.total_users ?? totalRegisteredCustomers ?? allCustomers.length;
-          const statCustEl = document.getElementById("stat-customers");
-          if (statCustEl) statCustEl.textContent = custCount;
-          document.getElementById("stat-products").textContent = s.total_products ?? allProducts.length;
-          document.getElementById("stat-low-stock").textContent = s.low_stock_count ?? 0;
-          document.getElementById("stat-out-of-stock").textContent = s.out_of_stock_count ?? 0;
-          document.getElementById("stat-returns").textContent = s.pending_returns ?? 0;
-          document.getElementById("stat-coupons").textContent = s.active_coupons ?? 0;
-
-          // Sidebar badges
-          const pendingBadge = document.getElementById("sidebar-pending-orders-badge");
-          if (pendingBadge) {
-            const pCount = Number(s.pending_orders || 0);
-            pendingBadge.textContent = pCount;
-            pendingBadge.classList.toggle("hidden", pCount === 0);
-          }
-          const custBadge = document.getElementById("sidebar-customers-badge");
-          if (custBadge) {
-            const cCount = Number(custCount || 0);
-            custBadge.textContent = cCount;
-            custBadge.classList.toggle("hidden", cCount === 0);
-          }
-          const lowStockBadge = document.getElementById("sidebar-low-stock-badge");
-          if (lowStockBadge) {
-            const lCount = Number(s.low_stock_count || 0) + Number(s.out_of_stock_count || 0);
-            lowStockBadge.textContent = lCount;
-            lowStockBadge.classList.toggle("hidden", lCount === 0);
-          }
-
-          renderDashboardBestSellers(s.best_selling_products || []);
-          renderDashboardLowStock(s.low_stock_alerts || []);
-          renderDashboardRecentOrders(allOrders.slice(0, 6));
+          applyStatsPayload(data);
         } catch (err) {
           console.error("Failed loading stats:", err);
         }
@@ -2267,27 +2307,30 @@
       // ==============================================================
       // 7. STORE SETTINGS
       // ==============================================================
+      function applySettingsToForm(s = {}) {
+        document.getElementById("set-shipping-fee").value = s.shipping_fee ?? "99";
+        document.getElementById("set-free-threshold").value = s.free_shipping_threshold ?? "1499";
+        document.getElementById("set-cod-enabled").value = s.cod_enabled ?? "true";
+        document.getElementById("set-store-name").value = s.store_name ?? "Matra Naari";
+        document.getElementById("set-support-phone").value = s.support_phone ?? "+91 98765 43210";
+        document.getElementById("set-support-email").value = s.support_email ?? "care@matranaari.com";
+        document.getElementById("set-return-days").value = s.return_window_days ?? "7";
+        document.getElementById("set-gst-percent").value = s.gst_percentage ?? "5";
+        document.getElementById("set-ann-enabled").value = s.announcement_enabled ?? "true";
+        document.getElementById("set-ann-text").value = s.announcement_text ?? "";
+        document.getElementById("set-promo-enabled").value = s.promo_banner_enabled ?? "true";
+        document.getElementById("set-promo-code").value = s.promo_banner_code ?? "";
+        document.getElementById("set-promo-title").value = s.promo_banner_title ?? "";
+        document.getElementById("set-promo-subtitle").value = s.promo_banner_subtitle ?? "";
+        document.getElementById("set-new-passkey").value = "";
+      }
+
       async function loadSettings() {
         try {
           const res = await fetch("/api/admin/settings", { headers: getAdminHeaders() });
           if (res.status === 401) return lockWorkspace();
           const data = await res.json();
-          const s = data.settings || {};
-          document.getElementById("set-shipping-fee").value = s.shipping_fee ?? "99";
-          document.getElementById("set-free-threshold").value = s.free_shipping_threshold ?? "1499";
-          document.getElementById("set-cod-enabled").value = s.cod_enabled ?? "true";
-          document.getElementById("set-store-name").value = s.store_name ?? "Matra Naari";
-          document.getElementById("set-support-phone").value = s.support_phone ?? "+91 98765 43210";
-          document.getElementById("set-support-email").value = s.support_email ?? "care@matranaari.com";
-          document.getElementById("set-return-days").value = s.return_window_days ?? "7";
-          document.getElementById("set-gst-percent").value = s.gst_percentage ?? "5";
-          document.getElementById("set-ann-enabled").value = s.announcement_enabled ?? "true";
-          document.getElementById("set-ann-text").value = s.announcement_text ?? "";
-          document.getElementById("set-promo-enabled").value = s.promo_banner_enabled ?? "true";
-          document.getElementById("set-promo-code").value = s.promo_banner_code ?? "";
-          document.getElementById("set-promo-title").value = s.promo_banner_title ?? "";
-          document.getElementById("set-promo-subtitle").value = s.promo_banner_subtitle ?? "";
-          document.getElementById("set-new-passkey").value = "";
+          applySettingsToForm(data.settings || {});
         } catch (err) {
           console.error("Failed loading settings:", err);
         }
@@ -2337,15 +2380,10 @@
         }
       });
 
-      // Auto-unlock if stored session token/passkey is valid
+      // Auto-unlock immediately if stored session token/passkey exists (401 on bootstrap fetch will re-lock)
       (async function init() {
-        if (currentPasskey) {
-          const verified = await verifyPasskey(currentPasskey);
-          if (verified && (verified.authenticated || verified.ok)) {
-            await unlockWorkspace(currentPasskey, verified.token || currentToken);
-          } else {
-            lockWorkspace();
-          }
+        if (currentPasskey || currentToken) {
+          await unlockWorkspace(currentPasskey, currentToken);
         }
       })();
     })();

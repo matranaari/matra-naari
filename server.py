@@ -28,7 +28,7 @@ import base64
 import urllib.parse
 import requests
 from datetime import datetime, timedelta
-from flask import Flask, Response, request, jsonify, send_from_directory, g
+from flask import Flask, Response, request, jsonify, send_from_directory, g, has_request_context
 from flask_cors import CORS
 from werkzeug.exceptions import RequestEntityTooLarge
 
@@ -564,6 +564,16 @@ DEFAULT_ANNOUNCEMENTS = [
 SQLITE_TIMEOUT_SECONDS = 15.0
 SQLITE_BUSY_TIMEOUT_MS = 15000
 _INIT_DB_LOCK = threading.RLock()
+_SITE_SETTINGS_CACHE_LOCK = threading.RLock()
+_SITE_SETTINGS_CACHE = {}
+_SITE_SETTINGS_TTL_SECONDS = 10.0
+
+
+def invalidate_site_settings_cache():
+    with _SITE_SETTINGS_CACHE_LOCK:
+        _SITE_SETTINGS_CACHE.clear()
+    if has_request_context():
+        g.pop("_site_settings_dict", None)
 
 
 def _configure_sqlite_connection(conn):
@@ -579,8 +589,25 @@ def _configure_sqlite_connection(conn):
 
 
 def get_site_settings_dict():
+    if has_request_context() and hasattr(g, "_site_settings_dict"):
+        return dict(g._site_settings_dict)
+
+    use_mem_cache = is_postgres_mode() and _POSTGRES_CONNECT_FN is None
+    cache_key = None
+    if use_mem_cache:
+        cache_key = (get_database_url(), get_postgres_schema())
+        now_ts = time.monotonic()
+        with _SITE_SETTINGS_CACHE_LOCK:
+            entry = _SITE_SETTINGS_CACHE.get(cache_key)
+            if entry and (now_ts - entry["ts"]) < _SITE_SETTINGS_TTL_SECONDS:
+                cached_dict = dict(entry["data"])
+                if has_request_context():
+                    g._site_settings_dict = cached_dict
+                return dict(cached_dict)
+
     settings = {}
     conn = None
+    loaded_ok = False
     try:
         conn = get_db()
         c = conn.cursor()
@@ -591,6 +618,7 @@ def get_site_settings_dict():
                 settings[r["key"]] = json.loads(val)
             except Exception:
                 settings[r["key"]] = val
+        loaded_ok = True
     except Exception:
         pass
     finally:
@@ -599,9 +627,17 @@ def get_site_settings_dict():
                 conn.close()
             except Exception:
                 pass
+
+    if loaded_ok:
+        if use_mem_cache and cache_key is not None:
+            with _SITE_SETTINGS_CACHE_LOCK:
+                _SITE_SETTINGS_CACHE[cache_key] = {"ts": time.monotonic(), "data": dict(settings)}
+        if has_request_context():
+            g._site_settings_dict = dict(settings)
     return settings
 
-def load_config():
+
+def load_config(include_db_settings=True):
     config = {
         "razorpay_key_id": "",
         "razorpay_key_secret": "",
@@ -631,7 +667,7 @@ def load_config():
         except Exception as e:
             print(f"[Warning] Error loading config.json: {e}")
 
-    db_settings = get_site_settings_dict()
+    db_settings = get_site_settings_dict() if include_db_settings else {}
     if "free_shipping_threshold" in db_settings:
         try:
             config["free_shipping_threshold"] = int(db_settings["free_shipping_threshold"])
@@ -981,10 +1017,46 @@ class PostgresCursorWrapper:
         has_params = params is not None
         pg_sql = translate_sql_for_postgres(sql, has_params=has_params)
         self.last_translated_sql = pg_sql
-        if params is None:
-            self._cur.execute(pg_sql)
-        else:
-            self._cur.execute(pg_sql, tuple(params) if isinstance(params, list) else params)
+        needs_tx = (
+            self._conn.in_transaction
+            or not upper_stmt.startswith("SELECT")
+            or "FOR UPDATE" in upper_stmt
+        )
+        if (
+            self._conn._pool_key is not None
+            and _POSTGRES_CONNECT_FN is None
+            and getattr(self._conn._raw_conn, "autocommit", False)
+            and needs_tx
+        ):
+            self._conn._raw_conn.autocommit = False
+        bound_params = tuple(params) if isinstance(params, list) else params
+        try:
+            if params is None:
+                self._cur.execute(pg_sql)
+            else:
+                self._cur.execute(pg_sql, bound_params)
+            if needs_tx:
+                self._conn._stmt_count_in_tx += 1
+        except Exception as err:
+            is_conn_drop = (
+                psycopg2 is not None
+                and isinstance(err, (psycopg2.OperationalError, psycopg2.InterfaceError))
+            )
+            if is_conn_drop and self._conn._pool_key is not None and self._conn._stmt_count_in_tx == 0:
+                self._conn._reconnect_fresh_raw()
+                if needs_tx and hasattr(self._conn._raw_conn, "autocommit"):
+                    self._conn._raw_conn.autocommit = False
+                self._cur = self._conn._raw_conn.cursor()
+                if params is None:
+                    self._cur.execute(pg_sql)
+                else:
+                    self._cur.execute(pg_sql, bound_params)
+                if needs_tx:
+                    self._conn._stmt_count_in_tx += 1
+            else:
+                if is_conn_drop:
+                    self._conn._discard_on_close = True
+                raise
         return self
 
     def executemany(self, sql, seq_of_params):
@@ -1026,6 +1098,31 @@ class PostgresCursorWrapper:
             pass
 
 
+_PG_POOL_LOCK = threading.RLock()
+_PG_CONNECTION_POOL = {}
+_MAX_PG_POOL_SIZE = 12
+
+
+def _create_raw_postgres_connection(clean_url, schema_name):
+    connect_kwargs = {
+        "dsn": clean_url,
+        "connect_timeout": int(SQLITE_TIMEOUT_SECONDS),
+    }
+    if "sslmode=" not in clean_url.lower() and "localhost" not in clean_url.lower() and "127.0.0.1" not in clean_url.lower():
+        connect_kwargs["sslmode"] = "require"
+    raw_conn = psycopg2.connect(**connect_kwargs)
+    if hasattr(raw_conn, "autocommit"):
+        try:
+            raw_conn.autocommit = True
+        except Exception:
+            pass
+    if schema_name and schema_name != "public":
+        cur = raw_conn.cursor()
+        cur.execute(f"SET search_path TO {schema_name}")
+        cur.close()
+    return raw_conn
+
+
 class PostgresConnectionWrapper:
     """
     Wraps a psycopg2 PostgreSQL connection so callers can use both standard
@@ -1034,19 +1131,34 @@ class PostgresConnectionWrapper:
     """
     is_postgres = True
 
-    def __init__(self, raw_conn):
+    def __init__(self, raw_conn, pool_key=None):
         self._raw_conn = raw_conn
+        self._pool_key = pool_key
+        self._discard_on_close = False
         self.isolation_level = ""
         self.in_transaction = False
+        self._stmt_count_in_tx = 0
         if hasattr(self._raw_conn, "autocommit"):
             try:
-                self._raw_conn.autocommit = False
+                self._raw_conn.autocommit = bool(pool_key is not None and _POSTGRES_CONNECT_FN is None)
             except Exception:
                 pass
 
+    def _reconnect_fresh_raw(self):
+        try:
+            self._raw_conn.close()
+        except Exception:
+            pass
+        if self._pool_key is not None:
+            clean_url, schema_name = self._pool_key
+            self._raw_conn = _create_raw_postgres_connection(clean_url, schema_name)
+            self._discard_on_close = False
+
     def _begin_transaction(self, raw_cursor=None):
         self.in_transaction = True
-        if getattr(self._raw_conn, "autocommit", False) and raw_cursor is not None:
+        if self._pool_key is not None and _POSTGRES_CONNECT_FN is None and hasattr(self._raw_conn, "autocommit"):
+            self._raw_conn.autocommit = False
+        elif getattr(self._raw_conn, "autocommit", False) and raw_cursor is not None:
             raw_cursor.execute("BEGIN")
         elif getattr(self._raw_conn, "RECORD_BEGIN_SQL", False) and raw_cursor is not None:
             raw_cursor.execute("BEGIN")
@@ -1060,15 +1172,51 @@ class PostgresConnectionWrapper:
 
     def commit(self):
         self.in_transaction = False
-        self._raw_conn.commit()
+        self._stmt_count_in_tx = 0
+        if not getattr(self._raw_conn, "autocommit", False) or _POSTGRES_CONNECT_FN is not None:
+            self._raw_conn.commit()
+        if self._pool_key is not None and _POSTGRES_CONNECT_FN is None and hasattr(self._raw_conn, "autocommit"):
+            try:
+                self._raw_conn.autocommit = True
+            except Exception:
+                pass
 
     def rollback(self):
         self.in_transaction = False
-        self._raw_conn.rollback()
+        self._stmt_count_in_tx = 0
+        if not getattr(self._raw_conn, "autocommit", False) or _POSTGRES_CONNECT_FN is not None:
+            self._raw_conn.rollback()
+        if self._pool_key is not None and _POSTGRES_CONNECT_FN is None and hasattr(self._raw_conn, "autocommit"):
+            try:
+                self._raw_conn.autocommit = True
+            except Exception:
+                pass
 
     def close(self):
         self.in_transaction = False
-        self._raw_conn.close()
+        self._stmt_count_in_tx = 0
+        if (
+            self._pool_key is not None
+            and _POSTGRES_CONNECT_FN is None
+            and not self._discard_on_close
+            and getattr(self._raw_conn, "closed", 1) == 0
+        ):
+            try:
+                tx_status = getattr(getattr(self._raw_conn, "info", None), "transaction_status", 0)
+                if not getattr(self._raw_conn, "autocommit", False) or tx_status != 0:
+                    self._raw_conn.rollback()
+                    self._raw_conn.autocommit = True
+                with _PG_POOL_LOCK:
+                    bucket = _PG_CONNECTION_POOL.setdefault(self._pool_key, [])
+                    if len(bucket) < _MAX_PG_POOL_SIZE:
+                        bucket.append(self._raw_conn)
+                        return
+            except Exception:
+                pass
+        try:
+            self._raw_conn.close()
+        except Exception:
+            pass
 
 
 def _connect_postgres(db_url):
@@ -1090,20 +1238,18 @@ def _connect_postgres(db_url):
             "psycopg2 is required when DATABASE_URL is set to PostgreSQL. "
             "Install dependencies via: pip install -r requirements.txt"
         )
-    connect_kwargs = {
-        "dsn": clean_url,
-        "connect_timeout": int(SQLITE_TIMEOUT_SECONDS),
-    }
-    if "sslmode=" not in clean_url.lower() and "localhost" not in clean_url.lower() and "127.0.0.1" not in clean_url.lower():
-        connect_kwargs["sslmode"] = "require"
-    raw_conn = psycopg2.connect(**connect_kwargs)
-    wrapper = PostgresConnectionWrapper(raw_conn)
-    if schema_name and schema_name != "public":
-        cur = wrapper.cursor()
-        cur.execute(f"SET search_path TO {schema_name}")
-        cur.close()
-        wrapper.commit()
-    return wrapper
+    pool_key = (clean_url, schema_name)
+    raw_conn = None
+    with _PG_POOL_LOCK:
+        bucket = _PG_CONNECTION_POOL.get(pool_key)
+        while bucket:
+            cand = bucket.pop()
+            if getattr(cand, "closed", 1) == 0:
+                raw_conn = cand
+                break
+    if raw_conn is None:
+        raw_conn = _create_raw_postgres_connection(clean_url, schema_name)
+    return PostgresConnectionWrapper(raw_conn, pool_key=pool_key)
 
 
 def get_db():
@@ -1692,6 +1838,7 @@ def init_db():
                     c.execute("INSERT INTO site_settings (key, value) VALUES (?, ?) ON CONFLICT (key) DO NOTHING", ("promo_banner_code", "NAARI10"))
 
                 conn.commit()
+                invalidate_site_settings_cache()
                 return
             except DB_OPERATIONAL_ERRORS as e:
                 last_err = e
@@ -2850,7 +2997,7 @@ def get_expected_admin_passkey():
             cleaned = raw_val.strip().strip('"').strip("'")
             if cleaned:
                 return cleaned
-    cfg = load_config()
+    cfg = load_config(include_db_settings=False)
     cfg_val = str(cfg.get("admin_secret_key") or cfg.get("admin_passkey") or "").strip().strip('"').strip("'")
     if cfg_val:
         return cfg_val
@@ -2870,7 +3017,7 @@ def is_admin_passkey_configured():
     return bool(stored_hash and stored_salt)
 
 
-def get_admin_auth_config_status():
+def get_admin_auth_config_status(cfg=None):
     """
     Returns non-sensitive metadata describing whether admin authentication is configured
     and which source(s) are active, never returning or logging secret values.
@@ -2879,7 +3026,8 @@ def get_admin_auth_config_status():
         bool((os.environ.get(k) or "").strip().strip('"').strip("'"))
         for k in ("ADMIN_SECRET_KEY", "ADMIN_PASSKEY", "ADMIN_PASSWORD")
     )
-    cfg = load_config()
+    if cfg is None:
+        cfg = load_config(include_db_settings=False)
     has_cfg_or_dotenv = bool(
         str(cfg.get("admin_secret_key") or cfg.get("admin_passkey") or "").strip().strip('"').strip("'")
     )
@@ -2919,6 +3067,25 @@ def verify_admin_passkey_value(candidate):
     return False
 
 def check_admin_auth():
+    if has_request_context() and getattr(g, "_admin_auth_verified", False) is True:
+        return True
+
+    passkey = request.headers.get("X-Admin-Passkey", "").strip() or request.args.get("passkey", "").strip()
+    if not passkey:
+        body = request.get_json(silent=True) or {}
+        if isinstance(body, dict):
+            passkey = str(body.get("passkey", "")).strip()
+    if not passkey and request.form:
+        passkey = str(request.form.get("passkey", "")).strip()
+
+    # Fast-path: check environment/config passkey in memory before opening a DB session
+    if passkey:
+        expected_env_key = get_expected_admin_passkey()
+        if expected_env_key and hmac.compare_digest(passkey.encode("utf-8"), expected_env_key.encode("utf-8")):
+            if has_request_context():
+                g._admin_auth_verified = True
+            return True
+
     # 1. Check session tokens (X-Admin-Token, Authorization: Bearer, and HttpOnly cookie)
     candidate_tokens = []
     hdr_admin_tok = request.headers.get("X-Admin-Token", "").strip()
@@ -2943,21 +3110,18 @@ def check_admin_auth():
                 c.execute("SELECT token FROM admin_sessions WHERE token = ? AND expires_at > ?", (tok, now_iso))
                 if c.fetchone():
                     conn.close()
+                    if has_request_context():
+                        g._admin_auth_verified = True
                     return True
             conn.close()
         except Exception:
             pass
 
-    # 2. Check passkey header, query arg, JSON payload, or form body
-    passkey = request.headers.get("X-Admin-Passkey", "").strip() or request.args.get("passkey", "").strip()
-    if not passkey:
-        body = request.get_json(silent=True) or {}
-        if isinstance(body, dict):
-            passkey = str(body.get("passkey", "")).strip()
-    if not passkey and request.form:
-        passkey = str(request.form.get("passkey", "")).strip()
-
-    return verify_admin_passkey_value(passkey)
+    # 2. Check passkey against site_settings hash if present
+    is_valid = verify_admin_passkey_value(passkey)
+    if is_valid and has_request_context():
+        g._admin_auth_verified = True
+    return is_valid
 
 # ================= Initialize Flask App =================
 app = Flask(__name__, static_folder=BASE_DIR)
@@ -3003,7 +3167,24 @@ def add_cors_headers(response):
     response.headers.pop("Access-Control-Allow-Credentials", None)
     response.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS, PUT, DELETE"
     response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization, X-Admin-Passkey, X-Admin-Token"
-    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    req_path = (request.path or "").lower()
+    is_static_asset = (
+        response.status_code == 200
+        and not req_path.startswith("/api")
+        and (
+            req_path.startswith("/assets/")
+            or req_path.startswith("/images/")
+            or req_path in ("/favicon.png", "/favicon.ico")
+        )
+        and any(req_path.endswith(ext) for ext in ALLOWED_PUBLIC_ASSET_EXTS)
+    )
+    if is_static_asset:
+        if req_path.endswith(".js") or req_path.endswith(".css"):
+            response.headers["Cache-Control"] = "public, max-age=300, must-revalidate"
+        elif "Cache-Control" not in response.headers or "no-store" in response.headers.get("Cache-Control", ""):
+            response.headers["Cache-Control"] = "public, max-age=3600"
+    else:
+        response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
     return response
 
 # ================= Public Storefront APIs =================
@@ -3022,7 +3203,7 @@ def api_config():
     cfg = load_config()
     configured = is_razorpay_configured(cfg)
     gmaps_configured = is_google_maps_configured(cfg)
-    admin_status = get_admin_auth_config_status()
+    admin_status = get_admin_auth_config_status(cfg=cfg)
     return jsonify({
         "ok": True,
         "razorpay_key_id": cfg.get("razorpay_key_id", "") if configured else "",
@@ -3284,16 +3465,16 @@ def api_banners():
     active_promo_coupon = None
     conn = get_db()
     c = conn.cursor()
-    if promo_code:
-        c.execute("SELECT code, discount_type, discount_value, min_order_value, max_discount, description, expiry_date FROM coupons WHERE code = ? AND is_active = 1", (promo_code,))
-        row = c.fetchone()
-        if row:
-            active_promo_coupon = dict(row)
-    if not active_promo_coupon:
-        c.execute("SELECT code, discount_type, discount_value, min_order_value, max_discount, description, expiry_date FROM coupons WHERE is_active = 1 ORDER BY created_at ASC LIMIT 1")
-        row = c.fetchone()
-        if row:
-            active_promo_coupon = dict(row)
+    c.execute("""
+        SELECT code, discount_type, discount_value, min_order_value, max_discount, description, expiry_date
+        FROM coupons
+        WHERE is_active = 1
+        ORDER BY CASE WHEN code = ? THEN 0 ELSE 1 END ASC, created_at ASC
+        LIMIT 1
+    """, (promo_code or "",))
+    row = c.fetchone()
+    if row:
+        active_promo_coupon = dict(row)
     conn.close()
 
     if not active_promo_coupon:
@@ -5084,220 +5265,7 @@ def api_admin_logout():
     resp = jsonify({"ok": True, "message": "Admin session logged out."})
     return clear_admin_auth_cookie(resp)
 
-@app.route("/api/admin/stats", methods=["GET"])
-def api_admin_stats():
-    if not check_admin_auth():
-        return jsonify({"ok": False, "error": "Unauthorized"}), 401
-
-    conn = get_db()
-    c = conn.cursor()
-
-    c.execute("""
-        SELECT COUNT(*) AS paid_orders, COALESCE(SUM(total_amount), 0) AS verified_paid_revenue
-        FROM orders
-        WHERE LOWER(COALESCE(order_status, '')) != 'cancelled'
-          AND LOWER(COALESCE(payment_method, '')) != 'cod'
-          AND LOWER(COALESCE(payment_status, '')) = 'paid'
-    """)
-    paid_row = dict(c.fetchone())
-
-    c.execute("""
-        SELECT COUNT(*) AS cod_orders, COALESCE(SUM(total_amount), 0) AS cod_revenue
-        FROM orders
-        WHERE LOWER(COALESCE(order_status, '')) != 'cancelled'
-          AND LOWER(COALESCE(payment_method, '')) = 'cod'
-          AND LOWER(COALESCE(payment_status, 'cod_confirmed')) NOT IN ('failed', 'cancelled', 'refunded')
-    """)
-    cod_row = dict(c.fetchone())
-
-    paid_orders_cnt = int(paid_row["paid_orders"] or 0)
-    verified_paid_rev = int(paid_row["verified_paid_revenue"] or 0)
-    cod_orders_cnt = int(cod_row["cod_orders"] or 0)
-    cod_rev = int(cod_row["cod_revenue"] or 0)
-
-    totals = {
-        "paid_orders": paid_orders_cnt,
-        "paid_count": paid_orders_cnt,
-        "verified_paid_revenue": verified_paid_rev,
-        "paid_revenue": verified_paid_rev,
-        "cod_orders": cod_orders_cnt,
-        "cod_count": cod_orders_cnt,
-        "cod_revenue": cod_rev,
-        "total_orders": paid_orders_cnt + cod_orders_cnt,
-        "total_revenue": verified_paid_rev + cod_rev,
-    }
-
-    c.execute("""
-        SELECT COUNT(*) AS pending_orders
-        FROM orders
-        WHERE LOWER(COALESCE(order_status, '')) IN ('placed', 'confirmed', 'packed', 'processing')
-          AND (
-              (LOWER(COALESCE(payment_method, '')) = 'cod' AND LOWER(COALESCE(payment_status, 'cod_confirmed')) NOT IN ('failed', 'cancelled', 'refunded'))
-              OR (LOWER(COALESCE(payment_method, '')) != 'cod' AND LOWER(COALESCE(payment_status, '')) = 'paid')
-          )
-    """)
-    totals["pending_orders"] = int(c.fetchone()["pending_orders"] or 0)
-
-    c.execute("""
-        SELECT COUNT(*) AS unpaid_orders
-        FROM orders
-        WHERE LOWER(COALESCE(order_status, '')) != 'cancelled'
-          AND LOWER(COALESCE(payment_method, '')) != 'cod'
-          AND LOWER(COALESCE(payment_status, '')) != 'paid'
-    """)
-    totals["unpaid_orders"] = int(c.fetchone()["unpaid_orders"] or 0)
-
-    c.execute("SELECT COUNT(*) AS shipped_orders FROM orders WHERE LOWER(COALESCE(order_status, '')) IN ('shipped', 'out for delivery', 'out_for_delivery')")
-    totals["shipped_orders"] = int(c.fetchone()["shipped_orders"] or 0)
-
-    c.execute("SELECT COUNT(*) AS delivered_orders FROM orders WHERE LOWER(COALESCE(order_status, '')) = 'delivered'")
-    totals["delivered_orders"] = int(c.fetchone()["delivered_orders"] or 0)
-
-    c.execute("SELECT COUNT(*) AS cancelled_orders FROM orders WHERE LOWER(COALESCE(order_status, '')) = 'cancelled'")
-    totals["cancelled_orders"] = int(c.fetchone()["cancelled_orders"] or 0)
-
-    c.execute("SELECT COUNT(*) AS pending_returns FROM return_requests WHERE LOWER(COALESCE(status, '')) IN ('pending', 'requested')")
-    totals["pending_returns"] = c.fetchone()["pending_returns"]
-
-    c.execute("SELECT * FROM products ORDER BY created_at DESC")
-    all_product_rows = [format_product_row(r) for r in c.fetchall()]
-
-    active_prods = [p for p in all_product_rows if not p.get("is_archived", 0)]
-    archived_prods = [p for p in all_product_rows if p.get("is_archived", 0)]
-    low_stock_alerts = [
-        {
-            "id": p["id"],
-            "sku": p.get("sku") or p["id"].upper(),
-            "name": p["name"],
-            "category": p["category"],
-            "image": p.get("relative_image") or p.get("image"),
-            "stock": p["stock"],
-            "sizeStock": p.get("sizeStock", {}),
-            "size_stock": p.get("sizeStock", {}),
-            "lowStockSizes": p.get("lowStockSizes", []),
-            "soldOutSizes": p.get("soldOutSizes", []),
-            "isOutOfStock": p["stock"] <= 0
-        }
-        for p in active_prods
-        if p["stock"] <= 10 or len(p.get("lowStockSizes", [])) > 0 or len(p.get("soldOutSizes", [])) > 0
-    ]
-    out_of_stock_cnt = sum(1 for p in active_prods if p["stock"] <= 0)
-
-    c.execute("SELECT COUNT(*) AS active_coupons FROM coupons WHERE is_active = 1")
-    active_coupons_cnt = c.fetchone()["active_coupons"]
-
-    totals["total_products"] = len(active_prods)
-    totals["active_products"] = len(active_prods)
-    totals["archived_products"] = len(archived_prods)
-    totals["low_stock_count"] = len(low_stock_alerts)
-    totals["out_of_stock_count"] = out_of_stock_cnt
-    totals["active_coupons"] = active_coupons_cnt
-
-    c.execute("SELECT COUNT(*) AS total_users FROM users")
-    totals["total_users"] = c.fetchone()["total_users"]
-    totals["total_customers"] = totals["total_users"]
-
-    # Calculate best-selling products from actual valid non-cancelled orders in SQLite
-    c.execute("""
-        SELECT items_json FROM orders
-        WHERE LOWER(COALESCE(order_status, '')) != 'cancelled'
-          AND (
-              (LOWER(COALESCE(payment_method, '')) = 'cod' AND LOWER(COALESCE(payment_status, 'cod_confirmed')) NOT IN ('failed', 'cancelled', 'refunded'))
-              OR (LOWER(COALESCE(payment_method, '')) != 'cod' AND LOWER(COALESCE(payment_status, '')) = 'paid')
-          )
-    """)
-    sales_by_pid = {}
-    prod_lookup = {p["id"]: p for p in all_product_rows}
-    for orow in c.fetchall():
-        try:
-            items = json.loads(orow["items_json"] or "[]")
-        except Exception:
-            items = []
-        for item in items:
-            pid = str(item.get("id", "")).strip()
-            if not pid:
-                continue
-            qty = max(1, int(item.get("qty", 1) or 1))
-            line_rev = int(item.get("subtotal") or (int(item.get("price", 0) or 0) * qty))
-            if pid not in sales_by_pid:
-                p_meta = prod_lookup.get(pid, {})
-                sales_by_pid[pid] = {
-                    "id": pid,
-                    "sku": p_meta.get("sku") or pid.upper(),
-                    "name": p_meta.get("name") or item.get("name") or pid,
-                    "category": p_meta.get("category") or item.get("category") or "Kurti",
-                    "image": p_meta.get("relative_image") or p_meta.get("image") or item.get("image") or "assets/hero.jpg",
-                    "price": p_meta.get("price") or int(item.get("price", 0) or 0),
-                    "stock": p_meta.get("stock", 0),
-                    "units_sold": 0,
-                    "revenue": 0,
-                    "orders_count": 0
-                }
-            sales_by_pid[pid]["units_sold"] += qty
-            sales_by_pid[pid]["revenue"] += line_rev
-            sales_by_pid[pid]["orders_count"] += 1
-
-    best_selling = sorted(
-        sales_by_pid.values(),
-        key=lambda x: (x["units_sold"], x["revenue"]),
-        reverse=True
-    )[:6]
-
-    # Recent orders
-    c.execute("""
-        SELECT id, customer_name, customer_email, customer_phone,
-               payment_method, payment_status, order_status,
-               subtotal, discount_amount, shipping, coupon_code,
-               total_amount, items_json, created_at
-        FROM orders
-        ORDER BY created_at DESC LIMIT 10
-    """)
-    recent_orders = []
-    for r in c.fetchall():
-        rd = dict(r)
-        rd["order_id"] = rd["id"]
-        try:
-            rd["items"] = json.loads(rd.pop("items_json", "[]"))
-        except Exception:
-            rd["items"] = []
-        disc_val = int(rd.get("discount_amount") or 0)
-        rd["discount"] = disc_val
-        rd["customer"] = {
-            "name": rd.get("customer_name", "Guest"),
-            "email": rd.get("customer_email", ""),
-            "phone": rd.get("customer_phone", ""),
-        }
-        rd["pricing"] = {
-            "subtotal": int(rd.get("subtotal") or 0),
-            "discount": disc_val,
-            "discount_amount": disc_val,
-            "shipping": int(rd.get("shipping") or 0),
-            "total": int(rd.get("total_amount") or 0),
-            "coupon_code": rd.get("coupon_code") or "",
-        }
-        recent_orders.append(rd)
-
-    totals["best_selling_products"] = best_selling
-    totals["low_stock_alerts"] = low_stock_alerts
-
-    conn.close()
-    return jsonify({
-        "ok": True,
-        "stats": totals,
-        "recent_orders": recent_orders,
-        "best_selling_products": best_selling,
-        "low_stock_alerts": low_stock_alerts
-    })
-
-@app.route("/api/admin/customers", methods=["GET"])
-def api_admin_customers():
-    if not check_admin_auth():
-        return jsonify({"ok": False, "error": "Unauthorized"}), 401
-
-    search = request.args.get("search", "").strip().lower()
-
-    conn = get_db()
-    c = conn.cursor()
+def _fetch_admin_customers_data(c, search=""):
     c.execute("""
         SELECT
             u.id,
@@ -5335,8 +5303,6 @@ def api_admin_customers():
         ORDER BY u.created_at DESC
     """)
     rows = c.fetchall()
-    conn.close()
-
     total_customers = len(rows)
     customers = []
     for r in rows:
@@ -5354,32 +5320,12 @@ def api_admin_customers():
             if search not in haystack:
                 continue
         customers.append(cust)
+    return total_customers, customers
 
-    return jsonify({
-        "ok": True,
-        "total_customers": total_customers,
-        "count": len(customers),
-        "customers": customers
-    })
 
-@app.route("/api/admin/orders", methods=["GET"])
-def api_admin_orders():
-    if not check_admin_auth():
-        return jsonify({"ok": False, "error": "Unauthorized"}), 401
-
-    status = request.args.get("status", "").strip().lower()
-    payment_method = request.args.get("payment_method", "").strip().lower()
-    payment_status = request.args.get("payment_status", "").strip().lower()
-    date_from = request.args.get("date_from", "").strip()
-    date_to = request.args.get("date_to", "").strip()
-    search = request.args.get("search", "").strip().lower()
-
-    conn = get_db()
-    c = conn.cursor()
+def _fetch_admin_orders_data(c, status="", payment_method="", payment_status="", date_from="", date_to="", search=""):
     c.execute("SELECT * FROM orders ORDER BY created_at DESC")
     rows = c.fetchall()
-    conn.close()
-
     orders = []
     for r in rows:
         od = dict(r)
@@ -5453,6 +5399,371 @@ def api_admin_orders():
             if search not in q:
                 continue
         orders.append(od)
+    return orders
+
+
+@app.route("/api/admin/stats", methods=["GET"])
+def api_admin_stats():
+    if not check_admin_auth():
+        return jsonify({"ok": False, "error": "Unauthorized"}), 401
+
+    include_all = request.args.get("include_all", "").strip() == "1"
+
+    conn = get_db()
+    c = conn.cursor()
+
+    c.execute("""
+        SELECT
+            COALESCE(SUM(CASE
+                WHEN LOWER(COALESCE(order_status, '')) != 'cancelled'
+                 AND LOWER(COALESCE(payment_method, '')) != 'cod'
+                 AND LOWER(COALESCE(payment_status, '')) = 'paid'
+                THEN 1 ELSE 0 END), 0) AS paid_orders,
+            COALESCE(SUM(CASE
+                WHEN LOWER(COALESCE(order_status, '')) != 'cancelled'
+                 AND LOWER(COALESCE(payment_method, '')) != 'cod'
+                 AND LOWER(COALESCE(payment_status, '')) = 'paid'
+                THEN COALESCE(total_amount, 0) ELSE 0 END), 0) AS verified_paid_revenue,
+            COALESCE(SUM(CASE
+                WHEN LOWER(COALESCE(order_status, '')) != 'cancelled'
+                 AND LOWER(COALESCE(payment_method, '')) = 'cod'
+                 AND LOWER(COALESCE(payment_status, 'cod_confirmed')) NOT IN ('failed', 'cancelled', 'refunded')
+                THEN 1 ELSE 0 END), 0) AS cod_orders,
+            COALESCE(SUM(CASE
+                WHEN LOWER(COALESCE(order_status, '')) != 'cancelled'
+                 AND LOWER(COALESCE(payment_method, '')) = 'cod'
+                 AND LOWER(COALESCE(payment_status, 'cod_confirmed')) NOT IN ('failed', 'cancelled', 'refunded')
+                THEN COALESCE(total_amount, 0) ELSE 0 END), 0) AS cod_revenue,
+            COALESCE(SUM(CASE
+                WHEN LOWER(COALESCE(order_status, '')) IN ('placed', 'confirmed', 'packed', 'processing')
+                 AND (
+                     (LOWER(COALESCE(payment_method, '')) = 'cod' AND LOWER(COALESCE(payment_status, 'cod_confirmed')) NOT IN ('failed', 'cancelled', 'refunded'))
+                     OR (LOWER(COALESCE(payment_method, '')) != 'cod' AND LOWER(COALESCE(payment_status, '')) = 'paid')
+                 )
+                THEN 1 ELSE 0 END), 0) AS pending_orders,
+            COALESCE(SUM(CASE
+                WHEN LOWER(COALESCE(order_status, '')) != 'cancelled'
+                 AND LOWER(COALESCE(payment_method, '')) != 'cod'
+                 AND LOWER(COALESCE(payment_status, '')) != 'paid'
+                THEN 1 ELSE 0 END), 0) AS unpaid_orders,
+            COALESCE(SUM(CASE
+                WHEN LOWER(COALESCE(order_status, '')) IN ('shipped', 'out for delivery', 'out_for_delivery')
+                THEN 1 ELSE 0 END), 0) AS shipped_orders,
+            COALESCE(SUM(CASE
+                WHEN LOWER(COALESCE(order_status, '')) = 'delivered'
+                THEN 1 ELSE 0 END), 0) AS delivered_orders,
+            COALESCE(SUM(CASE
+                WHEN LOWER(COALESCE(order_status, '')) = 'cancelled'
+                THEN 1 ELSE 0 END), 0) AS cancelled_orders,
+            (SELECT COUNT(*) FROM return_requests WHERE LOWER(COALESCE(status, '')) IN ('pending', 'requested')) AS pending_returns,
+            (SELECT COUNT(*) FROM coupons WHERE is_active = 1) AS active_coupons,
+            (SELECT COUNT(*) FROM users) AS total_users
+        FROM orders
+    """)
+    agg_row = dict(c.fetchone() or {})
+
+    paid_orders_cnt = int(agg_row.get("paid_orders") or 0)
+    verified_paid_rev = int(agg_row.get("verified_paid_revenue") or 0)
+    cod_orders_cnt = int(agg_row.get("cod_orders") or 0)
+    cod_rev = int(agg_row.get("cod_revenue") or 0)
+
+    totals = {
+        "paid_orders": paid_orders_cnt,
+        "paid_count": paid_orders_cnt,
+        "verified_paid_revenue": verified_paid_rev,
+        "paid_revenue": verified_paid_rev,
+        "cod_orders": cod_orders_cnt,
+        "cod_count": cod_orders_cnt,
+        "cod_revenue": cod_rev,
+        "total_orders": paid_orders_cnt + cod_orders_cnt,
+        "total_revenue": verified_paid_rev + cod_rev,
+        "pending_orders": int(agg_row.get("pending_orders") or 0),
+        "unpaid_orders": int(agg_row.get("unpaid_orders") or 0),
+        "shipped_orders": int(agg_row.get("shipped_orders") or 0),
+        "delivered_orders": int(agg_row.get("delivered_orders") or 0),
+        "cancelled_orders": int(agg_row.get("cancelled_orders") or 0),
+        "pending_returns": int(agg_row.get("pending_returns") or 0),
+    }
+
+    c.execute("SELECT * FROM products ORDER BY created_at DESC")
+    all_product_rows = [format_product_row(r) for r in c.fetchall()]
+
+    active_prods = [p for p in all_product_rows if not p.get("is_archived", 0)]
+    archived_prods = [p for p in all_product_rows if p.get("is_archived", 0)]
+    low_stock_alerts = [
+        {
+            "id": p["id"],
+            "sku": p.get("sku") or p["id"].upper(),
+            "name": p["name"],
+            "category": p["category"],
+            "image": p.get("relative_image") or p.get("image"),
+            "stock": p["stock"],
+            "sizeStock": p.get("sizeStock", {}),
+            "size_stock": p.get("sizeStock", {}),
+            "lowStockSizes": p.get("lowStockSizes", []),
+            "soldOutSizes": p.get("soldOutSizes", []),
+            "isOutOfStock": p["stock"] <= 0
+        }
+        for p in active_prods
+        if p["stock"] <= 10 or len(p.get("lowStockSizes", [])) > 0 or len(p.get("soldOutSizes", [])) > 0
+    ]
+    out_of_stock_cnt = sum(1 for p in active_prods if p["stock"] <= 0)
+    active_coupons_cnt = int(agg_row.get("active_coupons") or 0)
+
+    totals["total_products"] = len(active_prods)
+    totals["active_products"] = len(active_prods)
+    totals["archived_products"] = len(archived_prods)
+    totals["low_stock_count"] = len(low_stock_alerts)
+    totals["out_of_stock_count"] = out_of_stock_cnt
+    totals["active_coupons"] = active_coupons_cnt
+    totals["total_users"] = int(agg_row.get("total_users") or 0)
+    totals["total_customers"] = totals["total_users"]
+
+    all_orders_formatted = None
+    if include_all:
+        all_orders_formatted = _fetch_admin_orders_data(c)
+        sales_by_pid = {}
+        prod_lookup = {p["id"]: p for p in all_product_rows}
+        for od in all_orders_formatted:
+            ord_st = str(od.get("order_status") or "").strip().lower()
+            pay_m = str(od.get("payment_method") or "").strip().lower()
+            pay_st = str(od.get("payment_status") or "cod_confirmed").strip().lower()
+            if ord_st == "cancelled":
+                continue
+            is_valid_sale = (
+                (pay_m == "cod" and pay_st not in ("failed", "cancelled", "refunded"))
+                or (pay_m != "cod" and pay_st == "paid")
+            )
+            if not is_valid_sale:
+                continue
+            for item in (od.get("items") or []):
+                pid = str(item.get("id", "")).strip()
+                if not pid:
+                    continue
+                qty = max(1, int(item.get("qty", 1) or 1))
+                line_rev = int(item.get("subtotal") or (int(item.get("price", 0) or 0) * qty))
+                if pid not in sales_by_pid:
+                    p_meta = prod_lookup.get(pid, {})
+                    sales_by_pid[pid] = {
+                        "id": pid,
+                        "sku": p_meta.get("sku") or pid.upper(),
+                        "name": p_meta.get("name") or item.get("name") or pid,
+                        "category": p_meta.get("category") or item.get("category") or "Kurti",
+                        "image": p_meta.get("relative_image") or p_meta.get("image") or item.get("image") or "assets/hero.jpg",
+                        "price": p_meta.get("price") or int(item.get("price", 0) or 0),
+                        "stock": p_meta.get("stock", 0),
+                        "units_sold": 0,
+                        "revenue": 0,
+                        "orders_count": 0
+                    }
+                sales_by_pid[pid]["units_sold"] += qty
+                sales_by_pid[pid]["revenue"] += line_rev
+                sales_by_pid[pid]["orders_count"] += 1
+        best_selling = sorted(
+            sales_by_pid.values(),
+            key=lambda x: (x["units_sold"], x["revenue"]),
+            reverse=True
+        )[:6]
+        recent_orders = all_orders_formatted[:10]
+    else:
+        c.execute("""
+            SELECT items_json FROM orders
+            WHERE LOWER(COALESCE(order_status, '')) != 'cancelled'
+              AND (
+                  (LOWER(COALESCE(payment_method, '')) = 'cod' AND LOWER(COALESCE(payment_status, 'cod_confirmed')) NOT IN ('failed', 'cancelled', 'refunded'))
+                  OR (LOWER(COALESCE(payment_method, '')) != 'cod' AND LOWER(COALESCE(payment_status, '')) = 'paid')
+              )
+        """)
+        sales_by_pid = {}
+        prod_lookup = {p["id"]: p for p in all_product_rows}
+        for orow in c.fetchall():
+            try:
+                items = json.loads(orow["items_json"] or "[]")
+            except Exception:
+                items = []
+            for item in items:
+                pid = str(item.get("id", "")).strip()
+                if not pid:
+                    continue
+                qty = max(1, int(item.get("qty", 1) or 1))
+                line_rev = int(item.get("subtotal") or (int(item.get("price", 0) or 0) * qty))
+                if pid not in sales_by_pid:
+                    p_meta = prod_lookup.get(pid, {})
+                    sales_by_pid[pid] = {
+                        "id": pid,
+                        "sku": p_meta.get("sku") or pid.upper(),
+                        "name": p_meta.get("name") or item.get("name") or pid,
+                        "category": p_meta.get("category") or item.get("category") or "Kurti",
+                        "image": p_meta.get("relative_image") or p_meta.get("image") or item.get("image") or "assets/hero.jpg",
+                        "price": p_meta.get("price") or int(item.get("price", 0) or 0),
+                        "stock": p_meta.get("stock", 0),
+                        "units_sold": 0,
+                        "revenue": 0,
+                        "orders_count": 0
+                    }
+                sales_by_pid[pid]["units_sold"] += qty
+                sales_by_pid[pid]["revenue"] += line_rev
+                sales_by_pid[pid]["orders_count"] += 1
+
+        best_selling = sorted(
+            sales_by_pid.values(),
+            key=lambda x: (x["units_sold"], x["revenue"]),
+            reverse=True
+        )[:6]
+
+        c.execute("""
+            SELECT id, customer_name, customer_email, customer_phone,
+                   payment_method, payment_status, order_status,
+                   subtotal, discount_amount, shipping, coupon_code,
+                   total_amount, items_json, created_at
+            FROM orders
+            ORDER BY created_at DESC LIMIT 10
+        """)
+        recent_orders = []
+        for r in c.fetchall():
+            rd = dict(r)
+            rd["order_id"] = rd["id"]
+            try:
+                rd["items"] = json.loads(rd.pop("items_json", "[]"))
+            except Exception:
+                rd["items"] = []
+            disc_val = int(rd.get("discount_amount") or 0)
+            rd["discount"] = disc_val
+            rd["customer"] = {
+                "name": rd.get("customer_name", "Guest"),
+                "email": rd.get("customer_email", ""),
+                "phone": rd.get("customer_phone", ""),
+            }
+            rd["pricing"] = {
+                "subtotal": int(rd.get("subtotal") or 0),
+                "discount": disc_val,
+                "discount_amount": disc_val,
+                "shipping": int(rd.get("shipping") or 0),
+                "total": int(rd.get("total_amount") or 0),
+                "coupon_code": rd.get("coupon_code") or "",
+            }
+            recent_orders.append(rd)
+
+    totals["best_selling_products"] = best_selling
+    totals["low_stock_alerts"] = low_stock_alerts
+
+    payload = {
+        "ok": True,
+        "stats": totals,
+        "recent_orders": recent_orders,
+        "best_selling_products": best_selling,
+        "low_stock_alerts": low_stock_alerts,
+    }
+
+    if include_all:
+        total_cust, customers_list = _fetch_admin_customers_data(c)
+        c.execute("SELECT * FROM coupons ORDER BY created_at DESC")
+        coupons_list = []
+        for r in c.fetchall():
+            d = dict(r)
+            d["times_used"] = d.get("used_count", 0)
+            d["active"] = bool(d.get("is_active", 1))
+            d["min_order"] = d.get("min_order_value", 0)
+            d["auto_apply"] = bool(d.get("is_auto_apply", 0))
+            coupons_list.append(d)
+
+        c.execute("SELECT * FROM return_requests ORDER BY created_at DESC")
+        returns_list = []
+        for r in c.fetchall():
+            d = dict(r)
+            d["return_id"] = d.get("id", "")
+            d["status"] = normalize_return_status(d.get("status")) or "requested"
+            d["request_type"] = d.get("action_type", "return")
+            d["details"] = d.get("notes", "")
+            returns_list.append(d)
+
+        conn.close()
+        cfg = load_config()
+        raw_site_settings = get_site_settings_dict()
+        forbidden_setting_keys = {
+            "admin_passkey_hash", "admin_passkey_salt",
+            "admin_secret_key", "admin_passkey", "admin_password",
+            "razorpay_key_secret", "supabase_service_role_key",
+            "supabase_service_key", "database_url"
+        }
+        settings_obj = {
+            "store_name": cfg.get("store_name", "Matra Naari"),
+            "store_description": cfg.get("store_description", "Modern Kurtis Rooted in Craft"),
+            "support_phone": cfg.get("support_phone", "+91 88493 66915"),
+            "support_email": cfg.get("support_email", "hello@naari.in"),
+            "free_shipping_threshold": cfg.get("free_shipping_threshold", 999),
+            "shipping_fee": cfg.get("shipping_fee", 99),
+            "standard_shipping_fee": cfg.get("shipping_fee", 99),
+            "cod_enabled": cfg.get("cod_enabled", True),
+            "sales_enabled": cfg.get("sales_enabled", True),
+            "razorpay_enabled": cfg.get("razorpay_enabled", False),
+            "gst_percentage": cfg.get("gst_percentage", 5),
+            "return_window_days": cfg.get("return_window_days", 7),
+            "courier_provider": cfg.get("courier_provider", "Indian Postal Circle / Standard Courier")
+        }
+        for sk, sv in raw_site_settings.items():
+            if sk not in forbidden_setting_keys:
+                settings_obj[sk] = sv
+        if "announcements" in settings_obj and isinstance(settings_obj["announcements"], list) and "announcement_text" not in settings_obj:
+            settings_obj["announcement_text"] = " | ".join(settings_obj["announcements"])
+        if "shipping_fee" in settings_obj and "standard_shipping_fee" not in settings_obj:
+            settings_obj["standard_shipping_fee"] = settings_obj["shipping_fee"]
+
+        payload["products"] = all_product_rows
+        payload["orders"] = all_orders_formatted
+        payload["customers"] = customers_list
+        payload["total_customers"] = total_cust
+        payload["coupons"] = coupons_list
+        payload["returns"] = returns_list
+        payload["settings"] = settings_obj
+        return jsonify(payload)
+
+    conn.close()
+    return jsonify(payload)
+
+@app.route("/api/admin/customers", methods=["GET"])
+def api_admin_customers():
+    if not check_admin_auth():
+        return jsonify({"ok": False, "error": "Unauthorized"}), 401
+
+    search = request.args.get("search", "").strip().lower()
+
+    conn = get_db()
+    c = conn.cursor()
+    total_customers, customers = _fetch_admin_customers_data(c, search=search)
+    conn.close()
+
+    return jsonify({
+        "ok": True,
+        "total_customers": total_customers,
+        "count": len(customers),
+        "customers": customers
+    })
+
+@app.route("/api/admin/orders", methods=["GET"])
+def api_admin_orders():
+    if not check_admin_auth():
+        return jsonify({"ok": False, "error": "Unauthorized"}), 401
+
+    status = request.args.get("status", "").strip().lower()
+    payment_method = request.args.get("payment_method", "").strip().lower()
+    payment_status = request.args.get("payment_status", "").strip().lower()
+    date_from = request.args.get("date_from", "").strip()
+    date_to = request.args.get("date_to", "").strip()
+    search = request.args.get("search", "").strip().lower()
+
+    conn = get_db()
+    c = conn.cursor()
+    orders = _fetch_admin_orders_data(
+        c,
+        status=status,
+        payment_method=payment_method,
+        payment_status=payment_status,
+        date_from=date_from,
+        date_to=date_to,
+        search=search,
+    )
+    conn.close()
 
     return jsonify({"ok": True, "count": len(orders), "orders": orders})
 
@@ -6226,10 +6537,27 @@ def api_admin_settings():
                 (k, val_str),
             )
         conn.commit()
+        invalidate_site_settings_cache()
 
     c.execute("SELECT key, value FROM site_settings")
     rows = c.fetchall()
     conn.close()
+
+    parsed_site_settings = {}
+    for r in rows:
+        val = r["value"]
+        try:
+            parsed_site_settings[r["key"]] = json.loads(val)
+        except Exception:
+            parsed_site_settings[r["key"]] = val
+    if has_request_context():
+        g._site_settings_dict = dict(parsed_site_settings)
+    if is_postgres_mode() and _POSTGRES_CONNECT_FN is None:
+        with _SITE_SETTINGS_CACHE_LOCK:
+            _SITE_SETTINGS_CACHE[(get_database_url(), get_postgres_schema())] = {
+                "ts": time.monotonic(),
+                "data": dict(parsed_site_settings),
+            }
 
     cfg = load_config()
     settings = {
@@ -6247,14 +6575,10 @@ def api_admin_settings():
         "return_window_days": cfg.get("return_window_days", 7),
         "courier_provider": cfg.get("courier_provider", "Indian Postal Circle / Standard Courier")
     }
-    for r in rows:
-        if r["key"] in forbidden_setting_keys:
+    for k, v in parsed_site_settings.items():
+        if k in forbidden_setting_keys:
             continue
-        val = r["value"]
-        try:
-            settings[r["key"]] = json.loads(val)
-        except Exception:
-            settings[r["key"]] = val
+        settings[k] = v
 
     if "announcements" in settings and isinstance(settings["announcements"], list) and "announcement_text" not in settings:
         settings["announcement_text"] = " | ".join(settings["announcements"])

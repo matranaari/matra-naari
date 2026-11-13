@@ -112,6 +112,9 @@
 
   <script src="assets/app.js"></script>
   <script>
+    let lastRenderedThreshold = null;
+    let lastRenderedShippingFee = null;
+
     function renderFullCartPage() {
       const container = document.getElementById('cart-page-main-container');
       const cart = getCart();
@@ -122,6 +125,8 @@
       const storeSettings = window.NAARI_STORE_SETTINGS || { free_shipping_threshold: 999, shipping_fee: 99 };
       const freeThreshold = Number(storeSettings.free_shipping_threshold ?? 999);
       const baseShippingFee = Number(storeSettings.shipping_fee ?? 99);
+      lastRenderedThreshold = freeThreshold;
+      lastRenderedShippingFee = baseShippingFee;
       const meterText = document.getElementById('cart-page-meter-text');
       const meterBar = document.getElementById('cart-page-meter-bar');
       if (subtotal >= freeThreshold) {
@@ -330,10 +335,18 @@
       }
     }
 
-    document.addEventListener('DOMContentLoaded', renderFullCartPage);
+    renderFullCartPage();
     window.addEventListener('naari:cartUpdated', renderFullCartPage);
     window.addEventListener('naari:couponUpdated', renderFullCartPage);
     window.addEventListener('naari:authChanged', renderFullCartPage);
+    window.addEventListener('naari:settingsLoaded', (e) => {
+      const s = (e && e.detail) || window.NAARI_STORE_SETTINGS || {};
+      const nextThreshold = Number(s.free_shipping_threshold ?? 999);
+      const nextFee = Number(s.shipping_fee ?? 99);
+      if (nextThreshold !== lastRenderedThreshold || nextFee !== lastRenderedShippingFee) {
+        renderFullCartPage();
+      }
+    });
   </script>
 </body>
 </html>
