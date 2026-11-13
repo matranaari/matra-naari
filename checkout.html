@@ -109,11 +109,16 @@
               <div id="saved-addresses-chips" class="flex flex-wrap gap-2"></div>
             </div>
 
-            <!-- 1A. Blinkit-Style Live Address Search Autocomplete -->
+            <!-- 1A. Blinkit-Style Live Address Search Autocomplete (Google Places New + OpenStreetMap Fallback) -->
             <div class="mt-5 space-y-2">
-              <label for="address-search-input" class="block text-xs uppercase tracking-wider font-semibold text-primary">
-                Search Delivery Area / Society / Landmark
-              </label>
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <label for="address-search-input" class="block text-xs uppercase tracking-wider font-semibold text-primary">
+                  Search Society / Apartment / Building / Landmark
+                </label>
+                <span id="address-provider-badge" class="rounded bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary">
+                  India Delivery Search
+                </span>
+              </div>
               <div class="relative" id="address-autocomplete-container">
                 <div class="flex items-center border border-border bg-background focus-within:border-primary">
                   <span class="pl-3 pr-2 text-primary text-sm select-none" aria-hidden="true">🔍</span>
@@ -121,7 +126,7 @@
                     id="address-search-input"
                     type="text"
                     autocomplete="off"
-                    placeholder="Search your society, street, sector or landmark (e.g. C-Scheme Jaipur, Connaught Place)..."
+                    placeholder="Search society, apartment, building or landmark (e.g. Prestige Shantiniketan, DLF Phase 4, C-Scheme)..."
                     class="w-full bg-transparent py-2.5 pr-3 text-sm outline-none"
                   />
                   <span id="address-search-spinner" class="hidden pr-3 text-xs text-primary animate-pulse">Searching…</span>
@@ -140,8 +145,8 @@
                   class="hidden absolute left-0 right-0 top-full z-30 mt-1 max-h-64 overflow-y-auto border border-border bg-background shadow-lg divide-y divide-border/50 text-xs"
                 ></div>
               </div>
-              <p class="text-[11px] text-muted-foreground">
-                Powered by OpenStreetMap Nominatim. Selecting a suggestion moves the delivery pin and fills locality details below.
+              <p id="address-search-helper-note" class="text-[11px] text-muted-foreground">
+                Search Indian societies, apartments, and landmarks. Selecting a suggestion moves the delivery pin and autofills locality details below (OpenStreetMap fallback always active).
               </p>
             </div>
 
@@ -1000,11 +1005,212 @@
 
     let deliveryMap = null;
     let deliveryMarker = null;
+    let googleDeliveryMap = null;
+    let googleDeliveryMarker = null;
+    let googleGeocoder = null;
+    let googlePlacesSessionToken = null;
+    let activeMapProvider = 'osm'; // 'google' or 'osm'
+    let googleMapsLoadPromise = null;
+    let googleMapsUnavailable = false;
+    let googleAutocompleteRequestsInSession = 0;
+    const GOOGLE_AUTOCOMPLETE_MAX_REQUESTS = 25;
+    const googlePredictionsCache = new Map();
     let isAddressConfirmed = false;
     let lastPincodeLookup = null;
     let autocompleteTimer = null;
     let reverseGeocodeTimer = null;
     let pincodeLookupTimer = null;
+
+    function updateAddressProviderBadge(mode) {
+      const badge = document.getElementById('address-provider-badge');
+      const note = document.getElementById('address-search-helper-note');
+      if (mode === 'google') {
+        if (badge) {
+          badge.textContent = 'Google Maps & Places (India)';
+          badge.className = 'rounded bg-emerald-900/10 border border-emerald-800/30 px-2 py-0.5 text-[10px] font-semibold text-emerald-900';
+        }
+        if (note) {
+          note.textContent = 'Powered by Google Maps & Places (New) with OpenStreetMap fallback. Selecting a society or landmark pins the map and autofills locality details below.';
+        }
+      } else {
+        if (badge) {
+          badge.textContent = 'OpenStreetMap (India)';
+          badge.className = 'rounded bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary';
+        }
+        if (note) {
+          note.textContent = 'Powered by OpenStreetMap Nominatim. Selecting a suggestion moves the delivery pin and autofills locality details below.';
+        }
+      }
+    }
+
+    function loadGoogleMapsSdk(apiKey) {
+      if (!apiKey || googleMapsUnavailable) return Promise.resolve(false);
+      if (window.google && window.google.maps) return Promise.resolve(true);
+      if (googleMapsLoadPromise) return googleMapsLoadPromise;
+
+      googleMapsLoadPromise = new Promise((resolve) => {
+        const timeoutId = setTimeout(() => {
+          googleMapsUnavailable = true;
+          resolve(false);
+        }, 7000);
+
+        window.gm_authFailure = function() {
+          clearTimeout(timeoutId);
+          googleMapsUnavailable = true;
+          activeMapProvider = 'osm';
+          updateAddressProviderBadge('osm');
+          initLeafletFallbackMap();
+          resolve(false);
+        };
+
+        window.__onNaariGoogleMapsLoaded = function() {
+          clearTimeout(timeoutId);
+          resolve(Boolean(window.google && window.google.maps));
+        };
+
+        const script = document.createElement('script');
+        script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(apiKey)}&libraries=places,marker&v=weekly&loading=async&callback=__onNaariGoogleMapsLoaded`;
+        script.async = true;
+        script.defer = true;
+        script.onerror = () => {
+          clearTimeout(timeoutId);
+          googleMapsUnavailable = true;
+          resolve(false);
+        };
+        document.head.appendChild(script);
+      });
+
+      return googleMapsLoadPromise;
+    }
+
+    function parseGoogleAddressComponents(inputObjOrComponents, displayName = '', formattedAddress = '') {
+      let compList = [];
+      let rawDisplay = displayName;
+      let rawFormatted = formattedAddress;
+      let lat = null;
+      let lon = null;
+
+      if (Array.isArray(inputObjOrComponents)) {
+        compList = inputObjOrComponents;
+      } else if (inputObjOrComponents && typeof inputObjOrComponents === 'object') {
+        compList = Array.isArray(inputObjOrComponents.addressComponents)
+          ? inputObjOrComponents.addressComponents
+          : (Array.isArray(inputObjOrComponents.address_components) ? inputObjOrComponents.address_components : []);
+
+        const pDisp = inputObjOrComponents.displayName;
+        if (typeof pDisp === 'string' && pDisp.trim()) {
+          rawDisplay = pDisp.trim();
+        } else if (pDisp && typeof pDisp.text === 'string' && pDisp.text.trim()) {
+          rawDisplay = pDisp.text.trim();
+        }
+
+        const pFmt = inputObjOrComponents.formattedAddress || inputObjOrComponents.formatted_address;
+        if (typeof pFmt === 'string' && pFmt.trim()) {
+          rawFormatted = pFmt.trim();
+        }
+
+        const loc = inputObjOrComponents.location ||
+          (inputObjOrComponents.geometry && inputObjOrComponents.geometry.location);
+        if (loc) {
+          const rawLat = typeof loc.lat === 'function' ? loc.lat() : (loc.lat ?? loc.latitude);
+          const rawLng = typeof loc.lng === 'function' ? loc.lng() : (loc.lng ?? loc.longitude);
+          if (Number.isFinite(Number(rawLat)) && Number.isFinite(Number(rawLng))) {
+            lat = Number(rawLat);
+            lon = Number(rawLng);
+          }
+        }
+      }
+
+      const getByType = (...types) => {
+        for (const t of types) {
+          const found = compList.find(c => Array.isArray(c.types) && c.types.includes(t));
+          if (found) {
+            return String(found.longText || found.long_name || found.shortText || found.short_name || '').trim();
+          }
+        }
+        return '';
+      };
+
+      const subpremise = getByType('subpremise', 'floor', 'room');
+      const streetNumber = getByType('street_number');
+      const premise = getByType('premise', 'point_of_interest', 'establishment');
+      const landmark = getByType('landmark');
+      const subloc1 = getByType('sublocality_level_1', 'sublocality');
+      const subloc2 = getByType('sublocality_level_2', 'neighborhood');
+      const subloc3 = getByType('sublocality_level_3');
+      const route = getByType('route');
+      const city = getByType('locality', 'postal_town', 'administrative_area_level_2', 'administrative_area_level_3');
+      const state = getByType('administrative_area_level_1');
+      const rawPin = getByType('postal_code').replace(/\s+/g, '');
+      const pincode = /^\d{6}$/.test(rawPin) ? rawPin : '';
+
+      const houseParts = [subpremise, streetNumber].filter(Boolean);
+      const house_no = houseParts.join(', ');
+
+      const cleanDisplay = String(rawDisplay || '').trim();
+      const streetParts = [];
+      if (cleanDisplay && cleanDisplay.toLowerCase() !== city.toLowerCase() && cleanDisplay.toLowerCase() !== state.toLowerCase()) {
+        streetParts.push(cleanDisplay);
+      }
+      [premise, route, subloc3, subloc2, subloc1].forEach((part) => {
+        if (part && !streetParts.some(existing => existing.toLowerCase().includes(part.toLowerCase()) || part.toLowerCase().includes(existing.toLowerCase()))) {
+          streetParts.push(part);
+        }
+      });
+
+      let street_area = streetParts.slice(0, 3).join(', ');
+      const fullFormatted = String(rawFormatted || cleanDisplay || '').trim();
+      if (!street_area && fullFormatted) {
+        street_area = fullFormatted.split(',').slice(0, 2).map(s => s.trim()).filter(Boolean).join(', ');
+      }
+
+      return {
+        display_name: fullFormatted || [cleanDisplay, street_area, city, state, pincode].filter(Boolean).join(', '),
+        house_no,
+        street_area,
+        address_line2: landmark || '',
+        city,
+        state,
+        pincode,
+        lat,
+        lon
+      };
+    }
+
+    function applyParsedAddressToCheckoutForm(parsed, options = {}) {
+      if (!parsed || typeof parsed !== 'object') return;
+      markAddressConfirmedState(false);
+      const houseEl = document.getElementById('cust-house-no');
+      const streetEl = document.getElementById('cust-street-area');
+      const addr2El = document.getElementById('cust-address2');
+      const cityEl = document.getElementById('cust-city');
+      const pinEl = document.getElementById('cust-pincode');
+
+      // Keep manual flat/house number entry intact if customer already typed one
+      if (parsed.house_no && houseEl && (!houseEl.value.trim() || options.overwriteHouseNo)) {
+        houseEl.value = parsed.house_no;
+      }
+      if (parsed.street_area && streetEl) {
+        streetEl.value = parsed.street_area;
+      }
+      if (parsed.address_line2 && addr2El && !addr2El.value.trim()) {
+        addr2El.value = parsed.address_line2;
+      }
+      if (parsed.city && cityEl) {
+        cityEl.value = parsed.city;
+      }
+      if (parsed.state) {
+        selectMatchingStateOption(parsed.state);
+      }
+      if (parsed.pincode && pinEl && /^\d{6}$/.test(parsed.pincode)) {
+        pinEl.value = parsed.pincode;
+        verifyPincodeLive(parsed.pincode, false);
+      }
+
+      syncSplitAddressFields('split');
+      updateAddressConfirmationPreview();
+      saveCheckoutFormDraft();
+    }
 
     function syncSplitAddressFields(source) {
       const houseEl = document.getElementById('cust-house-no');
@@ -1195,6 +1401,42 @@
       }
     }
 
+    async function reverseGeocodeViaOsmFallback(latNum, lngNum) {
+      const mapAddrText = document.getElementById('map-selected-address-text');
+      const mapStatus = document.getElementById('map-geocode-status');
+      const { res, data } = await safeFetchJson(
+        `/api/address/reverse?lat=${encodeURIComponent(latNum.toFixed(6))}&lon=${encodeURIComponent(lngNum.toFixed(6))}`
+      );
+      if (!res.ok || !data || !data.ok) {
+        if (mapStatus) {
+          mapStatus.textContent = data?.error || 'Reverse geocoding unavailable. Coordinates saved; please enter street & PIN manually.';
+          mapStatus.className = 'mt-0.5 text-[11px] text-amber-900';
+        }
+        return false;
+      }
+
+      const addr = data.address || {};
+      const summary = data.display_name || [addr.street_area, addr.city, addr.state].filter(Boolean).join(', ');
+      if (mapAddrText && summary) mapAddrText.textContent = summary;
+      const locSumEl = document.getElementById('cust-location-summary');
+      if (locSumEl && summary) locSumEl.value = summary;
+
+      applyParsedAddressToCheckoutForm({
+        display_name: summary,
+        house_no: addr.house_no || '',
+        street_area: addr.street_area || '',
+        city: addr.city || '',
+        state: addr.state || '',
+        pincode: addr.pincode || ''
+      });
+
+      if (mapStatus) {
+        mapStatus.textContent = 'Map locality filled. Please check your exact House/Flat No. and 6-digit PIN code below.';
+        mapStatus.className = 'mt-0.5 text-[11px] text-emerald-900';
+      }
+      return true;
+    }
+
     async function setMapPinLocation(lat, lng, options = {}) {
       const latNum = Number(lat);
       const lngNum = Number(lng);
@@ -1210,7 +1452,20 @@
       if (lngInput) lngInput.value = lngNum.toFixed(6);
       if (coordsBadge) coordsBadge.textContent = `${latNum.toFixed(5)}, ${lngNum.toFixed(5)}`;
 
-      if (deliveryMap && deliveryMarker) {
+      if (activeMapProvider === 'google' && googleDeliveryMap && googleDeliveryMarker) {
+        const gLatLng = { lat: latNum, lng: lngNum };
+        if (typeof googleDeliveryMarker.setPosition === 'function') {
+          googleDeliveryMarker.setPosition(gLatLng);
+        } else {
+          googleDeliveryMarker.position = gLatLng;
+        }
+        if (options.pan !== false) {
+          googleDeliveryMap.panTo(gLatLng);
+          if ((googleDeliveryMap.getZoom() || 13) < 16) {
+            googleDeliveryMap.setZoom(16);
+          }
+        }
+      } else if (deliveryMap && deliveryMarker) {
         deliveryMarker.setLatLng([latNum, lngNum]);
         if (options.pan !== false) {
           deliveryMap.setView([latNum, lngNum], Math.max(deliveryMap.getZoom(), 15));
@@ -1226,58 +1481,47 @@
       updateAddressConfirmationPreview();
 
       if (options.reverseGeocode) {
+        const providerName = (activeMapProvider === 'google' && window.google && window.google.maps)
+          ? 'Google Maps'
+          : 'OpenStreetMap';
         if (mapStatus) {
-          mapStatus.textContent = 'Reverse-geocoding selected map pin via OpenStreetMap…';
+          mapStatus.textContent = `Reverse-geocoding selected map pin via ${providerName}…`;
           mapStatus.className = 'mt-0.5 text-[11px] text-primary animate-pulse';
         }
         clearTimeout(reverseGeocodeTimer);
         reverseGeocodeTimer = setTimeout(async () => {
           try {
-            const { res, data } = await safeFetchJson(
-              `/api/address/reverse?lat=${encodeURIComponent(latNum.toFixed(6))}&lon=${encodeURIComponent(lngNum.toFixed(6))}`
-            );
-            if (!res.ok || !data || !data.ok) {
-              if (mapStatus) {
-                mapStatus.textContent = data?.error || 'Reverse geocoding unavailable. Coordinates saved; please enter street & PIN manually.';
-                mapStatus.className = 'mt-0.5 text-[11px] text-amber-900';
+            if (activeMapProvider === 'google' && window.google && window.google.maps) {
+              if (!googleGeocoder && window.google.maps.Geocoder) {
+                googleGeocoder = new window.google.maps.Geocoder();
               }
-              return;
+              if (googleGeocoder) {
+                try {
+                  const geoResp = await googleGeocoder.geocode({ location: { lat: latNum, lng: lngNum } });
+                  const firstResult = geoResp && Array.isArray(geoResp.results) ? geoResp.results[0] : null;
+                  if (firstResult) {
+                    const parsed = parseGoogleAddressComponents(
+                      firstResult.address_components || [],
+                      '',
+                      firstResult.formatted_address || ''
+                    );
+                    const summary = parsed.display_name || firstResult.formatted_address || '';
+                    if (mapAddrText && summary) mapAddrText.textContent = summary;
+                    const locSumEl = document.getElementById('cust-location-summary');
+                    if (locSumEl && summary) locSumEl.value = summary;
+                    applyParsedAddressToCheckoutForm(parsed);
+                    if (mapStatus) {
+                      mapStatus.textContent = 'Google Maps pin locality filled. Please verify your exact Flat/House No. and 6-digit PIN code below.';
+                      mapStatus.className = 'mt-0.5 text-[11px] text-emerald-900';
+                    }
+                    return;
+                  }
+                } catch (gErr) {
+                  // Automatically fall back to OpenStreetMap reverse geocoding
+                }
+              }
             }
-
-            const addr = data.address || {};
-            const summary = data.display_name || [addr.street_area, addr.city, addr.state].filter(Boolean).join(', ');
-            if (mapAddrText && summary) mapAddrText.textContent = summary;
-            const locSumEl = document.getElementById('cust-location-summary');
-            if (locSumEl && summary) locSumEl.value = summary;
-
-            const houseEl = document.getElementById('cust-house-no');
-            const streetEl = document.getElementById('cust-street-area');
-            const cityEl = document.getElementById('cust-city');
-            const pinEl = document.getElementById('cust-pincode');
-
-            if (addr.house_no && houseEl && !houseEl.value.trim()) {
-              houseEl.value = addr.house_no;
-            }
-            if (addr.street_area && streetEl) {
-              streetEl.value = addr.street_area;
-            }
-            if (addr.city && cityEl) {
-              cityEl.value = addr.city;
-            }
-            if (addr.state) {
-              selectMatchingStateOption(addr.state);
-            }
-            if (addr.pincode && pinEl && /^\d{6}$/.test(addr.pincode)) {
-              pinEl.value = addr.pincode;
-              verifyPincodeLive(addr.pincode, false);
-            }
-            syncSplitAddressFields('split');
-            updateAddressConfirmationPreview();
-
-            if (mapStatus) {
-              mapStatus.textContent = 'Map locality filled. Please check your exact House/Flat No. and 6-digit PIN code below.';
-              mapStatus.className = 'mt-0.5 text-[11px] text-emerald-900';
-            }
+            await reverseGeocodeViaOsmFallback(latNum, lngNum);
           } catch (err) {
             if (mapStatus) {
               mapStatus.textContent = 'Reverse geocoding service is unreachable. Coordinates are saved; please fill address fields manually.';
@@ -1312,7 +1556,7 @@
       }
     }
 
-    function initDeliveryMap() {
+    function initLeafletFallbackMap() {
       const mapEl = document.getElementById('delivery-map');
       if (!mapEl || typeof L === 'undefined') {
         const mapStatus = document.getElementById('map-geocode-status');
@@ -1322,6 +1566,9 @@
         return;
       }
 
+      activeMapProvider = 'osm';
+      updateAddressProviderBadge('osm');
+
       if (deliveryMap) {
         setTimeout(() => {
           if (deliveryMap) deliveryMap.invalidateSize();
@@ -1329,6 +1576,7 @@
         return;
       }
 
+      mapEl.innerHTML = '';
       const defaultLat = 26.9124;
       const defaultLng = 75.7873;
       const latInput = document.getElementById('cust-lat');
@@ -1386,6 +1634,87 @@
       }, 250);
     }
 
+    async function initDeliveryMap() {
+      const mapEl = document.getElementById('delivery-map');
+      if (!mapEl) return;
+
+      const gmapsKey = String(serverConfig?.google_maps_api_key || window.NAARI_GOOGLE_MAPS_API_KEY || '').trim();
+      const gmapsConfigured = Boolean(serverConfig?.is_google_maps_configured && gmapsKey && !googleMapsUnavailable);
+
+      if (gmapsConfigured) {
+        const sdkReady = await loadGoogleMapsSdk(gmapsKey);
+        if (sdkReady && window.google && window.google.maps) {
+          try {
+            activeMapProvider = 'google';
+            updateAddressProviderBadge('google');
+
+            const defaultLat = 26.9124;
+            const defaultLng = 75.7873;
+            const latInput = document.getElementById('cust-lat');
+            const lngInput = document.getElementById('cust-lng');
+            const locSumEl = document.getElementById('cust-location-summary');
+            const existingLat = latInput && latInput.value !== '' ? Number(latInput.value) : NaN;
+            const existingLng = lngInput && lngInput.value !== '' ? Number(lngInput.value) : NaN;
+            const hasExistingCoords = Number.isFinite(existingLat) && Number.isFinite(existingLng);
+            const startCenter = {
+              lat: hasExistingCoords ? existingLat : defaultLat,
+              lng: hasExistingCoords ? existingLng : defaultLng
+            };
+
+            const mapOptions = {
+              center: startCenter,
+              zoom: hasExistingCoords ? 16 : 13,
+              mapTypeControl: false,
+              streetViewControl: false,
+              fullscreenControl: false,
+              gestureHandling: 'cooperative'
+            };
+            if (serverConfig?.google_maps_map_id) {
+              mapOptions.mapId = serverConfig.google_maps_map_id;
+            }
+
+            googleDeliveryMap = new window.google.maps.Map(mapEl, mapOptions);
+            googleDeliveryMarker = new window.google.maps.Marker({
+              map: googleDeliveryMap,
+              position: startCenter,
+              draggable: true,
+              title: 'Drag to your delivery location'
+            });
+
+            if (hasExistingCoords) {
+              setMapPinLocation(existingLat, existingLng, {
+                reverseGeocode: false,
+                pan: false,
+                displaySummary: locSumEl ? locSumEl.value : ''
+              });
+            }
+
+            googleDeliveryMap.addListener('click', (e) => {
+              if (e && e.latLng) {
+                markAddressConfirmedState(false);
+                setMapPinLocation(e.latLng.lat(), e.latLng.lng(), { reverseGeocode: true, pan: true });
+                saveCheckoutFormDraft();
+              }
+            });
+
+            googleDeliveryMarker.addListener('dragend', () => {
+              const pos = googleDeliveryMarker.getPosition();
+              if (pos) {
+                markAddressConfirmedState(false);
+                setMapPinLocation(pos.lat(), pos.lng(), { reverseGeocode: true, pan: false });
+                saveCheckoutFormDraft();
+              }
+            });
+            return;
+          } catch (gMapErr) {
+            googleMapsUnavailable = true;
+          }
+        }
+      }
+
+      initLeafletFallbackMap();
+    }
+
     function setupGeolocationButton() {
       const btn = document.getElementById('use-current-location-btn');
       const btnText = document.getElementById('use-current-location-text');
@@ -1441,6 +1770,145 @@
       });
     }
 
+    async function queryGooglePlacesSuggestions(queryText) {
+      if (
+        activeMapProvider !== 'google' ||
+        !window.google ||
+        !window.google.maps ||
+        !window.google.maps.places
+      ) {
+        return null;
+      }
+
+      const cacheKey = queryText.toLowerCase();
+      if (googlePredictionsCache.has(cacheKey)) {
+        return googlePredictionsCache.get(cacheKey);
+      }
+
+      if (googleAutocompleteRequestsInSession >= GOOGLE_AUTOCOMPLETE_MAX_REQUESTS) {
+        return null;
+      }
+
+      if (!googlePlacesSessionToken && typeof google.maps.places.AutocompleteSessionToken === 'function') {
+        googlePlacesSessionToken = new google.maps.places.AutocompleteSessionToken();
+      }
+
+      // Primary: Google Places Autocomplete (New) — AutocompleteSuggestion.fetchAutocompleteSuggestions
+      if (
+        google.maps.places.AutocompleteSuggestion &&
+        typeof google.maps.places.AutocompleteSuggestion.fetchAutocompleteSuggestions === 'function'
+      ) {
+        const req = {
+          input: queryText,
+          includedRegionCodes: ['in'],
+          language: 'en-IN',
+          region: 'in'
+        };
+        if (googlePlacesSessionToken) {
+          req.sessionToken = googlePlacesSessionToken;
+        }
+        googleAutocompleteRequestsInSession += 1;
+        const response = await google.maps.places.AutocompleteSuggestion.fetchAutocompleteSuggestions(req);
+        const rawSuggestions = (response && Array.isArray(response.suggestions)) ? response.suggestions : [];
+        const normalized = rawSuggestions
+          .map((s) => {
+            const pred = s.placePrediction;
+            if (!pred) return null;
+            const mainText = (pred.mainText && pred.mainText.text) || (pred.text && pred.text.text) || '';
+            const secondaryText = (pred.secondaryText && pred.secondaryText.text) || '';
+            const fullText = (pred.text && pred.text.text) || [mainText, secondaryText].filter(Boolean).join(', ');
+            return {
+              provider: 'google_new',
+              placeId: pred.placeId || '',
+              mainText: mainText || fullText.split(',')[0] || 'Selected Location',
+              secondaryText: secondaryText || fullText,
+              fullText: fullText,
+              placePrediction: pred
+            };
+          })
+          .filter(Boolean)
+          .slice(0, 6);
+
+        googlePredictionsCache.set(cacheKey, normalized);
+        return normalized;
+      }
+
+      // Secondary compatibility path: AutocompleteService (if Places New class isn't exposed on older channel)
+      if (typeof google.maps.places.AutocompleteService === 'function') {
+        googleAutocompleteRequestsInSession += 1;
+        const service = new google.maps.places.AutocompleteService();
+        const predictions = await new Promise((resolve, reject) => {
+          service.getPlacePredictions(
+            {
+              input: queryText,
+              sessionToken: googlePlacesSessionToken || undefined,
+              componentRestrictions: { country: 'in' }
+            },
+            (res, status) => {
+              if (
+                status === google.maps.places.PlacesServiceStatus.OK &&
+                Array.isArray(res)
+              ) {
+                resolve(res);
+              } else if (status === google.maps.places.PlacesServiceStatus.ZERO_RESULTS) {
+                resolve([]);
+              } else {
+                reject(new Error(`Google Places status: ${status}`));
+              }
+            }
+          );
+        });
+        const normalized = predictions.slice(0, 6).map((p) => ({
+          provider: 'google_legacy',
+          placeId: p.place_id || '',
+          mainText: (p.structured_formatting && p.structured_formatting.main_text) || (p.description || '').split(',')[0],
+          secondaryText: (p.structured_formatting && p.structured_formatting.secondary_text) || p.description || '',
+          fullText: p.description || ''
+        }));
+        googlePredictionsCache.set(cacheKey, normalized);
+        return normalized;
+      }
+
+      return null;
+    }
+
+    async function resolveGooglePlaceDetails(item) {
+      try {
+        // 1. Places API (New): placePrediction.toPlace() + place.fetchFields() with strict Basic-tier field mask
+        if (item.placePrediction && typeof item.placePrediction.toPlace === 'function') {
+          const place = item.placePrediction.toPlace();
+          await place.fetchFields({
+            fields: ['id', 'displayName', 'formattedAddress', 'location', 'addressComponents']
+          });
+          // Close the billing session token after Place Details is fetched
+          googlePlacesSessionToken = null;
+          return parseGoogleAddressComponents(place, item.fullText || item.mainText);
+        }
+
+        // 2. Fallback to Google Geocoder by placeId
+        if (item.placeId && googleGeocoder) {
+          const geoRes = await googleGeocoder.geocode({ placeId: item.placeId });
+          googlePlacesSessionToken = null;
+          if (geoRes && Array.isArray(geoRes.results) && geoRes.results.length > 0) {
+            const first = geoRes.results[0];
+            return parseGoogleAddressComponents(
+              {
+                displayName: item.mainText || '',
+                formatted_address: first.formatted_address || item.fullText,
+                address_components: first.address_components || [],
+                geometry: first.geometry
+              },
+              item.fullText
+            );
+          }
+        }
+      } catch (err) {
+        googlePlacesSessionToken = null;
+        throw err;
+      }
+      return null;
+    }
+
     function setupAddressAutocomplete() {
       const searchInput = document.getElementById('address-search-input');
       const dropdown = document.getElementById('address-autocomplete-dropdown');
@@ -1465,6 +1933,77 @@
         dropdown.classList.remove('hidden');
       };
 
+      const renderOpenStreetMapAutocomplete = async (q) => {
+        renderMessageRow('Searching Indian addresses & landmarks via OpenStreetMap…');
+        const { res, data } = await safeFetchJson(`/api/address/autocomplete?q=${encodeURIComponent(q)}`);
+        if (spinner) spinner.classList.add('hidden');
+
+        if (!res.ok || !data || !data.ok) {
+          renderMessageRow(
+            data?.error || 'Address autocomplete is temporarily unavailable. Please enter your address details manually below.',
+            'error'
+          );
+          return;
+        }
+
+        const list = Array.isArray(data.suggestions) ? data.suggestions : [];
+        if (list.length === 0) {
+          renderMessageRow(data.message || 'No matching addresses found. Try a nearby landmark or enter your address manually below.');
+          return;
+        }
+
+        dropdown.innerHTML = '';
+        list.forEach((item) => {
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.setAttribute('role', 'option');
+          btn.className = 'w-full text-left px-3.5 py-2.5 hover:bg-primary/5 transition flex items-start gap-2.5 cursor-pointer';
+
+          const iconSpan = document.createElement('span');
+          iconSpan.className = 'text-primary mt-0.5 shrink-0';
+          iconSpan.textContent = '📍';
+
+          const textWrap = document.createElement('div');
+          textWrap.className = 'min-w-0 flex-1';
+
+          const titleP = document.createElement('p');
+          titleP.className = 'font-semibold text-foreground text-xs truncate';
+          titleP.textContent = item.street_area || (item.display_name || '').split(',')[0] || 'Selected Location';
+
+          const subP = document.createElement('p');
+          subP.className = 'text-[11px] text-muted-foreground line-clamp-2';
+          subP.textContent = item.display_name || '';
+
+          textWrap.appendChild(titleP);
+          textWrap.appendChild(subP);
+          btn.appendChild(iconSpan);
+          btn.appendChild(textWrap);
+
+          btn.addEventListener('click', () => {
+            searchInput.value = item.display_name || '';
+            closeDropdown();
+
+            applyParsedAddressToCheckoutForm(item, { preserveExistingHouseNo: true });
+
+            if (item.lat !== null && item.lon !== null) {
+              setMapPinLocation(item.lat, item.lon, {
+                reverseGeocode: false,
+                pan: true,
+                displaySummary: item.display_name || ''
+              });
+            }
+          });
+
+          dropdown.appendChild(btn);
+        });
+
+        const attrFooter = document.createElement('div');
+        attrFooter.className = 'px-3 py-1.5 bg-secondary/30 text-[10px] text-muted-foreground flex items-center justify-between';
+        attrFooter.textContent = data.attribution || '© OpenStreetMap contributors (Fallback)';
+        dropdown.appendChild(attrFooter);
+        dropdown.classList.remove('hidden');
+      };
+
       searchInput.addEventListener('input', () => {
         const q = searchInput.value.trim();
         if (clearBtn) clearBtn.classList.toggle('hidden', q.length === 0);
@@ -1476,99 +2015,105 @@
           return;
         }
 
-        // Debounce requests (420ms) to respect Nominatim usage policy and avoid per-keystroke spam
+        const debounceMs = activeMapProvider === 'google' ? 380 : 420;
         autocompleteTimer = setTimeout(async () => {
           if (spinner) spinner.classList.remove('hidden');
-          renderMessageRow('Searching addresses via OpenStreetMap…');
-          try {
-            const { res, data } = await safeFetchJson(`/api/address/autocomplete?q=${encodeURIComponent(q)}`);
-            if (spinner) spinner.classList.add('hidden');
 
-            if (!res.ok || !data || !data.ok) {
-              renderMessageRow(
-                data?.error || 'Address autocomplete is temporarily unavailable. Please enter your address details manually below.',
-                'error'
-              );
-              return;
-            }
-
-            const list = Array.isArray(data.suggestions) ? data.suggestions : [];
-            if (list.length === 0) {
-              renderMessageRow(data.message || 'No matching addresses found. Try a nearby landmark or enter your address manually below.');
-              return;
-            }
-
-            dropdown.innerHTML = '';
-            list.forEach((item) => {
-              const btn = document.createElement('button');
-              btn.type = 'button';
-              btn.setAttribute('role', 'option');
-              btn.className = 'w-full text-left px-3.5 py-2.5 hover:bg-primary/5 transition flex items-start gap-2.5 cursor-pointer';
-
-              const iconSpan = document.createElement('span');
-              iconSpan.className = 'text-primary mt-0.5 shrink-0';
-              iconSpan.textContent = '📍';
-
-              const textWrap = document.createElement('div');
-              textWrap.className = 'min-w-0 flex-1';
-
-              const titleP = document.createElement('p');
-              titleP.className = 'font-semibold text-foreground text-xs truncate';
-              titleP.textContent = item.street_area || (item.display_name || '').split(',')[0] || 'Selected Location';
-
-              const subP = document.createElement('p');
-              subP.className = 'text-[11px] text-muted-foreground line-clamp-2';
-              subP.textContent = item.display_name || '';
-
-              textWrap.appendChild(titleP);
-              textWrap.appendChild(subP);
-              btn.appendChild(iconSpan);
-              btn.appendChild(textWrap);
-
-              btn.addEventListener('click', () => {
-                searchInput.value = item.display_name || '';
-                closeDropdown();
-                markAddressConfirmedState(false);
-
-                const houseEl = document.getElementById('cust-house-no');
-                const streetEl = document.getElementById('cust-street-area');
-                const cityEl = document.getElementById('cust-city');
-                const pinEl = document.getElementById('cust-pincode');
-
-                if (item.house_no && houseEl) houseEl.value = item.house_no;
-                if (item.street_area && streetEl) streetEl.value = item.street_area;
-                if (item.city && cityEl) cityEl.value = item.city;
-                if (item.state) selectMatchingStateOption(item.state);
-                if (item.pincode && pinEl && /^\d{6}$/.test(item.pincode)) {
-                  pinEl.value = item.pincode;
-                  verifyPincodeLive(item.pincode, false);
+          // 1. Try Google Places Autocomplete (New) if active and under session safeguard cap
+          if (activeMapProvider === 'google') {
+            renderMessageRow('Searching societies, apartments & landmarks via Google Places…');
+            try {
+              const googleList = await queryGooglePlacesSuggestions(q);
+              if (Array.isArray(googleList)) {
+                if (spinner) spinner.classList.add('hidden');
+                if (googleList.length === 0) {
+                  // Try OpenStreetMap fallback if Google returned 0 results
+                  await renderOpenStreetMapAutocomplete(q);
+                  return;
                 }
 
-                syncSplitAddressFields('split');
-                if (item.lat !== null && item.lon !== null) {
-                  setMapPinLocation(item.lat, item.lon, {
-                    reverseGeocode: false,
-                    pan: true,
-                    displaySummary: item.display_name || ''
+                dropdown.innerHTML = '';
+                googleList.forEach((item) => {
+                  const btn = document.createElement('button');
+                  btn.type = 'button';
+                  btn.setAttribute('role', 'option');
+                  btn.className = 'w-full text-left px-3.5 py-2.5 hover:bg-primary/5 transition flex items-start gap-2.5 cursor-pointer';
+
+                  const iconSpan = document.createElement('span');
+                  iconSpan.className = 'text-primary mt-0.5 shrink-0';
+                  iconSpan.textContent = '📍';
+
+                  const textWrap = document.createElement('div');
+                  textWrap.className = 'min-w-0 flex-1';
+
+                  const titleP = document.createElement('p');
+                  titleP.className = 'font-semibold text-foreground text-xs truncate';
+                  titleP.textContent = item.mainText || 'Selected Society / Landmark';
+
+                  const subP = document.createElement('p');
+                  subP.className = 'text-[11px] text-muted-foreground line-clamp-2';
+                  subP.textContent = item.secondaryText || item.fullText || '';
+
+                  textWrap.appendChild(titleP);
+                  textWrap.appendChild(subP);
+                  btn.appendChild(iconSpan);
+                  btn.appendChild(textWrap);
+
+                  btn.addEventListener('click', async () => {
+                    searchInput.value = item.fullText || item.mainText || '';
+                    closeDropdown();
+                    if (spinner) spinner.classList.remove('hidden');
+                    try {
+                      const parsed = await resolveGooglePlaceDetails(item);
+                      if (spinner) spinner.classList.add('hidden');
+                      if (parsed) {
+                        applyParsedAddressToCheckoutForm(parsed, { preserveExistingHouseNo: true });
+                        if (parsed.lat !== null && parsed.lon !== null) {
+                          setMapPinLocation(parsed.lat, parsed.lon, {
+                            reverseGeocode: false,
+                            pan: true,
+                            displaySummary: parsed.display_name || item.fullText || ''
+                          });
+                        }
+                        getToast().info('Society & address details autofilled! Please verify your Flat / House No.');
+                        return;
+                      }
+                    } catch (placeErr) {
+                      if (spinner) spinner.classList.add('hidden');
+                    }
+                    // Fallback: fill street area from suggestion text if Place Details call failed
+                    applyParsedAddressToCheckoutForm(
+                      {
+                        street_area: item.mainText || '',
+                        display_name: item.fullText || item.mainText || ''
+                      },
+                      { preserveExistingHouseNo: true }
+                    );
                   });
-                }
-                updateAddressConfirmationPreview();
-                saveCheckoutFormDraft();
-              });
 
-              dropdown.appendChild(btn);
-            });
+                  dropdown.appendChild(btn);
+                });
 
-            const attrFooter = document.createElement('div');
-            attrFooter.className = 'px-3 py-1.5 bg-secondary/30 text-[10px] text-muted-foreground flex items-center justify-between';
-            attrFooter.textContent = data.attribution || '© OpenStreetMap contributors';
-            dropdown.appendChild(attrFooter);
-            dropdown.classList.remove('hidden');
+                const attrFooter = document.createElement('div');
+                attrFooter.className = 'px-3 py-1.5 bg-secondary/30 text-[10px] text-muted-foreground flex items-center justify-between';
+                attrFooter.innerHTML = '<span>Powered by Google Places (India)</span><span>Select society & enter Flat No. below</span>';
+                dropdown.appendChild(attrFooter);
+                dropdown.classList.remove('hidden');
+                return;
+              }
+            } catch (googleErr) {
+              // Seamless fallback to OpenStreetMap Nominatim on Google quota/network/key failure
+            }
+          }
+
+          // 2. Fallback: OpenStreetMap Nominatim via /api/address/autocomplete
+          try {
+            await renderOpenStreetMapAutocomplete(q);
           } catch (err) {
             if (spinner) spinner.classList.add('hidden');
             renderMessageRow('Live address search is currently unreachable. Please enter your address manually below.', 'error');
           }
-        }, 420);
+        }, debounceMs);
       });
 
       if (clearBtn) {
@@ -2326,7 +2871,7 @@
       await loadServerConfig();
       renderOrderSummary();
       setupPaymentMethodRadios();
-      initDeliveryMap();
+      await initDeliveryMap();
       setupGeolocationButton();
       setupAddressAutocomplete();
       setupAddressFormControls();

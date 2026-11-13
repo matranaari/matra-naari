@@ -4543,6 +4543,136 @@ vm.runInContext(inlineCode, sandbox);
     print(" [PASS] 28. Free Address Autocomplete, Map Pin Reverse Geocoding, Indian PIN Lookup & Fake/Incomplete Address Rejection Verified!")
     passed += 1
 
+    # 29. Google Maps JS API & Places Autocomplete (New) Integration, Billing Safeguards, Secret Isolation & OpenStreetMap Fallback
+    total += 1
+    # A. Unconfigured / placeholder GOOGLE_MAPS_API_KEY -> is_google_maps_configured is False, fallback active
+    with patch.dict(os.environ, {
+        "GOOGLE_MAPS_API_KEY": "",
+        "GOOGLE_MAPS_BROWSER_KEY": "",
+        "GOOGLE_PLACES_API_KEY": "",
+        "GOOGLE_MAPS_MAP_ID": ""
+    }, clear=False):
+        gm_client = server.app.test_client()
+        unconf_res = gm_client.get("/api/config")
+        assert unconf_res.status_code == 200
+        unconf_data = unconf_res.get_json()
+        assert unconf_data["ok"] is True
+        assert unconf_data["is_google_maps_configured"] is False
+        assert unconf_data["google_maps_api_key"] == ""
+        assert unconf_data["google_maps_billing_safeguards"]["fallback_provider"] == "openstreetmap_nominatim"
+
+    # B. Placeholder key rejection
+    with patch.dict(os.environ, {
+        "GOOGLE_MAPS_API_KEY": "YOUR_GOOGLE_MAPS_BROWSER_API_KEY"
+    }, clear=False):
+        gm_client = server.app.test_client()
+        ph_data = gm_client.get("/api/config").get_json()
+        assert ph_data["is_google_maps_configured"] is False
+        assert ph_data["google_maps_api_key"] == ""
+
+    # C. Valid domain-restricted browser key configured -> exposed with billing safeguards while server secrets remain hidden
+    fake_browser_gmaps_key = "AIzaSyMatraNaariBrowserRestrictedKey998877"
+    fake_secret_service_role = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.SuperSecretServiceRole"
+    fake_rzp_secret = "rzp_secret_NeverExposeMe999"
+    with patch.dict(os.environ, {
+        "GOOGLE_MAPS_API_KEY": fake_browser_gmaps_key,
+        "GOOGLE_MAPS_MAP_ID": "DEMO_MAP_ID",
+        "SUPABASE_SERVICE_ROLE_KEY": fake_secret_service_role,
+        "RAZORPAY_KEY_SECRET": fake_rzp_secret
+    }, clear=False):
+        gm_client = server.app.test_client()
+        conf_res = gm_client.get("/api/config")
+        assert conf_res.status_code == 200
+        conf_raw = conf_res.get_data(as_text=True)
+        conf_data = conf_res.get_json()
+        assert conf_data["is_google_maps_configured"] is True
+        assert conf_data["google_maps_api_key"] == fake_browser_gmaps_key
+        assert conf_data["google_maps_map_id"] == "DEMO_MAP_ID"
+        safeguards = conf_data["google_maps_billing_safeguards"]
+        assert safeguards["session_token_enabled"] is True
+        assert safeguards["country_restriction"] == "IN"
+        assert safeguards["debounce_ms"] == 380
+        assert safeguards["min_query_length"] == 3
+        assert safeguards["max_requests_per_session"] == 25
+        assert safeguards["fields_mask"] == [
+            "id",
+            "displayName",
+            "formattedAddress",
+            "location",
+            "addressComponents"
+        ]
+        assert safeguards["fallback_provider"] == "openstreetmap_nominatim"
+        # Verify secret credentials are NEVER leaked in /api/config
+        assert fake_secret_service_role not in conf_raw
+        assert fake_rzp_secret not in conf_raw
+        assert "supabase_service_role_key" not in conf_raw.lower()
+        assert "razorpay_key_secret" not in conf_raw.lower()
+
+    # D. Verify checkout.html contains Google Maps JS SDK loader, Places (New) AutocompleteSuggestion, SessionToken,
+    #    restricted field mask, draggable marker, manual house_no preservation, and OpenStreetMap fallback
+    checkout_html_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "checkout.html")
+    with open(checkout_html_path, "r", encoding="utf-8") as f:
+        checkout_html = f.read()
+    assert "maps.googleapis.com/maps/api/js" in checkout_html
+    assert "AutocompleteSuggestion.fetchAutocompleteSuggestions" in checkout_html
+    assert "AutocompleteSessionToken" in checkout_html
+    assert "place.fetchFields" in checkout_html
+    assert "'id', 'displayName', 'formattedAddress', 'location', 'addressComponents'" in checkout_html
+    assert "includedRegionCodes: ['in']" in checkout_html
+    assert "preserveExistingHouseNo: true" in checkout_html
+    assert "initLeafletFallbackMap" in checkout_html
+    assert "/api/address/autocomplete" in checkout_html
+    assert "/api/address/reverse" in checkout_html
+
+    # E. End-to-End Indian Society Autocomplete, Draggable Map Pin & Address Autofill Validation (Preserving Manual Flat/House No.)
+    with patch.dict(os.environ, {"DISABLE_EXTERNAL_GEOCODING": "1"}, clear=False):
+        soc_client = server.app.test_client()
+        soc_email = f"society.test.{os.urandom(3).hex()}@example.com"
+        reg_soc = soc_client.post("/api/auth/register", json={
+            "name": "Meera Sharma",
+            "email": soc_email,
+            "phone": "9829098765",
+            "password": "SocietyTestPassword123!"
+        })
+        assert reg_soc.status_code == 200 and reg_soc.get_json().get("ok") is True
+        soc_hdrs = {"Authorization": f"Bearer {reg_soc.get_json()['token']}"}
+
+        # Simulate customer manually entering "Flat B-402" and selecting "Mahima Panorama, Jagatpura, Jaipur" from Google Places (New)
+        society_autofilled_address = {
+            "name": "Meera Sharma",
+            "phone": "9829098765",
+            "email": soc_email,
+            "house_no": "Flat B-402",
+            "street_area": "Mahima Panorama, VIT Road, Jagatpura",
+            "address_line1": "Flat B-402, Mahima Panorama, VIT Road, Jagatpura",
+            "address_line2": "Near SRN International School",
+            "city": "Jaipur",
+            "state": "Rajasthan",
+            "pincode": "302017",
+            "latitude": 26.814343,
+            "longitude": 75.864358,
+            "location_summary": "Mahima Panorama, VIT Road Near SRN INTERNATIONAL SCHOOL, Jagatpura, Jaipur, Rajasthan 302017, India",
+            "address_label": "Home"
+        }
+        val_soc = soc_client.post("/api/address/validate", headers=soc_hdrs, json={
+            "address": society_autofilled_address,
+            "require_split_fields": True,
+            "save_to_account": True,
+            "is_default": True
+        })
+        assert val_soc.status_code == 200 and val_soc.get_json().get("ok") is True
+        saved_soc = val_soc.get_json()["address"]
+        assert saved_soc["house_no"] == "Flat B-402"
+        assert "Mahima Panorama" in saved_soc["street_area"]
+        assert saved_soc["city"] == "Jaipur"
+        assert saved_soc["state"] == "Rajasthan"
+        assert saved_soc["pincode"] == "302017"
+        assert abs(saved_soc["latitude"] - 26.814343) < 1e-5
+        assert abs(saved_soc["longitude"] - 75.864358) < 1e-5
+
+    print(" [PASS] 29. Google Maps JS API & Places Autocomplete (New) Integration, Billing Safeguards, Secret Isolation & OpenStreetMap Fallback Verified!")
+    passed += 1
+
     print("=" * 60)
     print(f" ALL {passed}/{total} TESTS PASSED SUCCESSFULLY!")
     print("=" * 60)

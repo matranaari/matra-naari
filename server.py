@@ -605,6 +605,10 @@ def load_config():
     config = {
         "razorpay_key_id": "",
         "razorpay_key_secret": "",
+        "google_maps_api_key": "",
+        "google_maps_map_id": "",
+        "google_maps_daily_quota_limit": 1000,
+        "google_maps_session_Request_limit": 25,
         "currency": "INR",
         "store_name": "Matra Naari",
         "store_description": "Modern Kurtis Rooted in Craft",
@@ -661,6 +665,10 @@ def load_config():
         config["support_phone"] = str(db_settings["support_phone"]).strip()
     if "support_email" in db_settings and str(db_settings["support_email"]).strip():
         config["support_email"] = str(db_settings["support_email"]).strip()
+    if "google_maps_api_key" in db_settings and str(db_settings["google_maps_api_key"]).strip():
+        config["google_maps_api_key"] = str(db_settings["google_maps_api_key"]).strip()
+    if "google_maps_map_id" in db_settings and str(db_settings["google_maps_map_id"]).strip():
+        config["google_maps_map_id"] = str(db_settings["google_maps_map_id"]).strip()
 
     env_mappings = {
         "RAZORPAY_KEY": "razorpay_key_id",
@@ -671,6 +679,10 @@ def load_config():
         "RAZORPAY_API_SECRET": "razorpay_key_secret",
         "RZP_KEY_SECRET": "razorpay_key_secret",
         "RAZORPAY_KEY_SECRET": "razorpay_key_secret",
+        "GOOGLE_MAPS_API_KEY": "google_maps_api_key",
+        "GOOGLE_MAPS_BROWSER_KEY": "google_maps_api_key",
+        "GOOGLE_PLACES_API_KEY": "google_maps_api_key",
+        "GOOGLE_MAPS_MAP_ID": "google_maps_map_id",
         "CURRENCY": "currency",
         "STORE_NAME": "store_name",
         "STORE_DESCRIPTION": "store_description",
@@ -692,7 +704,7 @@ def load_config():
                     k, v = line.split("=", 1)
                     k = k.strip()
                     v = v.strip().strip('"').strip("'")
-                    if k in env_mappings and v:
+                    if k in env_mappings and k not in os.environ and v:
                         config[env_mappings[k]] = v
         except Exception:
             pass
@@ -703,6 +715,15 @@ def load_config():
             config[cfg_key] = val.strip().strip('"').strip("'")
 
     return config
+
+def is_google_maps_configured(cfg):
+    key = str(cfg.get("google_maps_api_key") or "").strip()
+    if not key or len(key) < 20:
+        return False
+    upper_key = key.upper()
+    if any(tok in upper_key for tok in ("YOUR_", "PLACEHOLDER", "CHANGE_ME", "EXAMPLE")):
+        return False
+    return True
 
 def is_razorpay_configured(cfg):
     key_id = cfg.get("razorpay_key_id", "").strip()
@@ -2990,11 +3011,24 @@ def api_health():
 def api_config():
     cfg = load_config()
     configured = is_razorpay_configured(cfg)
+    gmaps_configured = is_google_maps_configured(cfg)
     admin_status = get_admin_auth_config_status()
     return jsonify({
         "ok": True,
         "razorpay_key_id": cfg.get("razorpay_key_id", "") if configured else "",
         "is_razorpay_configured": configured,
+        "google_maps_api_key": cfg.get("google_maps_api_key", "") if gmaps_configured else "",
+        "google_maps_map_id": cfg.get("google_maps_map_id", "") if gmaps_configured else "",
+        "is_google_maps_configured": gmaps_configured,
+        "google_maps_billing_safeguards": {
+            "session_token_enabled": True,
+            "country_restriction": "IN",
+            "debounce_ms": 380,
+            "min_query_length": 3,
+            "max_requests_per_session": 25,
+            "fields_mask": ["id", "displayName", "formattedAddress", "location", "addressComponents"],
+            "fallback_provider": "openstreetmap_nominatim"
+        },
         "is_admin_configured": admin_status["is_admin_configured"],
         "store_name": cfg.get("store_name", "Matra Naari"),
         "store_description": cfg.get("store_description", "Modern Kurtis Rooted in Craft"),
