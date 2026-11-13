@@ -618,6 +618,7 @@ def load_config():
         "shipping_fee": 99,
         "cod_enabled": True,
         "sales_enabled": True,
+        "razorpay_enabled": False,
         "gst_percentage": 5,
         "return_window_days": 7,
         "courier_provider": "Indian Postal Circle / Standard Courier"
@@ -651,6 +652,12 @@ def load_config():
     env_sales = os.environ.get("SALES_ENABLED")
     if env_sales is not None and env_sales.strip():
         config["sales_enabled"] = env_sales.strip().strip('"').strip("'").lower() in ("true", "1", "yes")
+    if "razorpay_enabled" in db_settings:
+        val = db_settings["razorpay_enabled"]
+        config["razorpay_enabled"] = bool(val) if isinstance(val, bool) else str(val).strip().lower() in ("true", "1", "yes")
+    env_rzp_enabled = os.environ.get("RAZORPAY_ENABLED")
+    if env_rzp_enabled is not None and env_rzp_enabled.strip():
+        config["razorpay_enabled"] = env_rzp_enabled.strip().strip('"').strip("'").lower() in ("true", "1", "yes")
     if "gst_percentage" in db_settings:
         try:
             config["gst_percentage"] = int(db_settings["gst_percentage"])
@@ -735,6 +742,9 @@ def is_razorpay_configured(cfg):
     if key_id == "rzp_test_simulation":
         return False
     return True
+
+def is_razorpay_enabled(cfg):
+    return bool(cfg.get("razorpay_enabled", False)) and is_razorpay_configured(cfg)
 
 def mask_key_id(key_id):
     k = (key_id or "").strip()
@@ -3039,6 +3049,7 @@ def api_config():
         "shipping_fee": int(cfg.get("shipping_fee", 99)),
         "cod_enabled": bool(cfg.get("cod_enabled", True)),
         "sales_enabled": bool(cfg.get("sales_enabled", True)),
+        "razorpay_enabled": bool(cfg.get("razorpay_enabled", False)),
         "gst_percentage": int(cfg.get("gst_percentage", 5)),
         "return_window_days": int(cfg.get("return_window_days", 7)),
         "courier_provider": cfg.get("courier_provider", "Indian Postal Circle / Standard Courier")
@@ -4366,6 +4377,20 @@ def api_create_order():
         return jsonify({
             "ok": False,
             "error": "Online payment via Razorpay is currently unavailable because server payment credentials (RAZORPAY_KEY_ID / RAZORPAY_KEY_SECRET) are not configured. Please choose Cash on Delivery (COD) or contact support."
+        }), 503
+
+    if not cfg.get("razorpay_enabled", False):
+        print(
+            f"[Razorpay On Hold] POST /api/create-order rejected for order {order_id}: "
+            "online payments are temporarily on hold pending production approval.",
+            flush=True
+        )
+        return jsonify({
+            "ok": False,
+            "razorpay_on_hold": True,
+            "razorpay_disabled": True,
+            "is_simulated": False,
+            "error": "Online payment via Razorpay is temporarily unavailable while awaiting production approval. Please place your order using Cash on Delivery (COD)."
         }), 503
 
     # Real Razorpay Order Creation via official Orders API (Secret key remains strictly on server)
@@ -6217,6 +6242,7 @@ def api_admin_settings():
         "standard_shipping_fee": cfg.get("shipping_fee", 99),
         "cod_enabled": cfg.get("cod_enabled", True),
         "sales_enabled": cfg.get("sales_enabled", True),
+        "razorpay_enabled": cfg.get("razorpay_enabled", False),
         "gst_percentage": cfg.get("gst_percentage", 5),
         "return_window_days": cfg.get("return_window_days", 7),
         "courier_provider": cfg.get("courier_provider", "Indian Postal Circle / Standard Courier")

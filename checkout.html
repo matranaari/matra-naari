@@ -418,26 +418,27 @@
             </h2>
 
             <div class="mt-6 space-y-4" role="radiogroup" aria-label="Payment Method">
-              <!-- Online Payment via Razorpay -->
+              <!-- Online Payment via Razorpay (Disabled in COD-Only Mode) -->
               <label
                 data-method="razorpay"
                 role="radio"
-                aria-checked="true"
-                tabindex="0"
-                class="payment-option-label relative flex cursor-pointer items-start gap-3 border border-primary bg-primary/5 p-4 transition rounded-sm ring-1 ring-primary/40"
+                aria-checked="false"
+                aria-disabled="true"
+                tabindex="-1"
+                class="payment-option-label hidden relative flex cursor-not-allowed items-start gap-3 border border-border p-4 transition rounded-sm opacity-60"
               >
                 <input
                   type="radio"
                   id="payment-method-razorpay"
                   name="payment_method"
                   value="razorpay"
-                  checked
-                  class="mt-1 h-4 w-4 cursor-pointer accent-[#6B2D31]"
+                  disabled
+                  class="mt-1 h-4 w-4 cursor-not-allowed accent-[#6B2D31]"
                 />
                 <div class="flex-1">
                   <div class="flex flex-wrap items-center justify-between gap-2">
                     <span class="font-semibold text-foreground text-sm">Pay Online (UPI, Cards, NetBanking, Wallets)</span>
-                    <span class="rounded bg-primary/10 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-primary">Recommended</span>
+                    <span class="rounded bg-primary/10 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-primary">Unavailable</span>
                   </div>
                   <p class="mt-1 text-xs text-muted-foreground">
                     Instant & secure checkout powered by <strong>Razorpay</strong>.
@@ -456,21 +457,22 @@
               <label
                 data-method="cod"
                 role="radio"
-                aria-checked="false"
+                aria-checked="true"
                 tabindex="0"
-                class="payment-option-label relative flex cursor-pointer items-start gap-3 border border-border p-4 transition hover:border-primary/60 rounded-sm"
+                class="payment-option-label relative flex cursor-pointer items-start gap-3 border border-primary bg-primary/5 ring-1 ring-primary/40 p-4 transition hover:border-primary/60 rounded-sm"
               >
                 <input
                   type="radio"
                   id="payment-method-cod"
                   name="payment_method"
                   value="cod"
+                  checked
                   class="mt-1 h-4 w-4 cursor-pointer accent-[#6B2D31]"
                 />
                 <div class="flex-1">
                   <div class="flex items-center justify-between">
                     <span class="font-semibold text-foreground text-sm">Cash on Delivery (COD)</span>
-                    <span class="text-xs text-muted-foreground">Pay at doorstep</span>
+                    <span class="rounded bg-primary/10 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-primary">Pay at doorstep</span>
                   </div>
                   <p class="mt-1 text-xs text-muted-foreground">
                     Pay in cash when your courier arrives. Please keep exact change ready.
@@ -488,7 +490,7 @@
               type="button"
               class="mt-6 w-full bg-primary py-4 text-sm uppercase tracking-[0.2em] text-primary-foreground hover:opacity-90 transition font-medium cursor-pointer shadow flex items-center justify-center gap-2"
             >
-              <span id="place-order-text">Pay with Razorpay</span>
+              <span id="place-order-text">Place Cash on Delivery Order</span>
               <span id="place-order-spinner" class="hidden animate-spin">⏳</span>
             </button>
 
@@ -594,7 +596,15 @@
   <script src="assets/app.js"></script>
   <script>
     let serverConfig = null;
-    let selectedPaymentMethod = 'razorpay';
+    let selectedPaymentMethod = 'cod';
+
+    function isRazorpayEnabledInConfig() {
+      return Boolean(
+        serverConfig &&
+        serverConfig.razorpay_enabled === true &&
+        serverConfig.is_razorpay_configured === true
+      );
+    }
 
     function getApiBaseUrl() {
       if (typeof window !== 'undefined') {
@@ -887,16 +897,30 @@
 
     function setPaymentMethod(method) {
       if (method !== 'razorpay' && method !== 'cod') return;
+      if (method === 'razorpay' && !isRazorpayEnabledInConfig()) {
+        method = 'cod';
+      }
       selectedPaymentMethod = method;
 
       // Update native radio inputs
       document.querySelectorAll('input[name="payment_method"]').forEach(r => {
+        if (r.value === 'razorpay' && !isRazorpayEnabledInConfig()) {
+          r.checked = false;
+          r.disabled = true;
+          return;
+        }
         r.checked = (r.value === method);
       });
 
       // Update visual styles on card labels
       document.querySelectorAll('.payment-option-label').forEach(label => {
-        const isMatch = (label.getAttribute('data-method') === method);
+        const labelMethod = label.getAttribute('data-method');
+        if (labelMethod === 'razorpay' && !isRazorpayEnabledInConfig()) {
+          label.classList.add('hidden');
+          label.setAttribute('aria-checked', 'false');
+          return;
+        }
+        const isMatch = (labelMethod === method);
         label.setAttribute('aria-checked', isMatch ? 'true' : 'false');
         if (isMatch) {
           label.classList.add('border-primary', 'bg-primary/5', 'ring-1', 'ring-primary/40');
@@ -911,6 +935,9 @@
     }
 
     function getSelectedPaymentMethod() {
+      if (!isRazorpayEnabledInConfig()) {
+        return 'cod';
+      }
       const radio = document.querySelector('input[name="payment_method"]:checked');
       return radio ? radio.value : selectedPaymentMethod;
     }
@@ -947,8 +974,8 @@
         });
       });
 
-      // 3. Initial sync
-      setPaymentMethod('razorpay');
+      // 3. Initial sync (COD-only mode unless Razorpay is explicitly enabled and configured)
+      setPaymentMethod('cod');
     }
 
     function escapeHtmlText(val) {
@@ -2558,6 +2585,10 @@
       }
 
       const paymentMethod = getSelectedPaymentMethod();
+      if (paymentMethod !== 'cod' && !isRazorpayEnabledInConfig()) {
+        showError('Online payment via Razorpay is currently disabled. Please place your order using Cash on Delivery (COD).');
+        return;
+      }
       setSubmitting(true);
 
       if (paymentMethod === 'cod') {
@@ -2891,11 +2922,31 @@
         });
       }
 
-      // Respect COD availability from serverConfig
-      if (serverConfig && serverConfig.cod_enabled === false) {
-        const codLabel = document.querySelector('.payment-option-label[data-method="cod"]');
-        if (codLabel) codLabel.classList.add('hidden');
-        setPaymentMethod('razorpay');
+      // Enforce COD-only mode while Razorpay is on hold; automatically reveal Razorpay when enabled & configured
+      const rzpLabel = document.querySelector('.payment-option-label[data-method="razorpay"]');
+      const rzpRadio = document.getElementById('payment-method-razorpay');
+      if (!isRazorpayEnabledInConfig()) {
+        if (rzpLabel) rzpLabel.classList.add('hidden');
+        if (rzpRadio) {
+          rzpRadio.checked = false;
+          rzpRadio.disabled = true;
+        }
+        setPaymentMethod('cod');
+      } else {
+        if (rzpLabel) {
+          rzpLabel.classList.remove('hidden', 'cursor-not-allowed', 'opacity-60');
+          rzpLabel.classList.add('cursor-pointer');
+          rzpLabel.setAttribute('aria-disabled', 'false');
+          rzpLabel.setAttribute('tabindex', '0');
+        }
+        if (rzpRadio) {
+          rzpRadio.disabled = false;
+        }
+        if (serverConfig && serverConfig.cod_enabled === false) {
+          const codLabel = document.querySelector('.payment-option-label[data-method="cod"]');
+          if (codLabel) codLabel.classList.add('hidden');
+          setPaymentMethod('razorpay');
+        }
       }
 
       // Checkout coupon button

@@ -85,7 +85,8 @@ def run_configured_razorpay_hmac_tests():
 
     env_overrides = {
         "RAZORPAY_KEY_ID": test_key_id,
-        "RAZORPAY_KEY_SECRET": test_key_secret
+        "RAZORPAY_KEY_SECRET": test_key_secret,
+        "RAZORPAY_ENABLED": "1"
     }
 
     with patch.dict(os.environ, env_overrides):
@@ -1271,6 +1272,7 @@ vm.runInContext(inlineCode, sandbox);
         "ADMIN_SECRET_KEY": cancel_test_passkey,
         "RAZORPAY_KEY_ID": cancel_rzp_key_id,
         "RAZORPAY_KEY_SECRET": cancel_rzp_secret,
+        "RAZORPAY_ENABLED": "1",
         "DISABLE_EXTERNAL_GEOCODING": "1"
     }):
         cancel_client = server.app.test_client()
@@ -1524,6 +1526,7 @@ vm.runInContext(inlineCode, sandbox);
         "ADMIN_SECRET_KEY": dup_admin_key,
         "RAZORPAY_KEY_ID": dup_rzp_id,
         "RAZORPAY_KEY_SECRET": dup_rzp_secret,
+        "RAZORPAY_ENABLED": "1",
         "DISABLE_EXTERNAL_GEOCODING": "1"
     }):
         dup_client = server.app.test_client()
@@ -1714,6 +1717,7 @@ vm.runInContext(inlineCode, sandbox);
         "ADMIN_SECRET_KEY": cp_admin_key,
         "RAZORPAY_KEY_ID": cp_rzp_id,
         "RAZORPAY_KEY_SECRET": cp_rzp_secret,
+        "RAZORPAY_ENABLED": "1",
         "DISABLE_EXTERNAL_GEOCODING": "1"
     }):
         cp_client = server.app.test_client()
@@ -1950,6 +1954,7 @@ vm.runInContext(inlineCode, sandbox);
         "ADMIN_SECRET_KEY": av_admin_key,
         "RAZORPAY_KEY_ID": test_rzp_key_id,
         "RAZORPAY_KEY_SECRET": test_rzp_key_secret,
+        "RAZORPAY_ENABLED": "1",
         "DISABLE_EXTERNAL_GEOCODING": "1"
     }, clear=False):
         av_client = server.app.test_client()
@@ -2263,6 +2268,7 @@ vm.runInContext(inlineCode, sandbox);
         "ADMIN_SECRET_KEY": oc_admin_key,
         "RAZORPAY_KEY_ID": oc_rzp_id,
         "RAZORPAY_KEY_SECRET": oc_rzp_secret,
+        "RAZORPAY_ENABLED": "1",
         "DISABLE_EXTERNAL_GEOCODING": "1"
     }, clear=False):
         oc_client = server.app.test_client()
@@ -2505,6 +2511,7 @@ vm.runInContext(inlineCode, sandbox);
         "ADMIN_SECRET_KEY": adm_passkey,
         "RAZORPAY_KEY_ID": adm_rzp_key_id,
         "RAZORPAY_KEY_SECRET": adm_rzp_secret,
+        "RAZORPAY_ENABLED": "1",
         "DISABLE_EXTERNAL_GEOCODING": "1"
     }, clear=False):
         adm_client = server.app.test_client()
@@ -2930,6 +2937,7 @@ vm.runInContext(inlineCode, sandbox);
         "ADMIN_SECRET_KEY": audit_admin_key,
         "RAZORPAY_KEY_ID": audit_rzp_id,
         "RAZORPAY_KEY_SECRET": audit_rzp_secret,
+        "RAZORPAY_ENABLED": "1",
         "DISABLE_EXTERNAL_GEOCODING": "1"
     }, clear=False):
         anon_c = server.app.test_client()
@@ -3179,6 +3187,7 @@ vm.runInContext(inlineCode, sandbox);
         "ADMIN_SECRET_KEY": ret_admin_key,
         "RAZORPAY_KEY_ID": ret_rzp_id,
         "RAZORPAY_KEY_SECRET": ret_rzp_secret,
+        "RAZORPAY_ENABLED": "1",
         "DISABLE_EXTERNAL_GEOCODING": "1"
     }, clear=False):
         # 1. Verify exact 'picked_up' status vs leading-space '" picked_up"'
@@ -4356,6 +4365,7 @@ vm.runInContext(inlineCode, sandbox);
     with patch.dict(os.environ, {
         "RAZORPAY_KEY_ID": "rzp_test_AddrSuiteKey123",
         "RAZORPAY_KEY_SECRET": "rzp_test_AddrSuiteSecret987",
+        "RAZORPAY_ENABLED": "1",
         "DISABLE_EXTERNAL_GEOCODING": "0"
     }, clear=False):
         addr_client = server.app.test_client()
@@ -4671,6 +4681,135 @@ vm.runInContext(inlineCode, sandbox);
         assert abs(saved_soc["longitude"] - 75.864358) < 1e-5
 
     print(" [PASS] 29. Google Maps JS API & Places Autocomplete (New) Integration, Billing Safeguards, Secret Isolation & OpenStreetMap Fallback Verified!")
+    passed += 1
+
+    # 30. Production COD-Only Mode (Razorpay On Hold + Ready for Future Activation), Real Stock Verification, Order Saving, Stock Deduction & Admin Visibility
+    total += 1
+    cod_only_admin_key = "CodOnlyLaunchAdmin_2026!"
+    with patch.dict(os.environ, {
+        "ADMIN_SECRET_KEY": cod_only_admin_key,
+        "RAZORPAY_KEY_ID": "rzp_live_ReadyButOnHold123",
+        "RAZORPAY_KEY_SECRET": "rzp_secret_ReadyButOnHold987",
+        "RAZORPAY_ENABLED": "0",
+        "SALES_ENABLED": "1",
+        "DISABLE_EXTERNAL_GEOCODING": "1"
+    }, clear=False):
+        cod_client = server.app.test_client()
+        adm_hdrs = {"X-Admin-Passkey": cod_only_admin_key}
+
+        # A. Verify /api/config reports COD & sales enabled, Razorpay credentials intact (is_razorpay_configured=True), and razorpay_enabled=False (on hold)
+        cfg_r = cod_client.get("/api/config")
+        assert cfg_r.status_code == 200
+        cfg_d = cfg_r.get_json()
+        assert cfg_d["sales_enabled"] is True
+        assert cfg_d["cod_enabled"] is True
+        assert cfg_d["razorpay_enabled"] is False
+        assert cfg_d["is_razorpay_configured"] is True
+        assert cfg_d["razorpay_key_id"] == "rzp_live_ReadyButOnHold123"
+        assert "rzp_secret_ReadyButOnHold987" not in cfg_r.get_data(as_text=True)
+
+        # Register isolated test customer
+        cust_email = f"cod.launch.{os.urandom(3).hex()}@example.com"
+        reg_c = cod_client.post("/api/auth/register", json={
+            "name": "Roshni Rathore",
+            "email": cust_email,
+            "phone": "9829055443",
+            "password": "CodLaunchPassword123!"
+        })
+        assert reg_c.status_code == 200 and reg_c.get_json().get("ok") is True
+        cust_hdrs = {"Authorization": f"Bearer {reg_c.get_json()['token']}"}
+
+        valid_cust = {
+            "name": "Roshni Rathore",
+            "phone": "9829055443",
+            "email": cust_email,
+            "house_no": "Flat B-402",
+            "street_area": "Mahima Panorama, Jagatpura",
+            "address_line1": "Flat B-402, Mahima Panorama, Jagatpura",
+            "address_line2": "Near VIT Road",
+            "city": "Jaipur",
+            "state": "Rajasthan",
+            "pincode": "302017",
+            "latitude": 26.814343,
+            "longitude": 75.864358
+        }
+
+        # B. Online payment order creation (/api/create-order) MUST be blocked with 503 while Razorpay is on hold
+        rzp_hold_r = cod_client.post("/api/create-order", headers=cust_hdrs, json={
+            "customer": valid_cust,
+            "items": [{"id": "angrakha", "qty": 1, "size": "M", "color": "Ivory"}]
+        })
+        assert rzp_hold_r.status_code == 503
+        rzp_hold_d = rzp_hold_r.get_json()
+        assert rzp_hold_d["ok"] is False
+        assert rzp_hold_d.get("razorpay_on_hold") is True
+        assert rzp_hold_d.get("razorpay_disabled") is True
+
+        # C. Real Product Availability Verification before accepting COD orders
+        # 1. Set 'angrakha' Size 'XS' stock to 0 and verify sold-out size is rejected -> 400
+        pre_inv = cod_client.get("/api/products/angrakha").get_json()["product"]["sizeStock"]
+        zero_xs_stock = dict(pre_inv)
+        zero_xs_stock["XS"] = 0
+        assert cod_client.post("/api/admin/inventory/update", headers=adm_hdrs, json={
+            "id": "angrakha",
+            "size_stock": zero_xs_stock
+        }).status_code == 200
+        sold_out_r = cod_client.post("/api/create-cod-order", headers=cust_hdrs, json={
+            "customer": valid_cust,
+            "items": [{"id": "angrakha", "qty": 1, "size": "XS", "color": "Ivory"}]
+        })
+        assert sold_out_r.status_code == 400 and sold_out_r.get_json()["ok"] is False
+
+        # 2. Quantity exceeding available size stock ('angrakha' Size 'S' requesting 99 units) -> 400
+        excess_r = cod_client.post("/api/create-cod-order", headers=cust_hdrs, json={
+            "customer": valid_cust,
+            "items": [{"id": "angrakha", "qty": 99, "size": "S", "color": "Ivory"}]
+        })
+        assert excess_r.status_code == 400 and excess_r.get_json()["ok"] is False
+
+        # D. Valid COD Checkout, Order Saving, Atomic Stock Deduction & Admin Order Visibility
+        before_prod = cod_client.get("/api/products/angrakha").get_json()["product"]
+        before_total_stock = int(before_prod["stock"])
+        before_m_stock = int(before_prod["sizeStock"]["M"])
+        expected_unit_price = int(before_prod["price"])  # ₹1799
+
+        # Client sends tampered price=50 -> server must enforce real DB price (₹1799 * 2 = ₹3598, free shipping >= ₹999)
+        cod_ok_r = cod_client.post("/api/create-cod-order", headers=cust_hdrs, json={
+            "customer": valid_cust,
+            "items": [{"id": "angrakha", "qty": 2, "size": "M", "color": "Ivory", "price": 50}]
+        })
+        assert cod_ok_r.status_code == 200, f"COD order failed: {cod_ok_r.get_json()}"
+        cod_ok_d = cod_ok_r.get_json()
+        assert cod_ok_d["ok"] is True
+        new_cod_id = cod_ok_d["order_id"]
+        assert cod_ok_d["total_amount"] == expected_unit_price * 2
+
+        # Verify stock & size stock deducted by exactly 2 units
+        after_prod = cod_client.get("/api/products/angrakha").get_json()["product"]
+        assert int(after_prod["stock"]) == before_total_stock - 2
+        assert int(after_prod["sizeStock"]["M"]) == before_m_stock - 2
+
+        # Verify order is visible in Admin Orders (/api/admin/orders) and Admin Stats (/api/admin/stats)
+        adm_orders_r = cod_client.get("/api/admin/orders", headers=adm_hdrs)
+        assert adm_orders_r.status_code == 200
+        adm_orders_list = adm_orders_r.get_json()["orders"]
+        matched_adm_order = next((o for o in adm_orders_list if o["id"] == new_cod_id), None)
+        assert matched_adm_order is not None, f"Order {new_cod_id} not visible in /api/admin/orders"
+        assert matched_adm_order["payment_method"] == "cod"
+        assert matched_adm_order["payment_status"] == "cod_confirmed"
+        assert matched_adm_order["order_status"] == "confirmed"
+        assert matched_adm_order["total_amount"] == expected_unit_price * 2
+
+        adm_stats_r = cod_client.get("/api/admin/stats", headers=adm_hdrs)
+        assert adm_stats_r.status_code == 200 and adm_stats_r.get_json()["ok"] is True
+
+        # E. Verify checkout.html defaults to COD-only while keeping Razorpay code ready for future activation
+        assert "let selectedPaymentMethod = 'cod';" in checkout_html
+        assert "function isRazorpayEnabledInConfig()" in checkout_html
+        assert "Place Cash on Delivery Order" in checkout_html
+        assert "new Razorpay(options)" in checkout_html
+
+    print(" [PASS] 30. Production COD-Only Mode (Razorpay On Hold + Ready for Future Activation), Real Stock Verification, Order Saving, Stock Deduction & Admin Visibility Verified!")
     passed += 1
 
     print("=" * 60)
