@@ -12,11 +12,16 @@ venv/
 data/*.db
 data/*.sqlite
 data/*.sqlite3
+data/uploads/
 .env
 .env.local
 .env.*.local
 config.local.json
 !.env.example
+*.address-backup
+*.security-backup*
+*.bak
+*.backup
 
 # Operating System & IDE
 .DS_Store

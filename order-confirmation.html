@@ -368,15 +368,46 @@
       return { res, data };
     }
 
+    function escapeHtml(val) {
+      return String(val ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function sanitizeImageSrc(src) {
+      const raw = String(src || 'assets/hero.jpg').trim().replace(/^\//, '');
+      if (/^(javascript|data|vbscript):/i.test(raw)) return 'assets/hero.jpg';
+      return escapeHtml(raw || 'assets/hero.jpg');
+    }
+
+    function showDefaultNotFoundError(errorEl) {
+      if (!errorEl) return;
+      errorEl.innerHTML = `
+        <p class="font-hand text-2xl text-destructive">Order not found.</p>
+        <p class="mt-2 text-sm text-muted-foreground">Please check your order link or contact our studio.</p>
+        <a href="shop.html"
+          class="mt-6 inline-block bg-primary px-7 py-3 text-sm uppercase tracking-[0.2em] text-primary-foreground hover:opacity-90 transition">
+          Return to Shop
+        </a>
+      `;
+    }
+
+    let currentOrderForReturn = null;
+
     async function loadOrderConfirmation() {
       const urlParams = new URLSearchParams(window.location.search);
-      const orderId = urlParams.get('order_id');
+      const orderId = (urlParams.get('order_id') || '').trim();
       const loadingEl = document.getElementById('confirmation-loading');
       const errorEl = document.getElementById('confirmation-error');
       const contentEl = document.getElementById('confirmation-content');
 
       if (!orderId) {
         loadingEl.classList.add('hidden');
+        contentEl.classList.add('hidden');
+        showDefaultNotFoundError(errorEl);
         errorEl.classList.remove('hidden');
         return;
       }
@@ -397,7 +428,7 @@
           errorEl.innerHTML = `
             <p class="font-hand text-2xl text-primary">Login Required</p>
             <p class="mt-2 text-sm text-muted-foreground">Please sign in to the customer account that placed this order to view confirmation details.</p>
-            <a href="${redirectUrl}"
+            <a href="${escapeHtml(redirectUrl)}"
               class="mt-6 inline-block bg-primary px-7 py-3 text-sm uppercase tracking-[0.2em] text-primary-foreground hover:opacity-90 transition">
               Login to View Order
             </a>
@@ -428,6 +459,7 @@
         if (!res.ok || !data || !data.ok || !data.order) {
           loadingEl.classList.add('hidden');
           contentEl.classList.add('hidden');
+          showDefaultNotFoundError(errorEl);
           errorEl.classList.remove('hidden');
           return;
         }
@@ -435,9 +467,10 @@
         const order = data.order;
         if (order.payment_method !== 'cod' && order.payment_status !== 'paid') {
           loadingEl.classList.add('hidden');
+          contentEl.classList.add('hidden');
           errorEl.innerHTML = `
             <p class="font-hand text-2xl text-destructive">Payment Not Completed</p>
-            <p class="mt-2 text-sm text-muted-foreground">Payment for order <strong>${order.id}</strong> (${order.payment_status || 'pending'}) has not been verified yet.</p>
+            <p class="mt-2 text-sm text-muted-foreground">Payment for order <strong>${escapeHtml(order.id)}</strong> (${escapeHtml(order.payment_status || 'pending')}) has not been verified yet.</p>
             <a href="checkout.html"
               class="mt-6 inline-block bg-primary px-7 py-3 text-sm uppercase tracking-[0.2em] text-primary-foreground hover:opacity-90 transition">
               Return to Checkout
@@ -446,135 +479,8 @@
           errorEl.classList.remove('hidden');
           return;
         }
-        document.getElementById('order-ref-id').textContent = order.id;
 
-        // Customer & Delivery Address
-        document.getElementById('order-customer-name').textContent = order.customer_name;
-        document.getElementById('order-address-line1').textContent = order.address_line1;
-        const line2 = document.getElementById('order-address-line2');
-        if (order.address_line2) {
-          line2.textContent = order.address_line2;
-          line2.classList.remove('hidden');
-        } else {
-          line2.classList.add('hidden');
-        }
-        document.getElementById('order-city').textContent = order.city;
-        document.getElementById('order-state').textContent = order.state;
-        document.getElementById('order-pincode').textContent = order.pincode;
-        document.getElementById('order-phone').textContent = order.customer_phone;
-        document.getElementById('order-email').textContent = order.customer_email;
-
-        // Payment Details
-        const methodEl = document.getElementById('order-payment-method');
-        const statusEl = document.getElementById('order-payment-status');
-        const codNote = document.getElementById('cod-note-box');
-        const paymentIdRow = document.getElementById('payment-id-row');
-
-        if (order.payment_method === 'cod') {
-          methodEl.textContent = 'Cash on Delivery (COD)';
-          statusEl.textContent = 'Confirmed (Pay on Delivery)';
-          statusEl.className = 'font-medium text-xs px-2 py-0.5 rounded bg-primary/10 text-primary';
-          codNote.classList.remove('hidden');
-          paymentIdRow.classList.add('hidden');
-        } else {
-          methodEl.textContent = 'Online Payment (Razorpay)';
-          statusEl.textContent = order.payment_status === 'paid' ? 'Paid Successfully ✓' : order.payment_status;
-          statusEl.className = order.payment_status === 'paid'
-            ? 'font-medium text-xs px-2 py-0.5 rounded bg-green-950 text-green-200'
-            : 'font-medium text-xs px-2 py-0.5 rounded bg-amber-950 text-amber-200';
-          codNote.classList.add('hidden');
-          if (order.razorpay_payment_id) {
-            document.getElementById('order-payment-id').textContent = order.razorpay_payment_id;
-            paymentIdRow.classList.remove('hidden');
-          }
-        }
-
-        // Items List
-        const itemsList = document.getElementById('order-items-list');
-        itemsList.innerHTML = order.items.map(item => `
-          <li class="py-3 flex gap-3 items-center">
-            <img src="${item.image}" alt="${item.name}" class="h-16 w-12 object-cover rounded-sm ring-1 ring-border/50 shrink-0"/>
-            <div class="min-w-0 flex-1 text-xs">
-              <p class="font-semibold text-foreground truncate text-sm">${item.name}</p>
-              <p class="text-muted-foreground">${item.color} · Size ${item.size}</p>
-              <p class="text-muted-foreground">Qty: ${item.qty} × ${formatPrice(item.price)}</p>
-            </div>
-            <span class="font-display text-sm font-semibold text-primary shrink-0">
-              ${formatPrice(item.subtotal || item.price * item.qty)}
-            </span>
-          </li>
-        `).join('');
-
-        document.getElementById('order-subtotal').textContent = formatPrice(order.subtotal);
-        const shipEl = document.getElementById('order-shipping-val');
-        if (shipEl) shipEl.textContent = (order.shipping && order.shipping > 0) ? formatPrice(order.shipping) : 'FREE ✿';
-        document.getElementById('order-total-amount').textContent = formatPrice(order.total_amount);
-
-        // Update WhatsApp support link with order ID prefilled
-        const waLink = document.getElementById('order-support-whatsapp');
-        if (waLink) {
-          waLink.href = `https://wa.me/918849366915?text=Hi%20Naari!%20I%20have%20a%20question%20regarding%20my%20order%20${encodeURIComponent(order.id)}.`;
-        }
-
-        // Update Tracker
-        const st = (order.order_status || 'confirmed').toLowerCase();
-        const badge = document.getElementById('order-status-badge');
-        if (badge) badge.textContent = st.charAt(0).toUpperCase() + st.slice(1);
-
-        const cancelBtn = document.getElementById('cancel-order-btn');
-        if (cancelBtn) {
-          if (st === 'confirmed' || st === 'processing' || st === 'pending_payment') {
-            cancelBtn.classList.remove('hidden');
-          } else {
-            cancelBtn.classList.add('hidden');
-          }
-        }
-
-        if (st === 'shipped' || st === 'delivered') {
-          const shippedBar = document.getElementById('step-shipped-bar');
-          const shippedTxt = document.getElementById('step-shipped-text');
-          if (shippedBar) shippedBar.className = 'h-2 rounded-full bg-primary mx-auto';
-          if (shippedTxt) shippedTxt.className = 'text-[11px] font-semibold text-foreground';
-        }
-        if (st === 'delivered') {
-          const delBar = document.getElementById('step-delivered-bar');
-          const delTxt = document.getElementById('step-delivered-text');
-          if (delBar) delBar.className = 'h-2 rounded-full bg-primary mx-auto';
-          if (delTxt) delTxt.className = 'text-[11px] font-semibold text-foreground';
-        }
-
-        // Tracking Details
-        if (order.tracking_number) {
-          const trackBox = document.getElementById('order-tracking-info');
-          const trackVal = document.getElementById('order-tracking-val');
-          const courierVal = document.getElementById('order-courier-val');
-          if (trackBox) trackBox.classList.remove('hidden');
-          if (trackVal) trackVal.textContent = order.tracking_number;
-          if (courierVal && order.courier_partner) courierVal.textContent = order.courier_partner;
-        }
-
-        // Coupon discount
-        if (order.discount_amount && order.discount_amount > 0) {
-          const discRow = document.getElementById('order-discount-row');
-          const discCode = document.getElementById('order-coupon-code');
-          const discVal = document.getElementById('order-discount-val');
-          if (discRow) discRow.classList.remove('hidden');
-          if (discRow) discRow.classList.add('flex');
-          if (discCode) discCode.textContent = order.coupon_code || 'COUPON';
-          if (discVal) discVal.textContent = `-${formatPrice(order.discount_amount)}`;
-        }
-
-        // Setup Return Modal items
-        currentOrderForReturn = order;
-        const itemSelect = document.getElementById('return-item-select');
-        if (itemSelect && itemsList) {
-          itemSelect.innerHTML = (order.items || []).map(i => `
-            <option value="${i.name} (${i.size})">${i.name} - ${i.color}, Size ${i.size}</option>
-          `).join('');
-        }
-
-        loadingEl.classList.add('hidden');
-        contentEl.classList.remove('hidden');
+        renderOrderFromData(order);
       } catch (err) {
         if (!serverResponded) {
           console.warn('Could not reach server, checking authenticated local order backup:', err);
@@ -583,10 +489,18 @@
             const cachedRaw = localStorage.getItem('naari_last_order');
             if (session && session.user && cachedRaw) {
               const cachedOrder = JSON.parse(cachedRaw);
-              const ownsCachedOrder = cachedOrder &&
-                (cachedOrder.id === orderId || cachedOrder.order_id === orderId) &&
-                cachedOrder.user_id &&
-                Number(cachedOrder.user_id) === Number(session.user.id);
+              const cachedOrderId = String(cachedOrder?.id || cachedOrder?.order_id || '').trim();
+              const cachedUserId = String(cachedOrder?.user_id || '').trim();
+              const sessionUserId = String(session.user.id || '').trim();
+              const isPaymentComplete = cachedOrder && (cachedOrder.payment_method === 'cod' || cachedOrder.payment_status === 'paid');
+              const ownsCachedOrder = Boolean(
+                cachedOrder &&
+                cachedOrderId === orderId &&
+                cachedUserId &&
+                sessionUserId &&
+                cachedUserId === sessionUserId &&
+                isPaymentComplete
+              );
               if (ownsCachedOrder) {
                 renderOrderFromData(cachedOrder);
                 return;
@@ -596,19 +510,20 @@
         }
 
         loadingEl.classList.add('hidden');
+        contentEl.classList.add('hidden');
+        showDefaultNotFoundError(errorEl);
         errorEl.classList.remove('hidden');
       }
     }
-
-    let currentOrderForReturn = null;
 
     function renderOrderFromData(order) {
       currentOrderForReturn = order;
       const loadingEl = document.getElementById('confirmation-loading');
       const errorEl = document.getElementById('confirmation-error');
       const contentEl = document.getElementById('confirmation-content');
+      const orderIdVal = order.id || order.order_id || '';
 
-      document.getElementById('order-ref-id').textContent = order.id || order.order_id;
+      document.getElementById('order-ref-id').textContent = orderIdVal;
 
       // Customer & Delivery Address
       document.getElementById('order-customer-name').textContent = order.customer_name || 'Customer';
@@ -618,6 +533,7 @@
         line2.textContent = order.address_line2;
         line2.classList.remove('hidden');
       } else {
+        line2.textContent = '';
         line2.classList.add('hidden');
       }
       document.getElementById('order-city').textContent = order.city || '';
@@ -640,7 +556,7 @@
         paymentIdRow.classList.add('hidden');
       } else {
         methodEl.textContent = 'Online Payment (Razorpay)';
-        statusEl.textContent = order.payment_status === 'paid' ? 'Paid Successfully ✓' : order.payment_status;
+        statusEl.textContent = order.payment_status === 'paid' ? 'Paid Successfully ✓' : (order.payment_status || 'pending');
         statusEl.className = order.payment_status === 'paid'
           ? 'font-medium text-xs px-2 py-0.5 rounded bg-green-950 text-green-200'
           : 'font-medium text-xs px-2 py-0.5 rounded bg-amber-950 text-amber-200';
@@ -648,40 +564,147 @@
         if (order.razorpay_payment_id) {
           document.getElementById('order-payment-id').textContent = order.razorpay_payment_id;
           paymentIdRow.classList.remove('hidden');
+        } else {
+          document.getElementById('order-payment-id').textContent = '';
+          paymentIdRow.classList.add('hidden');
         }
       }
 
-      // Items List
+      // Items List (strictly HTML-escaped)
       const itemsList = document.getElementById('order-items-list');
       const items = Array.isArray(order.items) ? order.items : [];
-      itemsList.innerHTML = items.map(item => `
-        <li class="py-3 flex gap-3 items-center">
-          <img src="${(item.image || 'assets/hero.jpg').replace(/^\//, '')}" alt="${item.name}" class="h-16 w-12 object-cover rounded-sm ring-1 ring-border/50 shrink-0"/>
-          <div class="min-w-0 flex-1 text-xs">
-            <p class="font-semibold text-foreground truncate text-sm">${item.name}</p>
-            <p class="text-muted-foreground">${item.color || 'Standard'} · Size ${item.size || 'M'}</p>
-            <p class="text-muted-foreground">Qty: ${item.qty || 1} × ${formatPrice(item.price || 0)}</p>
-          </div>
-          <span class="font-display text-sm font-semibold text-primary shrink-0">
-            ${formatPrice(item.subtotal || (item.price || 0) * (item.qty || 1))}
-          </span>
-        </li>
-      `).join('');
+      itemsList.innerHTML = items.map(item => {
+        const safeImg = sanitizeImageSrc(item.image);
+        const safeName = escapeHtml(item.name || 'Kurti');
+        const safeColor = escapeHtml(item.color || 'Standard');
+        const safeSize = escapeHtml(item.size || 'M');
+        const itemQty = Number(item.qty) || 1;
+        const itemPrice = Number(item.price) || 0;
+        const lineSubtotal = (item.subtotal !== undefined && item.subtotal !== null)
+          ? Number(item.subtotal)
+          : (itemPrice * itemQty);
+        return `
+          <li class="py-3 flex gap-3 items-center">
+            <img src="${safeImg}" alt="${safeName}" class="h-16 w-12 object-cover rounded-sm ring-1 ring-border/50 shrink-0"/>
+            <div class="min-w-0 flex-1 text-xs">
+              <p class="font-semibold text-foreground truncate text-sm">${safeName}</p>
+              <p class="text-muted-foreground">${safeColor} · Size ${safeSize}</p>
+              <p class="text-muted-foreground">Qty: ${escapeHtml(itemQty)} × ${formatPrice(itemPrice)}</p>
+            </div>
+            <span class="font-display text-sm font-semibold text-primary shrink-0">
+              ${formatPrice(lineSubtotal)}
+            </span>
+          </li>
+        `;
+      }).join('');
 
-      document.getElementById('order-subtotal').textContent = formatPrice(order.subtotal || order.total_amount || 0);
-      document.getElementById('order-total-amount').textContent = formatPrice(order.total_amount || 0);
+      // Totals, Shipping & Coupon Discount
+      const subtotalVal = (order.subtotal !== undefined && order.subtotal !== null)
+        ? Number(order.subtotal)
+        : (Number(order.total_amount) || 0);
+      const shippingNum = Number(order.shipping) || 0;
+      const discountNum = Number(order.discount_amount) || 0;
+      const totalVal = Number(order.total_amount) || 0;
 
+      document.getElementById('order-subtotal').textContent = formatPrice(subtotalVal);
+      const shipEl = document.getElementById('order-shipping-val');
+      if (shipEl) {
+        shipEl.textContent = shippingNum > 0 ? formatPrice(shippingNum) : 'FREE ✿';
+      }
+      document.getElementById('order-total-amount').textContent = formatPrice(totalVal);
+
+      const discRow = document.getElementById('order-discount-row');
+      const discCode = document.getElementById('order-coupon-code');
+      const discVal = document.getElementById('order-discount-val');
+      if (discountNum > 0) {
+        if (discRow) {
+          discRow.classList.remove('hidden');
+          discRow.classList.add('flex');
+        }
+        if (discCode) discCode.textContent = order.coupon_code || 'COUPON';
+        if (discVal) discVal.textContent = `-${formatPrice(discountNum)}`;
+      } else if (discRow) {
+        discRow.classList.add('hidden');
+        discRow.classList.remove('flex');
+      }
+
+      // Update Fulfillment Tracker & Actions
+      const st = String(order.order_status || 'confirmed').toLowerCase();
+      const badge = document.getElementById('order-status-badge');
+      if (badge) {
+        badge.textContent = st.charAt(0).toUpperCase() + st.slice(1);
+        badge.className = st === 'cancelled'
+          ? 'px-2 py-0.5 rounded bg-red-100 text-red-800 font-bold'
+          : 'px-2 py-0.5 rounded bg-primary/10 text-primary font-bold';
+      }
+
+      const cancelBtn = document.getElementById('cancel-order-btn');
+      if (cancelBtn) {
+        if (st === 'confirmed' || st === 'processing' || st === 'pending_payment') {
+          cancelBtn.classList.remove('hidden');
+        } else {
+          cancelBtn.classList.add('hidden');
+        }
+      }
+
+      const openReturnBtn = document.getElementById('open-return-modal-btn');
+      if (openReturnBtn) {
+        const payMethod = String(order.payment_method || 'cod').toLowerCase();
+        const payStatus = String(order.payment_status || '').toLowerCase();
+        if (st === 'cancelled' || st === 'pending_payment' || (payMethod === 'razorpay' && payStatus !== 'paid')) {
+          openReturnBtn.classList.add('hidden');
+        } else {
+          openReturnBtn.classList.remove('hidden');
+        }
+      }
+
+      const shippedBar = document.getElementById('step-shipped-bar');
+      const shippedTxt = document.getElementById('step-shipped-text');
+      if (st === 'shipped' || st === 'delivered') {
+        if (shippedBar) shippedBar.className = 'h-2 rounded-full bg-primary mx-auto';
+        if (shippedTxt) shippedTxt.className = 'text-[11px] font-semibold text-foreground';
+      } else {
+        if (shippedBar) shippedBar.className = 'h-2 rounded-full bg-border mx-auto';
+        if (shippedTxt) shippedTxt.className = 'text-[11px] font-medium text-muted-foreground';
+      }
+
+      const delBar = document.getElementById('step-delivered-bar');
+      const delTxt = document.getElementById('step-delivered-text');
+      if (st === 'delivered') {
+        if (delBar) delBar.className = 'h-2 rounded-full bg-primary mx-auto';
+        if (delTxt) delTxt.className = 'text-[11px] font-semibold text-foreground';
+      } else {
+        if (delBar) delBar.className = 'h-2 rounded-full bg-border mx-auto';
+        if (delTxt) delTxt.className = 'text-[11px] font-medium text-muted-foreground';
+      }
+
+      // Tracking Details
+      const trackBox = document.getElementById('order-tracking-info');
+      const trackVal = document.getElementById('order-tracking-val');
+      const courierVal = document.getElementById('order-courier-val');
+      if (order.tracking_number) {
+        if (trackBox) trackBox.classList.remove('hidden');
+        if (trackVal) trackVal.textContent = order.tracking_number;
+        if (courierVal) courierVal.textContent = order.courier_partner || 'Blue Dart';
+      } else if (trackBox) {
+        trackBox.classList.add('hidden');
+      }
+
+      // Setup Return Modal items (strictly HTML-escaped)
       const itemSelect = document.getElementById('return-item-select');
       if (itemSelect) {
-        itemSelect.innerHTML = items.map(i => `
-          <option value="${i.name} (${i.size})">${i.name} - ${i.color}, Size ${i.size}</option>
-        `).join('');
+        itemSelect.innerHTML = items.map(i => {
+          const safeName = escapeHtml(i.name || 'Kurti');
+          const safeSize = escapeHtml(i.size || 'M');
+          const safeColor = escapeHtml(i.color || 'Standard');
+          return `<option value="${safeName} (${safeSize})">${safeName} - ${safeColor}, Size ${safeSize}</option>`;
+        }).join('');
       }
 
       // Update WhatsApp support link with order ID prefilled
       const waLink = document.getElementById('order-support-whatsapp');
       if (waLink) {
-        waLink.href = `https://wa.me/918849366915?text=Hi%20Naari!%20I%20have%20a%20question%20regarding%20my%20order%20${encodeURIComponent(order.id || order.order_id)}.`;
+        waLink.href = `https://wa.me/918849366915?text=Hi%20Naari!%20I%20have%20a%20question%20regarding%20my%20order%20${encodeURIComponent(orderIdVal)}.`;
       }
 
       loadingEl.classList.add('hidden');
@@ -748,11 +771,14 @@
         returnForm.addEventListener('submit', async (e) => {
           e.preventDefault();
           if (!currentOrderForReturn) return;
+          const submitBtn = returnForm.querySelector('button[type="submit"]');
+          if (submitBtn && submitBtn.disabled) return;
           const itemName = document.getElementById('return-item-select').value;
           const actionType = document.querySelector('input[name="action_type"]:checked').value;
           const reason = document.getElementById('return-reason-select').value;
           const notes = document.getElementById('return-notes').value;
 
+          if (submitBtn) submitBtn.disabled = true;
           returnMsg.innerHTML = '<span class="text-primary animate-pulse">Submitting request...</span>';
 
           try {
@@ -771,13 +797,18 @@
             });
 
             if (res.ok && data && data.ok) {
-              returnMsg.innerHTML = `<span class="text-emerald-800 font-medium">✓ ${data.message}</span>`;
+              returnMsg.innerHTML = `<span class="text-emerald-800 font-medium">✓ ${escapeHtml(data.message || '')}</span>`;
               getToast().success(data.message);
-              setTimeout(closeReturnModal, 2500);
+              setTimeout(() => {
+                closeReturnModal();
+                if (submitBtn) submitBtn.disabled = false;
+              }, 2500);
             } else {
-              returnMsg.innerHTML = `<span class="text-destructive">${data?.error || 'Failed to submit.'}</span>`;
+              if (submitBtn) submitBtn.disabled = false;
+              returnMsg.innerHTML = `<span class="text-destructive">${escapeHtml(data?.error || 'Failed to submit.')}</span>`;
             }
           } catch (err) {
+            if (submitBtn) submitBtn.disabled = false;
             returnMsg.innerHTML = '<span class="text-destructive">Network error. Please try again.</span>';
           }
         });

@@ -15,7 +15,7 @@ import base64
 import os
 import sys
 
-BASE_URL = "http://127.0.0.1:8000"
+BASE_URL = os.environ.get("BASE_URL", os.environ.get("API_BASE", "http://127.0.0.1:8000"))
 ADMIN_PASSKEY = "naari@admin2026"
 
 
@@ -257,16 +257,47 @@ def test_admin_flow():
         "data_url": base64.b64encode(b"<?php echo 1; ?>").decode("ascii")
     })
     uploaded_rel = r_up_ok.get("image_path", "")
-    if uploaded_rel and os.path.isfile(uploaded_rel):
+    served_upload_ok = False
+    saved_prod_upload_ok = False
+    if uploaded_rel:
         try:
-            os.remove(uploaded_rel)
+            with urllib.request.urlopen(f"{BASE_URL}/{uploaded_rel.lstrip('/')}") as up_resp:
+                served_upload_ok = (up_resp.status == 200 and len(up_resp.read()) > 0)
         except Exception:
-            pass
-    if c_up_ok == 200 and uploaded_rel.startswith("assets/uploads/") and c_up_bad == 400:
-        print("✓ Test 12 Passed: Valid product image uploaded & disguised file rejected (400)")
+            served_upload_ok = False
+        try:
+            c_save_up, _ = make_req("/api/admin/products", method="POST", data={
+                "id": "test_admin_upload_kurti",
+                "name": "Test Admin Uploaded Image Kurti",
+                "category": "Festive",
+                "price": 1699,
+                "mrp": 2299,
+                "stock": 8,
+                "image": uploaded_rel
+            })
+            c_get_up, r_get_up = make_req("/api/products/test_admin_upload_kurti", passkey=None)
+            prod_up_obj = r_get_up.get("product", {}) if isinstance(r_get_up, dict) else {}
+            saved_prod_upload_ok = (
+                c_save_up == 200
+                and c_get_up == 200
+                and prod_up_obj.get("image") == uploaded_rel
+                and prod_up_obj.get("relative_image") == uploaded_rel
+            )
+        finally:
+            make_req("/api/admin/products/test_admin_upload_kurti", method="DELETE")
+        up_fname = os.path.basename(uploaded_rel)
+        cfg_up_dir = os.environ.get("UPLOAD_DIR") or os.path.join(os.environ.get("DATA_DIR", "data"), "uploads")
+        for cand_del in (uploaded_rel, os.path.join(cfg_up_dir, up_fname)):
+            if cand_del and os.path.isfile(cand_del):
+                try:
+                    os.remove(cand_del)
+                except Exception:
+                    pass
+    if c_up_ok == 200 and uploaded_rel.startswith("assets/uploads/") and served_upload_ok and saved_prod_upload_ok and c_up_bad == 400:
+        print("✓ Test 12 Passed: Valid product image uploaded, retained on product save & disguised file rejected (400)")
         passed += 1
     else:
-        print(f"✗ Test 12 Failed: ok={c_up_ok} {r_up_ok}, bad={c_up_bad}")
+        print(f"✗ Test 12 Failed: ok={c_up_ok} {r_up_ok}, served={served_upload_ok}, saved_prod={saved_prod_upload_ok}, bad={c_up_bad}")
 
     # 13. Store Settings Fetch & Update (Never Exposing Secrets)
     total += 1

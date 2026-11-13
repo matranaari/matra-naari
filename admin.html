@@ -810,6 +810,7 @@
           <div>
             <label class="block text-xs uppercase tracking-wider text-muted-foreground mb-1">Order Fulfillment Status</label>
             <select id="modal-order-status" class="w-full bg-background border border-border px-3 py-2 text-sm">
+              <option value="pending_payment">Pending Payment</option>
               <option value="Confirmed">Confirmed</option>
               <option value="Packed">Packed</option>
               <option value="Shipped">Shipped</option>
@@ -821,7 +822,9 @@
           <div>
             <label class="block text-xs uppercase tracking-wider text-muted-foreground mb-1">Payment Status</label>
             <select id="modal-payment-status" class="w-full bg-background border border-border px-3 py-2 text-sm">
+              <option value="cod_confirmed">Confirmed (COD)</option>
               <option value="pending_cod">Pending (COD)</option>
+              <option value="pending">Pending (Online)</option>
               <option value="paid">Paid / Collected</option>
               <option value="refunded">Refunded</option>
               <option value="failed">Failed / Cancelled</option>
@@ -936,7 +939,7 @@
         <div class="bg-background/70 border border-border p-4">
           <label class="block text-xs uppercase tracking-wider font-semibold text-foreground mb-2">Product Image</label>
           <div class="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-            <img id="p-image-preview" src="images/products/p101.jpg" alt="Preview" class="h-20 w-16 object-cover border border-border bg-card shrink-0"/>
+            <img id="p-image-preview" src="assets/hero.jpg" alt="Preview" class="h-20 w-16 object-cover border border-border bg-card shrink-0"/>
             <div class="flex-1 w-full space-y-2">
               <div class="flex flex-wrap items-center gap-2">
                 <label class="bg-primary/10 text-primary border border-primary/30 px-3 py-1.5 text-xs font-semibold cursor-pointer hover:bg-primary/20 transition">
@@ -945,7 +948,7 @@
                 </label>
                 <span id="p-image-upload-status" class="text-xs text-muted-foreground">Max 5 MB</span>
               </div>
-              <input type="text" id="p-form-image" required placeholder="images/products/p101.jpg or assets/uploads/..." class="w-full bg-card border border-border px-3 py-1.5 text-xs"/>
+              <input type="text" id="p-form-image" required placeholder="assets/hero.jpg or assets/uploads/..." class="w-full bg-card border border-border px-3 py-1.5 text-xs"/>
             </div>
           </div>
         </div>
@@ -1159,7 +1162,7 @@
           const s = data.stats;
 
           document.getElementById("stat-revenue").textContent = formatINR(s.total_revenue);
-          document.getElementById("stat-paid-revenue").textContent = formatINR(s.paid_revenue);
+          document.getElementById("stat-paid-revenue").textContent = formatINR(s.verified_paid_revenue ?? s.paid_revenue);
           document.getElementById("stat-orders").textContent = s.total_orders;
           document.getElementById("stat-pending-orders").textContent = s.pending_orders ?? 0;
           const custCount = s.total_customers ?? s.total_users ?? totalRegisteredCustomers ?? allCustomers.length;
@@ -1210,7 +1213,7 @@
           <tr class="hover:bg-primary/5">
             <td class="py-2.5 pr-2">
               <div class="flex items-center gap-2.5">
-                <img src="${escapeHtml(item.image || 'images/products/p101.jpg')}" alt="" class="h-9 w-7 object-cover border border-border"/>
+                <img src="${escapeHtml(item.image || 'assets/hero.jpg')}" alt="" class="h-9 w-7 object-cover border border-border"/>
                 <div>
                   <div class="font-medium text-foreground">${escapeHtml(item.name)}</div>
                   <div class="text-[10px] text-muted-foreground font-mono">${escapeHtml(item.sku || ('#' + item.id))}</div>
@@ -1591,7 +1594,7 @@
         document.getElementById("p-size-xl").value = Number(ss.XL ?? 0);
         recalcModalSizeStock();
 
-        const imgPath = prod ? prod.image : "images/products/p101.jpg";
+        const imgPath = prod ? prod.image : "assets/hero.jpg";
         document.getElementById("p-form-image").value = imgPath;
         document.getElementById("p-image-preview").src = imgPath;
         document.getElementById("p-form-fabric").value = prod ? (prod.fabric || "") : "Pure Cotton";
@@ -1707,6 +1710,10 @@
         }
       }
 
+      function normalizeOrderStatusKey(val) {
+        return String(val || "").trim().toLowerCase().replace(/_/g, " ");
+      }
+
       function renderOrdersTable() {
         const tbody = document.getElementById("admin-orders-tbody");
         if (!tbody) return;
@@ -1716,7 +1723,7 @@
         const dateTo = document.getElementById("order-date-to")?.value || "";
 
         const filtered = allOrders.filter((o) => {
-          if (activeStatusFilter !== "ALL" && o.order_status !== activeStatusFilter) return false;
+          if (activeStatusFilter !== "ALL" && normalizeOrderStatusKey(o.order_status) !== normalizeOrderStatusKey(activeStatusFilter)) return false;
           if (payFilter !== "ALL" && String(o.payment_method || "").toUpperCase() !== payFilter) return false;
           if (dateFrom || dateTo) {
             const oDate = String(o.created_at || "").slice(0, 10);
@@ -1744,10 +1751,11 @@
         tbody.innerHTML = filtered.map((o) => {
           const dateStr = o.created_at ? new Date(o.created_at).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" }) : "-";
           const itemCount = (o.items || []).reduce((acc, i) => acc + (Number(i.qty) || 1), 0);
+          const normStatus = normalizeOrderStatusKey(o.order_status);
           const statusBadgeClass =
-            o.order_status === "Delivered"
+            normStatus === "delivered"
               ? "bg-green-100 text-green-800"
-              : o.order_status === "Cancelled"
+              : normStatus === "cancelled"
               ? "bg-red-100 text-red-800"
               : "bg-primary/10 text-primary";
 
@@ -1818,8 +1826,20 @@
         if (!order) return;
         activeModalOrderId = orderId;
         document.getElementById("modal-order-id").textContent = order.order_id;
-        document.getElementById("modal-order-status").value = order.order_status || "Confirmed";
-        document.getElementById("modal-payment-status").value = order.payment_status || "pending_cod";
+        const statusSelect = document.getElementById("modal-order-status");
+        const targetStatusKey = normalizeOrderStatusKey(order.order_status || "Confirmed");
+        const matchedStatusOpt = Array.from(statusSelect.options).find(
+          (opt) => normalizeOrderStatusKey(opt.value) === targetStatusKey
+        );
+        statusSelect.value = matchedStatusOpt ? matchedStatusOpt.value : "Confirmed";
+
+        const paySelect = document.getElementById("modal-payment-status");
+        const rawPayStatus = String(order.payment_status || "pending_cod").trim().toLowerCase();
+        const matchedPayOpt = Array.from(paySelect.options).find(
+          (opt) => String(opt.value).trim().toLowerCase() === rawPayStatus
+        );
+        paySelect.value = matchedPayOpt ? matchedPayOpt.value : "pending_cod";
+
         document.getElementById("modal-courier-name").value = order.courier_name || "";
         document.getElementById("modal-tracking-num").value = order.tracking_number || "";
         document.getElementById("modal-status-note").value = "";
@@ -1830,18 +1850,24 @@
 
         const c = order.customer || {};
         const p = order.pricing || {};
-        const itemsHtml = (order.items || []).map((item) => `
+        const discountVal = Number(p.discount ?? p.discount_amount ?? order.discount_amount ?? 0);
+        const itemsHtml = (order.items || []).map((item) => {
+          const qtyVal = Math.max(1, Number(item.qty) || 1);
+          const unitPriceVal = Number(item.price ?? item.unit_price ?? 0);
+          const lineTotalVal = Number(item.subtotal ?? item.line_total ?? (unitPriceVal * qtyVal));
+          return `
           <div class="flex items-center justify-between py-2 border-b border-border/60 text-xs">
             <div class="flex items-center gap-3">
               ${item.image ? `<img src="${escapeHtml(item.image)}" alt="" class="h-10 w-8 object-cover border border-border"/>` : ""}
               <div>
                 <span class="font-semibold">${escapeHtml(item.name)}</span>
-                <span class="text-muted-foreground ml-1">(Size: ${escapeHtml(item.size || "M")}, Qty: ${Number(item.qty) || 1})</span>
+                <span class="text-muted-foreground ml-1">(Size: ${escapeHtml(item.size || "M")}, Qty: ${qtyVal})</span>
               </div>
             </div>
-            <span class="font-medium">${formatINR(item.line_total || (item.unit_price * item.qty))}</span>
+            <span class="font-medium">${formatINR(lineTotalVal)}</span>
           </div>
-        `).join("");
+        `;
+        }).join("");
 
         document.getElementById("modal-order-body").innerHTML = `
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-background/60 p-4 border border-border">
@@ -1855,7 +1881,7 @@
               <p class="text-xs uppercase tracking-wider text-muted-foreground mb-1">Financial Summary</p>
               <div class="text-xs space-y-1">
                 <div class="flex justify-between"><span>Bag Subtotal:</span><span>${formatINR(p.subtotal)}</span></div>
-                <div class="flex justify-between"><span>Coupon Discount ${p.coupon_code ? "(" + escapeHtml(p.coupon_code) + ")" : ""}:</span><span>-${formatINR(p.discount)}</span></div>
+                <div class="flex justify-between"><span>Coupon Discount ${p.coupon_code ? "(" + escapeHtml(p.coupon_code) + ")" : ""}:</span><span>-${formatINR(discountVal)}</span></div>
                 <div class="flex justify-between"><span>Shipping:</span><span>${formatINR(p.shipping)}</span></div>
                 <div class="flex justify-between font-bold text-sm border-t border-border pt-1"><span>Order Total:</span><span class="text-primary">${formatINR(p.total)}</span></div>
                 <div class="pt-1 text-[11px] text-muted-foreground">
@@ -2152,6 +2178,26 @@
         }
       }
 
+      const ALLOWED_RETURN_TRANSITIONS = {
+        requested: ["requested", "approved", "rejected"],
+        approved: ["approved", "picked_up", "rejected"],
+        picked_up: ["picked_up", "completed", "refunded"],
+        completed: ["completed", "refunded"],
+        refunded: ["refunded"],
+        rejected: ["rejected"],
+      };
+
+      function normalizeAdminReturnStatus(raw) {
+        const s = String(raw || "requested").trim().toLowerCase();
+        if (s === "pending" || s === "requested") return "requested";
+        if (s === "approved") return "approved";
+        if (s === "picked_up" || s === "picked up" || s === "pickup_scheduled" || s === "pickup scheduled") return "picked_up";
+        if (s === "completed") return "completed";
+        if (s === "refunded" || s === "completed / refunded") return "refunded";
+        if (s === "rejected" || s === "cancelled") return "rejected";
+        return "requested";
+      }
+
       function renderReturnsTable() {
         const tbody = document.getElementById("admin-returns-tbody");
         if (!tbody) return;
@@ -2160,28 +2206,34 @@
           return;
         }
         tbody.innerHTML = allReturns.map((r) => {
+          const retId = r.return_id || r.id || "";
+          const normRetStatus = normalizeAdminReturnStatus(r.status);
+          const allowedNext = ALLOWED_RETURN_TRANSITIONS[normRetStatus] || [normRetStatus];
+          const isTerminal = normRetStatus === "refunded" || normRetStatus === "rejected";
+          const reqType = r.request_type || r.action_type || "return";
           const dateStr = r.created_at ? new Date(r.created_at).toLocaleDateString("en-IN") : "-";
           return `
             <tr class="hover:bg-primary/5 transition">
-              <td class="py-3 px-3 font-mono text-xs font-semibold text-primary">${escapeHtml(r.return_id)}</td>
+              <td class="py-3 px-3 font-mono text-xs font-semibold text-primary">${escapeHtml(retId)}</td>
               <td class="py-3 px-3 font-mono text-xs">${escapeHtml(r.order_id)}</td>
               <td class="py-3 px-3 text-xs text-muted-foreground">${escapeHtml(dateStr)}</td>
-              <td class="py-3 px-3 text-xs uppercase font-medium">${escapeHtml(r.request_type)}</td>
+              <td class="py-3 px-3 text-xs uppercase font-medium">${escapeHtml(reqType)}</td>
               <td class="py-3 px-3 text-xs">
                 <div class="font-medium">${escapeHtml(r.reason)}</div>
                 <div class="text-muted-foreground">${escapeHtml(r.notes || "")}</div>
               </td>
               <td class="py-3 px-3">
-                <select data-ret-id="${escapeHtml(r.return_id)}" class="ret-status-select bg-background border border-border px-2 py-1 text-xs">
-                  <option value="Requested" ${r.status === "Requested" ? "selected" : ""}>Requested</option>
-                  <option value="Approved" ${r.status === "Approved" ? "selected" : ""}>Approved</option>
-                  <option value="Pickup Scheduled" ${r.status === "Pickup Scheduled" ? "selected" : ""}>Pickup Scheduled</option>
-                  <option value="Completed / Refunded" ${r.status === "Completed / Refunded" ? "selected" : ""}>Completed / Refunded</option>
-                  <option value="Rejected" ${r.status === "Rejected" ? "selected" : ""}>Rejected</option>
+                <select data-ret-id="${escapeHtml(retId)}" class="ret-status-select bg-background border border-border px-2 py-1 text-xs" ${isTerminal ? "disabled" : ""}>
+                  <option value="requested" ${normRetStatus === "requested" ? "selected" : ""} ${allowedNext.includes("requested") ? "" : "disabled"}>Requested</option>
+                  <option value="approved" ${normRetStatus === "approved" ? "selected" : ""} ${allowedNext.includes("approved") ? "" : "disabled"}>Approved</option>
+                  <option value="picked_up" ${normRetStatus === "picked_up" ? "selected" : ""} ${allowedNext.includes("picked_up") ? "" : "disabled"}>Picked Up</option>
+                  <option value="completed" ${normRetStatus === "completed" ? "selected" : ""} ${allowedNext.includes("completed") ? "" : "disabled"}>Completed</option>
+                  <option value="refunded" ${normRetStatus === "refunded" ? "selected" : ""} ${allowedNext.includes("refunded") ? "" : "disabled"}>Refunded</option>
+                  <option value="rejected" ${normRetStatus === "rejected" ? "selected" : ""} ${allowedNext.includes("rejected") ? "" : "disabled"}>Rejected</option>
                 </select>
               </td>
               <td class="py-3 px-3 text-right">
-                <button type="button" data-save-ret="${escapeHtml(r.return_id)}" class="save-ret-btn text-xs bg-primary text-primary-foreground px-3 py-1 cursor-pointer">Save</button>
+                <button type="button" data-save-ret="${escapeHtml(retId)}" class="save-ret-btn text-xs bg-primary text-primary-foreground px-3 py-1 ${isTerminal ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}" ${isTerminal ? "disabled" : ""}>Save</button>
               </td>
             </tr>
           `;
@@ -2191,12 +2243,21 @@
           btn.addEventListener("click", async () => {
             const retId = btn.getAttribute("data-save-ret");
             const select = tbody.querySelector(`select[data-ret-id="${retId}"]`);
-            if (!select) return;
-            await fetch("/api/admin/returns/status", {
-              method: "POST",
-              headers: getAdminHeaders({ "Content-Type": "application/json" }),
-              body: JSON.stringify({ return_id: retId, status: select.value }),
-            });
+            if (!select || select.disabled) return;
+            try {
+              const res = await fetch("/api/admin/returns/status", {
+                method: "POST",
+                headers: getAdminHeaders({ "Content-Type": "application/json" }),
+                body: JSON.stringify({ return_id: retId, status: select.value }),
+              });
+              if (res.status === 401) return lockWorkspace();
+              const data = await res.json().catch(() => ({}));
+              if (!res.ok || !data.ok) {
+                alert(data.error || "Failed to update return request status.");
+              }
+            } catch (err) {
+              console.error("Failed updating return status:", err);
+            }
             await loadReturns();
             await loadStats();
           });

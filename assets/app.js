@@ -634,6 +634,76 @@ function setActiveCoupon(couponObj) {
   window.dispatchEvent(new CustomEvent('naari:couponUpdated', { detail: { coupon: couponObj } }));
 }
 
+function evaluateClientCoupon(activeCoupon, cartItems = [], subtotal = 0) {
+  if (!activeCoupon || !activeCoupon.code) {
+    return { valid: false, discountAmount: 0, error: '' };
+  }
+  const code = String(activeCoupon.code || '').trim().toUpperCase();
+  if (activeCoupon.is_active !== undefined && !Number(activeCoupon.is_active)) {
+    return { valid: false, discountAmount: 0, error: `Coupon '${code}' is currently inactive.` };
+  }
+  const minOrd = Number(activeCoupon.min_order_value || 0);
+  if (subtotal < minOrd) {
+    return {
+      valid: false,
+      discountAmount: 0,
+      error: `Coupon ${code} requires a minimum order value of ${formatPrice(minOrd)} (Current bag: ${formatPrice(subtotal)}).`
+    };
+  }
+  const appCats = String(activeCoupon.applicable_categories || '')
+    .split(',')
+    .map(s => s.trim().toLowerCase())
+    .filter(Boolean);
+  const appProds = String(activeCoupon.applicable_products || '')
+    .split(',')
+    .map(s => s.trim().toLowerCase())
+    .filter(Boolean);
+
+  let eligibleSubtotal = subtotal;
+  if (appCats.length > 0 || appProds.length > 0) {
+    eligibleSubtotal = 0;
+    for (const item of (Array.isArray(cartItems) ? cartItems : [])) {
+      const pid = String(item?.id || '').trim().toLowerCase();
+      let cat = String(item?.category || '').trim().toLowerCase();
+      if (!cat && pid && typeof DEFAULT_PRODUCTS !== 'undefined') {
+        const matchProd = DEFAULT_PRODUCTS.find(p => String(p.id).toLowerCase() === pid);
+        if (matchProd && matchProd.category) cat = String(matchProd.category).trim().toLowerCase();
+      }
+      if ((appProds.length > 0 && appProds.includes(pid)) || (appCats.length > 0 && appCats.includes(cat))) {
+        eligibleSubtotal += (Number(item?.price || 0) * Number(item?.qty || 1));
+      }
+    }
+    if (eligibleSubtotal <= 0) {
+      return {
+        valid: false,
+        discountAmount: 0,
+        error: `Coupon '${code}' is not applicable to the items in your bag.`
+      };
+    }
+  }
+
+  let discountAmount = 0;
+  const discVal = Number(activeCoupon.discount_value || 0);
+  if (activeCoupon.discount_type === 'percentage') {
+    discountAmount = Math.round(eligibleSubtotal * (discVal / 100));
+    const maxDisc = Number(activeCoupon.max_discount || 0);
+    if (maxDisc > 0 && discountAmount > maxDisc) {
+      discountAmount = maxDisc;
+    }
+  } else {
+    discountAmount = Math.min(discVal, eligibleSubtotal);
+  }
+  discountAmount = Math.max(0, Math.min(discountAmount, eligibleSubtotal, subtotal));
+  if (discountAmount <= 0) {
+    return {
+      valid: false,
+      discountAmount: 0,
+      error: `Coupon '${code}' is not applicable to the items in your bag.`
+    };
+  }
+  return { valid: true, discountAmount, error: '' };
+}
+
 // ================= Header Badges & UI Sync =================
 function updateHeaderBadges() {
   const bagCount = getCartCount();
@@ -1255,19 +1325,11 @@ function renderCartDrawerContent() {
   }
 
   // Calculate discount if coupon active
-  let discountAmount = 0;
-  if (activeCoupon && activeCoupon.code) {
-    const minOrd = Number(activeCoupon.min_order_value || 0);
-    if (subtotal >= minOrd) {
-      if (activeCoupon.discount_type === 'percentage') {
-        discountAmount = Math.round(subtotal * (activeCoupon.discount_value / 100));
-        if (activeCoupon.max_discount && discountAmount > activeCoupon.max_discount) {
-          discountAmount = activeCoupon.max_discount;
-        }
-      } else {
-        discountAmount = Math.min(activeCoupon.discount_value, subtotal);
-      }
-    }
+  const couponEval = evaluateClientCoupon(activeCoupon, cart, subtotal);
+  const discountAmount = couponEval.valid ? couponEval.discountAmount : 0;
+  const statusBox = document.getElementById('drawer-coupon-status');
+  if (activeCoupon && activeCoupon.code && !couponEval.valid && statusBox) {
+    statusBox.innerHTML = `<span class="text-destructive">${escapeHtml(couponEval.error)}</span>`;
   }
 
   const shipping = subtotal >= freeThreshold ? 0 : stdShippingFee;

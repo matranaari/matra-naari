@@ -147,20 +147,11 @@
         return;
       }
 
-      // Compute discounts
-      let discountAmount = 0;
-      if (activeCoupon && activeCoupon.code) {
-        if (typeof activeCoupon.discount_amount === 'number' && activeCoupon.subtotal_snapshot === subtotal) {
-          discountAmount = activeCoupon.discount_amount;
-        } else if (activeCoupon.discount_type === 'percentage') {
-          discountAmount = Math.round(subtotal * (activeCoupon.discount_value / 100));
-          if (activeCoupon.max_discount && discountAmount > activeCoupon.max_discount) {
-            discountAmount = activeCoupon.max_discount;
-          }
-        } else {
-          discountAmount = Math.min(activeCoupon.discount_value, subtotal);
-        }
-      }
+      // Compute discounts using shared coupon rule evaluator
+      const couponEval = (typeof evaluateClientCoupon === 'function')
+        ? evaluateClientCoupon(activeCoupon, cart, subtotal)
+        : { valid: false, discountAmount: 0, error: '' };
+      const discountAmount = couponEval.valid ? couponEval.discountAmount : 0;
 
       const shipping = subtotal >= freeThreshold ? 0 : baseShippingFee;
       const finalTotal = Math.max(0, subtotal - discountAmount + shipping);
@@ -222,7 +213,10 @@
                 </button>
               </form>
               <div id="cart-page-coupon-msg" class="text-xs">
-                ${activeCoupon ? `<span class="text-emerald-800 font-medium">✓ Coupon "${activeCoupon.code}" applied!</span> <button type="button" onclick="setActiveCoupon(null); renderFullCartPage();" class="text-muted-foreground hover:text-destructive underline ml-1">Remove</button>` : ''}
+                ${activeCoupon ? (couponEval.valid
+                  ? `<span class="text-emerald-800 font-medium">✓ Coupon "${escapeHtml(activeCoupon.code)}" applied!</span> <button type="button" onclick="setActiveCoupon(null); renderFullCartPage();" class="text-muted-foreground hover:text-destructive underline ml-1">Remove</button>`
+                  : `<span class="text-destructive">${escapeHtml(couponEval.error)}</span> <button type="button" onclick="setActiveCoupon(null); renderFullCartPage();" class="text-muted-foreground hover:text-destructive underline ml-1">Remove</button>`
+                ) : ''}
               </div>
             </div>
 

@@ -8,6 +8,9 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous"/>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Kalam:wght@300;400;700&family=Karla:wght@400;500;600&display=swap"/>
   <link rel="stylesheet" href="assets/styles.css"/>
+  <!-- Leaflet Interactive Map (OpenStreetMap) -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
   <title>Checkout — Naari</title>
   <meta name="description" content="Secure checkout for your Naari order."/>
   <style>
@@ -25,6 +28,19 @@
     .payment-option-label:focus-within {
       outline: 2px solid #6B2D31;
       outline-offset: 2px;
+    }
+    #delivery-map {
+      height: 250px;
+      width: 100%;
+      z-index: 10;
+    }
+    @media (min-width: 640px) {
+      #delivery-map {
+        height: 300px;
+      }
+    }
+    .leaflet-container {
+      font-family: 'Karla', sans-serif;
     }
   </style>
   <!-- Razorpay Standard Checkout SDK -->
@@ -75,23 +91,122 @@
       <div id="checkout-main-grid" class="grid gap-10 lg:grid-cols-[1fr_400px]">
         <!-- Left: Form -->
         <div class="space-y-8">
-          <!-- Step 1: Customer & Delivery Details -->
+          <!-- Step 1: Customer & Delivery Details (Blinkit-style Address Selection & Pin Flow) -->
           <div class="bg-card/70 p-5 ring-1 ring-border sm:p-7">
-            <h2 class="font-display text-2xl font-semibold text-foreground flex items-center gap-2">
-              <span class="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground font-sans">1</span>
-              Delivery Address
-            </h2>
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <h2 class="font-display text-2xl font-semibold text-foreground flex items-center gap-2">
+                <span class="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground font-sans">1</span>
+                Delivery Address
+              </h2>
+              <span id="address-step-status-pill" class="rounded-full bg-amber-900/10 border border-amber-800/30 px-2.5 py-0.5 text-[11px] font-medium text-amber-900">
+                Pin &amp; Address Details Required
+              </span>
+            </div>
 
             <!-- Saved Addresses Quick-Fill (populated if logged in) -->
             <div id="saved-addresses-quickfill" class="mt-4 hidden space-y-2 border-b border-border/60 pb-4">
-              <p class="text-[11px] uppercase tracking-wider font-semibold text-primary font-sans">Saved Addresses — Tap to Auto-Fill</p>
+              <p class="text-[11px] uppercase tracking-wider font-semibold text-primary font-sans">Saved Addresses — Tap to Select</p>
               <div id="saved-addresses-chips" class="flex flex-wrap gap-2"></div>
             </div>
 
+            <!-- 1A. Blinkit-Style Live Address Search Autocomplete -->
+            <div class="mt-5 space-y-2">
+              <label for="address-search-input" class="block text-xs uppercase tracking-wider font-semibold text-primary">
+                Search Delivery Area / Society / Landmark
+              </label>
+              <div class="relative" id="address-autocomplete-container">
+                <div class="flex items-center border border-border bg-background focus-within:border-primary">
+                  <span class="pl-3 pr-2 text-primary text-sm select-none" aria-hidden="true">🔍</span>
+                  <input
+                    id="address-search-input"
+                    type="text"
+                    autocomplete="off"
+                    placeholder="Search your society, street, sector or landmark (e.g. C-Scheme Jaipur, Connaught Place)..."
+                    class="w-full bg-transparent py-2.5 pr-3 text-sm outline-none"
+                  />
+                  <span id="address-search-spinner" class="hidden pr-3 text-xs text-primary animate-pulse">Searching…</span>
+                  <button
+                    type="button"
+                    id="address-search-clear-btn"
+                    class="hidden pr-3 text-xs text-muted-foreground hover:text-foreground cursor-pointer"
+                    aria-label="Clear address search"
+                  >✕</button>
+                </div>
+                <!-- Suggestions Dropdown -->
+                <div
+                  id="address-autocomplete-dropdown"
+                  role="listbox"
+                  aria-label="Address suggestions"
+                  class="hidden absolute left-0 right-0 top-full z-30 mt-1 max-h-64 overflow-y-auto border border-border bg-background shadow-lg divide-y divide-border/50 text-xs"
+                ></div>
+              </div>
+              <p class="text-[11px] text-muted-foreground">
+                Powered by OpenStreetMap Nominatim. Selecting a suggestion moves the delivery pin and fills locality details below.
+              </p>
+            </div>
+
+            <!-- 1B. Interactive Leaflet Map + Use Current Location -->
+            <div class="mt-4 border border-border bg-background/80 p-3 space-y-2.5">
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <p class="text-xs font-semibold text-foreground">Pin Your Delivery Location on Map</p>
+                  <p class="text-[11px] text-muted-foreground">Click on the map or drag the burgundy pin to refine your doorstep coordinates.</p>
+                </div>
+                <button
+                  type="button"
+                  id="use-current-location-btn"
+                  class="inline-flex items-center gap-1.5 border border-primary bg-primary/5 px-3 py-1.5 text-xs font-semibold text-primary hover:bg-primary hover:text-primary-foreground transition cursor-pointer"
+                >
+                  <span aria-hidden="true">📍</span>
+                  <span id="use-current-location-text">Use my current location</span>
+                </button>
+              </div>
+
+              <!-- Map Canvas -->
+              <div id="delivery-map" class="border border-border/80 bg-secondary/20" aria-label="Interactive delivery location map"></div>
+
+              <!-- Selected Map Pin & Coordinates Readout -->
+              <div class="flex flex-wrap items-start justify-between gap-2 bg-secondary/25 px-3 py-2 border border-border/50 text-xs">
+                <div class="min-w-0 flex-1">
+                  <p class="text-[10px] uppercase tracking-wider font-semibold text-primary">Selected Map Area</p>
+                  <p id="map-selected-address-text" class="text-foreground font-medium truncate">
+                    Click the map, drag the pin, or search above to set map coordinates
+                  </p>
+                  <p id="map-geocode-status" class="mt-0.5 text-[11px] text-muted-foreground"></p>
+                </div>
+                <div class="text-right shrink-0">
+                  <span class="text-[10px] uppercase tracking-wider text-muted-foreground block">Coordinates</span>
+                  <span id="map-coords-badge" class="font-mono text-[11px] font-medium text-foreground">Not pinned yet</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- 1C. Complete Delivery Address Form -->
             <form id="checkout-form" class="mt-6 space-y-4">
+              <input type="hidden" id="cust-lat" name="latitude" value=""/>
+              <input type="hidden" id="cust-lng" name="longitude" value=""/>
+              <input type="hidden" id="cust-location-summary" name="location_summary" value=""/>
+              <input type="hidden" id="cust-address-label" name="address_label" value="Home"/>
+
+              <!-- Address Type Pills (Home / Work / Other) -->
+              <div>
+                <span class="block text-xs uppercase tracking-wider text-muted-foreground mb-1.5">Save Address As</span>
+                <div class="flex flex-wrap gap-2" id="address-label-pills" role="group" aria-label="Address Label">
+                  <button type="button" data-label="Home" class="addr-label-btn border border-primary bg-primary text-primary-foreground px-3 py-1 text-xs font-medium cursor-pointer transition">
+                    🏠 Home
+                  </button>
+                  <button type="button" data-label="Work" class="addr-label-btn border border-border bg-background text-foreground hover:border-primary px-3 py-1 text-xs font-medium cursor-pointer transition">
+                    💼 Work
+                  </button>
+                  <button type="button" data-label="Other" class="addr-label-btn border border-border bg-background text-foreground hover:border-primary px-3 py-1 text-xs font-medium cursor-pointer transition">
+                    📍 Other
+                  </button>
+                </div>
+              </div>
+
               <div class="grid gap-4 sm:grid-cols-2">
                 <div>
-                  <label for="cust-name" class="block text-xs uppercase tracking-wider text-muted-foreground mb-1">Full Name *</label>
+                  <label for="cust-name" class="block text-xs uppercase tracking-wider text-muted-foreground mb-1">Recipient Full Name *</label>
                   <input
                     id="cust-name"
                     name="name"
@@ -128,32 +243,72 @@
                 <p class="mt-1 text-[11px] text-muted-foreground">We will send your order receipt and tracking updates here.</p>
               </div>
 
+              <!-- Split Blinkit-Style House/Flat & Street/Area Fields -->
+              <div class="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <label for="cust-house-no" class="block text-xs uppercase tracking-wider text-muted-foreground mb-1">House / Flat / Floor No. *</label>
+                  <input
+                    id="cust-house-no"
+                    name="house_no"
+                    type="text"
+                    required
+                    placeholder="e.g. Flat 402, Tower B / Plot 14"
+                    class="w-full border border-border bg-background px-3 py-2.5 text-sm outline-none focus:border-primary"
+                  />
+                </div>
+                <div>
+                  <label for="cust-street-area" class="block text-xs uppercase tracking-wider text-muted-foreground mb-1">Street / Society / Locality *</label>
+                  <input
+                    id="cust-street-area"
+                    name="street_area"
+                    type="text"
+                    required
+                    placeholder="e.g. Lotus Apartments, MI Road"
+                    class="w-full border border-border bg-background px-3 py-2.5 text-sm outline-none focus:border-primary"
+                  />
+                </div>
+              </div>
+
               <div>
-                <label for="cust-address1" class="block text-xs uppercase tracking-wider text-muted-foreground mb-1">Street Address / House No. *</label>
+                <label for="cust-address1" class="block text-xs uppercase tracking-wider text-muted-foreground mb-1">Complete Delivery Street Address *</label>
                 <input
                   id="cust-address1"
                   name="address_line1"
                   type="text"
                   required
-                  placeholder="Flat / House No., Apartment name, Street"
+                  placeholder="Flat / House No., Building, Street &amp; Area"
                   class="w-full border border-border bg-background px-3 py-2.5 text-sm outline-none focus:border-primary"
                 />
+                <p class="mt-1 text-[11px] text-muted-foreground">Auto-synced from House/Flat No. and Street/Locality above (you can also edit directly).</p>
               </div>
 
               <div>
-                <label for="cust-address2" class="block text-xs uppercase tracking-wider text-muted-foreground mb-1">Landmark / Locality (Optional)</label>
+                <label for="cust-address2" class="block text-xs uppercase tracking-wider text-muted-foreground mb-1">Nearby Landmark / Directions (Optional)</label>
                 <input
                   id="cust-address2"
                   name="address_line2"
                   type="text"
-                  placeholder="Near temple, Opposite park, etc."
+                  placeholder="Near temple, Opposite park, Gate no., etc."
                   class="w-full border border-border bg-background px-3 py-2.5 text-sm outline-none focus:border-primary"
                 />
               </div>
 
               <div class="grid gap-4 sm:grid-cols-3">
                 <div>
-                  <label for="cust-city" class="block text-xs uppercase tracking-wider text-muted-foreground mb-1">City *</label>
+                  <label for="cust-pincode" class="block text-xs uppercase tracking-wider text-muted-foreground mb-1">PIN Code (6 digits) *</label>
+                  <input
+                    id="cust-pincode"
+                    name="pincode"
+                    type="text"
+                    inputmode="numeric"
+                    required
+                    maxlength="6"
+                    placeholder="302001"
+                    class="w-full border border-border bg-background px-3 py-2.5 text-sm outline-none focus:border-primary"
+                  />
+                </div>
+                <div>
+                  <label for="cust-city" class="block text-xs uppercase tracking-wider text-muted-foreground mb-1">City / District *</label>
                   <input
                     id="cust-city"
                     name="city"
@@ -164,7 +319,7 @@
                   />
                 </div>
                 <div>
-                  <label for="cust-state" class="block text-xs uppercase tracking-wider text-muted-foreground mb-1">State *</label>
+                  <label for="cust-state" class="block text-xs uppercase tracking-wider text-muted-foreground mb-1">State / UT *</label>
                   <select
                     id="cust-state"
                     name="state"
@@ -173,35 +328,78 @@
                   >
                     <option value="">Select State</option>
                     <option value="Andhra Pradesh">Andhra Pradesh</option>
+                    <option value="Arunachal Pradesh">Arunachal Pradesh</option>
                     <option value="Assam">Assam</option>
                     <option value="Bihar">Bihar</option>
-                    <option value="Delhi">Delhi NCR</option>
+                    <option value="Chandigarh">Chandigarh</option>
+                    <option value="Chhattisgarh">Chhattisgarh</option>
+                    <option value="Delhi">Delhi</option>
+                    <option value="Goa">Goa</option>
                     <option value="Gujarat">Gujarat</option>
                     <option value="Haryana">Haryana</option>
+                    <option value="Himachal Pradesh">Himachal Pradesh</option>
+                    <option value="Jammu and Kashmir">Jammu and Kashmir</option>
+                    <option value="Jharkhand">Jharkhand</option>
                     <option value="Karnataka">Karnataka</option>
                     <option value="Kerala">Kerala</option>
+                    <option value="Ladakh">Ladakh</option>
                     <option value="Madhya Pradesh">Madhya Pradesh</option>
                     <option value="Maharashtra">Maharashtra</option>
+                    <option value="Manipur">Manipur</option>
+                    <option value="Meghalaya">Meghalaya</option>
+                    <option value="Mizoram">Mizoram</option>
+                    <option value="Nagaland">Nagaland</option>
+                    <option value="Odisha">Odisha</option>
+                    <option value="Puducherry">Puducherry</option>
                     <option value="Punjab">Punjab</option>
                     <option value="Rajasthan" selected>Rajasthan</option>
+                    <option value="Sikkim">Sikkim</option>
                     <option value="Tamil Nadu">Tamil Nadu</option>
                     <option value="Telangana">Telangana</option>
+                    <option value="Tripura">Tripura</option>
                     <option value="Uttar Pradesh">Uttar Pradesh</option>
+                    <option value="Uttarakhand">Uttarakhand</option>
                     <option value="West Bengal">West Bengal</option>
-                    <option value="Other">Other States & UTs</option>
                   </select>
                 </div>
-                <div>
-                  <label for="cust-pincode" class="block text-xs uppercase tracking-wider text-muted-foreground mb-1">PIN Code *</label>
-                  <input
-                    id="cust-pincode"
-                    name="pincode"
-                    type="text"
-                    required
-                    maxlength="6"
-                    placeholder="302001"
-                    class="w-full border border-border bg-background px-3 py-2.5 text-sm outline-none focus:border-primary"
-                  />
+              </div>
+
+              <!-- Live PIN Code Verification Status -->
+              <div id="pincode-verify-status" class="hidden rounded border border-border/70 bg-secondary/20 px-3 py-2 text-xs"></div>
+
+              <!-- 1D. Delivery Address Confirmation Preview & Action -->
+              <div id="address-confirmation-card" class="mt-4 border border-primary/30 bg-primary/5 p-4 space-y-3">
+                <div class="flex flex-wrap items-center justify-between gap-2">
+                  <div class="flex items-center gap-2">
+                    <span class="text-xs font-semibold uppercase tracking-wider text-primary">Delivery Address Preview</span>
+                    <span id="address-confirmed-badge" class="hidden rounded bg-emerald-800/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-emerald-900">
+                      ✓ Confirmed &amp; Saved
+                    </span>
+                  </div>
+                  <span id="confirm-preview-label" class="text-[11px] font-medium text-muted-foreground">Label: Home</span>
+                </div>
+
+                <div class="text-xs space-y-1 text-foreground/90">
+                  <p id="confirm-preview-recipient" class="font-semibold text-foreground">Enter recipient name &amp; mobile number above</p>
+                  <p id="confirm-preview-address" class="text-muted-foreground">Fill in your house/flat number, street/area, city, state, and 6-digit PIN code.</p>
+                  <p id="confirm-preview-coords" class="font-mono text-[11px] text-primary/90">Map Pin: Not selected (optional)</p>
+                </div>
+
+                <p class="text-[11px] text-muted-foreground border-t border-border/60 pt-2">
+                  ℹ️ <strong>Note:</strong> PIN code lookup and map coordinates confirm your postal region and map pin only—they do not verify that a specific building or residence exists. Courier delivery relies on the house/flat number and street details you confirm here.
+                </p>
+
+                <div id="address-confirm-feedback" class="hidden text-xs p-2.5 rounded"></div>
+
+                <div class="flex flex-wrap items-center justify-between gap-3 pt-1">
+                  <button
+                    type="button"
+                    id="confirm-address-btn"
+                    class="bg-primary px-5 py-2.5 text-xs uppercase tracking-[0.18em] text-primary-foreground hover:opacity-90 transition font-semibold cursor-pointer"
+                  >
+                    Confirm Delivery Address
+                  </button>
+                  <span class="text-[11px] text-muted-foreground">Saves to your Matra Naari account for checkout</span>
                 </div>
               </div>
             </form>
@@ -489,11 +687,14 @@
           name: 'cust-name',
           phone: 'cust-phone',
           email: 'cust-email',
+          house_no: 'cust-house-no',
+          street_area: 'cust-street-area',
           address_line1: 'cust-address1',
           address_line2: 'cust-address2',
           city: 'cust-city',
           state: 'cust-state',
-          pincode: 'cust-pincode'
+          pincode: 'cust-pincode',
+          location_summary: 'cust-location-summary'
         };
         Object.entries(fieldMap).forEach(([key, id]) => {
           const el = document.getElementById(id);
@@ -501,6 +702,30 @@
             el.value = draft[key];
           }
         });
+        if (draft.state) {
+          selectMatchingStateOption(draft.state);
+        }
+        if (draft.address_label) {
+          setAddressLabelUI(draft.address_label);
+        }
+        if (draft.house_no || draft.street_area) {
+          syncSplitAddressFields('split');
+        } else if (draft.address_line1) {
+          syncSplitAddressFields('addr1');
+        }
+        const hasLat = draft.latitude !== null && draft.latitude !== undefined && draft.latitude !== '';
+        const hasLng = draft.longitude !== null && draft.longitude !== undefined && draft.longitude !== '';
+        if (hasLat && hasLng && Number.isFinite(Number(draft.latitude)) && Number.isFinite(Number(draft.longitude))) {
+          setMapPinLocation(Number(draft.latitude), Number(draft.longitude), {
+            reverseGeocode: false,
+            pan: true,
+            displaySummary: draft.location_summary || ''
+          });
+        }
+        if (draft.pincode && /^\d{6}$/.test(String(draft.pincode).trim())) {
+          verifyPincodeLive(String(draft.pincode).trim(), false);
+        }
+        updateAddressConfirmationPreview();
       } catch (e) {}
     }
 
@@ -545,12 +770,16 @@
     }
 
     function computeCheckoutAmounts() {
+      const cart = getCart();
       const subtotal = getCartTotal();
       const activeCoupon = getActiveCoupon();
       let discountAmount = 0;
+      let couponError = '';
       if (activeCoupon && activeCoupon.code) {
-        if (typeof activeCoupon.discount_amount === 'number' && activeCoupon.subtotal_snapshot === subtotal) {
-          discountAmount = activeCoupon.discount_amount;
+        if (typeof evaluateClientCoupon === 'function') {
+          const couponEval = evaluateClientCoupon(activeCoupon, cart, subtotal);
+          discountAmount = couponEval.valid ? couponEval.discountAmount : 0;
+          couponError = couponEval.valid ? '' : (couponEval.error || '');
         } else if (activeCoupon.discount_type === 'percentage') {
           discountAmount = Math.round(subtotal * (activeCoupon.discount_value / 100));
           if (activeCoupon.max_discount && discountAmount > activeCoupon.max_discount) {
@@ -566,7 +795,7 @@
       const finalTotal = Math.max(0, subtotal - discountAmount + shipping);
       const gstPercentage = Number(serverConfig?.gst_percentage ?? 5);
       const gstAmount = Math.round(finalTotal * gstPercentage / (100 + gstPercentage));
-      return { subtotal, discountAmount, shipping, finalTotal, gstAmount, activeCoupon };
+      return { subtotal, discountAmount, shipping, finalTotal, gstAmount, activeCoupon, couponError };
     }
 
     function renderOrderSummary() {
@@ -591,13 +820,14 @@
       emptyState.classList.add('hidden');
       mainGrid.classList.remove('hidden');
 
-      const { subtotal, discountAmount, shipping, finalTotal, gstAmount, activeCoupon } = computeCheckoutAmounts();
+      const { subtotal, discountAmount, shipping, finalTotal, gstAmount, activeCoupon, couponError } = computeCheckoutAmounts();
       subtotalEl.textContent = formatPrice(subtotal);
       totalEl.textContent = formatPrice(finalTotal);
       if (gstNoteEl) gstNoteEl.textContent = formatPrice(gstAmount);
 
       if (shippingEl) shippingEl.textContent = shipping === 0 ? 'FREE ✿' : formatPrice(shipping);
 
+      const cMsgEl = document.getElementById('checkout-coupon-msg');
       if (discountAmount > 0 && activeCoupon) {
         discRow.classList.remove('hidden');
         discRow.classList.add('flex');
@@ -606,6 +836,9 @@
       } else {
         discRow.classList.add('hidden');
         discRow.classList.remove('flex');
+        if (activeCoupon && activeCoupon.code && couponError && cMsgEl) {
+          cMsgEl.innerHTML = `<span class="text-destructive">${escapeHtml(couponError)}</span> <button type="button" id="checkout-remove-coupon-btn" class="text-muted-foreground hover:text-destructive underline ml-1">Remove</button>`;
+        }
       }
 
       if (itemsList) {
@@ -713,30 +946,1009 @@
       setPaymentMethod('razorpay');
     }
 
+    function escapeHtmlText(val) {
+      return String(val ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    const CLIENT_PLACEHOLDER_WORDS = new Set([
+      'abc', 'abcd', 'abcde', 'abcdef', 'abcdefg', 'abcdefgh',
+      'test', 'testing', 'tester', 'tests', 'asdf', 'asdfg', 'asdfgh',
+      'qwerty', 'qwer', 'qwert', 'zxcv', 'zxcvb', 'xyz', 'xyzw',
+      'xxxx', 'xxxxx', 'zzzz', 'none', 'null', 'undefined', 'na', 'n/a',
+      'nil', 'dummy', 'sample', 'fake', 'placeholder', 'address', 'street',
+      'city', 'state', 'house', 'flat', 'demo', '123', '1234', '12345',
+      '123456', '1234567', '12345678', '000', '0000', '00000',
+      '000000', '9999', '99999', '999999'
+    ]);
+
+    const CLIENT_GIBBERISH_WORDS = new Set([
+      'abc', 'abcd', 'abcde', 'abcdef', 'abcdefg', 'abcdefgh',
+      'asdf', 'asdfg', 'asdfgh', 'asdfghj', 'asdfghjk', 'asdfghjkl',
+      'qwerty', 'qwer', 'qwert', 'qwertyu', 'qwertyui', 'qwertyuio', 'qwertyuiop',
+      'zxcv', 'zxcvb', 'zxcvbn', 'zxcvbnm',
+      'xyz', 'xyzw', 'xxxx', 'xxxxx', 'zzzz',
+      'dummy', 'fake', 'placeholder'
+    ]);
+
+    function isClientPlaceholderText(val, minAlnum = 2) {
+      const s = String(val || '').trim().toLowerCase();
+      if (!s) return true;
+      const alnum = s.replace(/[^a-z0-9]/g, '');
+      if (alnum.length < minAlnum) return true;
+      if (alnum.length >= 3 && new Set(alnum.split('')).size === 1) return true;
+      if (CLIENT_PLACEHOLDER_WORDS.has(s) || CLIENT_PLACEHOLDER_WORDS.has(alnum)) return true;
+      const words = s.split(/[\s,./\-_]+/).map(w => w.replace(/[^a-z0-9]/g, '')).filter(Boolean);
+      if (words.length === 0) return true;
+      if (words.some(w => {
+        const alphaStem = w.replace(/[0-9]+/g, '');
+        return CLIENT_GIBBERISH_WORDS.has(w) ||
+          (alphaStem && CLIENT_GIBBERISH_WORDS.has(alphaStem)) ||
+          (/^[a-z]+$/.test(w) && w.length >= 3 && new Set(w.split('')).size === 1);
+      })) {
+        return true;
+      }
+      if (words.every(w => CLIENT_PLACEHOLDER_WORDS.has(w) || (w.length >= 3 && new Set(w.split('')).size === 1))) {
+        return true;
+      }
+      return false;
+    }
+
+    let deliveryMap = null;
+    let deliveryMarker = null;
+    let isAddressConfirmed = false;
+    let lastPincodeLookup = null;
+    let autocompleteTimer = null;
+    let reverseGeocodeTimer = null;
+    let pincodeLookupTimer = null;
+
+    function syncSplitAddressFields(source) {
+      const houseEl = document.getElementById('cust-house-no');
+      const streetEl = document.getElementById('cust-street-area');
+      const addr1El = document.getElementById('cust-address1');
+      if (!houseEl || !streetEl || !addr1El) return;
+
+      if (source === 'split') {
+        const h = houseEl.value.trim();
+        const s = streetEl.value.trim();
+        if (h && s) {
+          addr1El.value = `${h}, ${s}`;
+        } else if (h || s) {
+          addr1El.value = h || s;
+        }
+      } else if (source === 'addr1') {
+        const a1 = addr1El.value.trim();
+        if (a1 && (!houseEl.value.trim() || !streetEl.value.trim())) {
+          const commaIdx = a1.indexOf(',');
+          if (commaIdx > 0) {
+            if (!houseEl.value.trim()) houseEl.value = a1.slice(0, commaIdx).trim();
+            if (!streetEl.value.trim()) streetEl.value = a1.slice(commaIdx + 1).trim();
+          } else if (!streetEl.value.trim()) {
+            streetEl.value = a1;
+          }
+        }
+      }
+    }
+
+    function markAddressConfirmedState(confirmed, message = '') {
+      isAddressConfirmed = Boolean(confirmed);
+      const badge = document.getElementById('address-confirmed-badge');
+      const stepPill = document.getElementById('address-step-status-pill');
+      const feedback = document.getElementById('address-confirm-feedback');
+      const confirmBtn = document.getElementById('confirm-address-btn');
+
+      if (badge) {
+        badge.classList.toggle('hidden', !isAddressConfirmed);
+      }
+      if (stepPill) {
+        if (isAddressConfirmed) {
+          stepPill.textContent = '✓ Delivery Address Confirmed';
+          stepPill.className = 'rounded-full bg-emerald-900/10 border border-emerald-800/30 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-900';
+        } else {
+          stepPill.textContent = 'Pin & Address Details Required';
+          stepPill.className = 'rounded-full bg-amber-900/10 border border-amber-800/30 px-2.5 py-0.5 text-[11px] font-medium text-amber-900';
+        }
+      }
+      if (confirmBtn) {
+        confirmBtn.textContent = isAddressConfirmed ? '✓ Address Confirmed (Update)' : 'Confirm Delivery Address';
+      }
+      if (feedback) {
+        if (message) {
+          feedback.textContent = message;
+          feedback.className = isAddressConfirmed
+            ? 'text-xs p-2.5 rounded bg-emerald-950/10 border border-emerald-800/30 text-emerald-900 font-medium'
+            : 'text-xs p-2.5 rounded bg-[#2A1810] border border-[#93000A]/40 text-[#FFB4AB]';
+        } else {
+          feedback.classList.add('hidden');
+        }
+      }
+    }
+
+    function updateAddressConfirmationPreview() {
+      const data = getCustomerFormData();
+      const recEl = document.getElementById('confirm-preview-recipient');
+      const addrEl = document.getElementById('confirm-preview-address');
+      const coordsEl = document.getElementById('confirm-preview-coords');
+      const labelEl = document.getElementById('confirm-preview-label');
+
+      if (labelEl) {
+        labelEl.textContent = `Label: ${data.address_label || 'Home'}`;
+      }
+      if (recEl) {
+        if (data.name || data.phone) {
+          recEl.textContent = `${data.name || 'Recipient'}${data.phone ? ' · +91 ' + data.phone : ''}${data.email ? ' (' + data.email + ')' : ''}`;
+        } else {
+          recEl.textContent = 'Enter recipient name & mobile number above';
+        }
+      }
+      if (addrEl) {
+        const parts = [
+          data.address_line1 || [data.house_no, data.street_area].filter(Boolean).join(', '),
+          data.address_line2 ? `Landmark: ${data.address_line2}` : '',
+          [data.city, data.state].filter(Boolean).join(', '),
+          data.pincode ? `PIN ${data.pincode}` : ''
+        ].filter(Boolean);
+        addrEl.textContent = parts.length > 0
+          ? parts.join(' — ')
+          : 'Fill in your house/flat number, street/area, city, state, and 6-digit PIN code.';
+      }
+      if (coordsEl) {
+        if (data.latitude !== null && data.longitude !== null && data.latitude !== '' && data.longitude !== '') {
+          const latNum = Number(data.latitude);
+          const lngNum = Number(data.longitude);
+          if (Number.isFinite(latNum) && Number.isFinite(lngNum)) {
+            coordsEl.textContent = `Map Pin Coordinates: Lat ${latNum.toFixed(6)}, Lng ${lngNum.toFixed(6)}${data.location_summary ? ' · ' + data.location_summary.slice(0, 75) : ''}`;
+            return;
+          }
+        }
+        coordsEl.textContent = 'Map Pin: Not pinned yet (click map, drag marker, or use current location)';
+      }
+    }
+
+    function selectMatchingStateOption(stateName) {
+      const stateEl = document.getElementById('cust-state');
+      if (!stateEl || !stateName) return;
+      const norm = String(stateName).trim().toLowerCase().replace(/&/g, 'and');
+      for (const opt of stateEl.options) {
+        if (!opt.value) continue;
+        const optNorm = opt.value.trim().toLowerCase().replace(/&/g, 'and');
+        if (optNorm === norm || norm.includes(optNorm) || optNorm.includes(norm)) {
+          stateEl.value = opt.value;
+          return;
+        }
+      }
+    }
+
+    async function verifyPincodeLive(pincode, autoFillStateCity = true) {
+      const cleanPin = String(pincode || '').replace(/\s+/g, '');
+      const statusBox = document.getElementById('pincode-verify-status');
+      if (!statusBox) return null;
+
+      if (!cleanPin) {
+        statusBox.classList.add('hidden');
+        lastPincodeLookup = null;
+        return null;
+      }
+      if (!/^\d{6}$/.test(cleanPin)) {
+        statusBox.classList.remove('hidden');
+        statusBox.className = 'rounded border border-amber-800/30 bg-amber-950/10 px-3 py-2 text-xs text-amber-900';
+        statusBox.textContent = 'Enter a complete 6-digit Indian PIN code.';
+        lastPincodeLookup = null;
+        return null;
+      }
+
+      statusBox.classList.remove('hidden');
+      statusBox.className = 'rounded border border-border/70 bg-secondary/20 px-3 py-2 text-xs text-primary animate-pulse';
+      statusBox.textContent = `Verifying PIN code ${cleanPin} with India Post directory…`;
+
+      try {
+        const { res, data } = await safeFetchJson(`/api/address/pincode/${encodeURIComponent(cleanPin)}`);
+        if (!res.ok || !data || !data.ok) {
+          lastPincodeLookup = { ok: false, pincode: cleanPin, error: data?.error || 'Invalid PIN code.' };
+          statusBox.className = 'rounded border border-[#93000A]/40 bg-[#2A1810] px-3 py-2 text-xs text-[#FFB4AB]';
+          statusBox.textContent = `✕ ${data?.error || 'PIN code not found in India Post records.'}`;
+          return lastPincodeLookup;
+        }
+
+        lastPincodeLookup = data;
+        const cityEl = document.getElementById('cust-city');
+        const stateEl = document.getElementById('cust-state');
+
+        if (autoFillStateCity) {
+          if (data.district && cityEl && (!cityEl.value.trim() || isClientPlaceholderText(cityEl.value, 2))) {
+            cityEl.value = data.district;
+          }
+          if (data.state && stateEl) {
+            selectMatchingStateOption(data.state);
+          }
+        }
+
+        const currentState = stateEl ? stateEl.value.trim() : '';
+        const allowedStates = Array.isArray(data.allowed_states) ? data.allowed_states : (data.state ? [data.state] : []);
+        const stateMismatch = currentState && allowedStates.length > 0 && !allowedStates.some(
+          s => s.toLowerCase().replace(/&/g, 'and') === currentState.toLowerCase().replace(/&/g, 'and')
+        );
+
+        if (stateMismatch) {
+          statusBox.className = 'rounded border border-[#93000A]/40 bg-[#2A1810] px-3 py-2 text-xs text-[#FFB4AB]';
+          statusBox.textContent = `⚠️ PIN ${cleanPin} belongs to ${data.state || allowedStates[0]}${data.district ? ' (' + data.district + ')' : ''}, which does not match selected state "${currentState}".`;
+        } else if (data.provider_unavailable) {
+          statusBox.className = 'rounded border border-amber-800/30 bg-amber-950/10 px-3 py-2 text-xs text-amber-900';
+          statusBox.textContent = `ℹ️ PIN ${cleanPin} postal circle (${data.state}) matched. Live India Post office lookup is temporarily offline; street/residence is not verified by PIN.`;
+        } else {
+          const poSample = Array.isArray(data.post_offices) && data.post_offices.length > 0
+            ? ` · Post Office: ${data.post_offices.slice(0, 2).join(', ')}`
+            : '';
+          statusBox.className = 'rounded border border-emerald-800/30 bg-emerald-950/10 px-3 py-2 text-xs text-emerald-900';
+          statusBox.textContent = `✓ India Post PIN ${cleanPin} verified: ${[data.district, data.state].filter(Boolean).join(', ')}${poSample}. (Verifies postal area only, not individual building/street.)`;
+        }
+        updateAddressConfirmationPreview();
+        return data;
+      } catch (err) {
+        statusBox.className = 'rounded border border-amber-800/30 bg-amber-950/10 px-3 py-2 text-xs text-amber-900';
+        statusBox.textContent = 'Could not reach PIN lookup service right now. Server validation will run at confirmation.';
+        return null;
+      }
+    }
+
+    async function setMapPinLocation(lat, lng, options = {}) {
+      const latNum = Number(lat);
+      const lngNum = Number(lng);
+      if (!Number.isFinite(latNum) || !Number.isFinite(lngNum)) return;
+
+      const latInput = document.getElementById('cust-lat');
+      const lngInput = document.getElementById('cust-lng');
+      const coordsBadge = document.getElementById('map-coords-badge');
+      const mapAddrText = document.getElementById('map-selected-address-text');
+      const mapStatus = document.getElementById('map-geocode-status');
+
+      if (latInput) latInput.value = latNum.toFixed(6);
+      if (lngInput) lngInput.value = lngNum.toFixed(6);
+      if (coordsBadge) coordsBadge.textContent = `${latNum.toFixed(5)}, ${lngNum.toFixed(5)}`;
+
+      if (deliveryMap && deliveryMarker) {
+        deliveryMarker.setLatLng([latNum, lngNum]);
+        if (options.pan !== false) {
+          deliveryMap.setView([latNum, lngNum], Math.max(deliveryMap.getZoom(), 15));
+        }
+      }
+
+      if (options.displaySummary) {
+        if (mapAddrText) mapAddrText.textContent = options.displaySummary;
+        const locSumEl = document.getElementById('cust-location-summary');
+        if (locSumEl) locSumEl.value = options.displaySummary;
+      }
+
+      updateAddressConfirmationPreview();
+
+      if (options.reverseGeocode) {
+        if (mapStatus) {
+          mapStatus.textContent = 'Reverse-geocoding selected map pin via OpenStreetMap…';
+          mapStatus.className = 'mt-0.5 text-[11px] text-primary animate-pulse';
+        }
+        clearTimeout(reverseGeocodeTimer);
+        reverseGeocodeTimer = setTimeout(async () => {
+          try {
+            const { res, data } = await safeFetchJson(
+              `/api/address/reverse?lat=${encodeURIComponent(latNum.toFixed(6))}&lon=${encodeURIComponent(lngNum.toFixed(6))}`
+            );
+            if (!res.ok || !data || !data.ok) {
+              if (mapStatus) {
+                mapStatus.textContent = data?.error || 'Reverse geocoding unavailable. Coordinates saved; please enter street & PIN manually.';
+                mapStatus.className = 'mt-0.5 text-[11px] text-amber-900';
+              }
+              return;
+            }
+
+            const addr = data.address || {};
+            const summary = data.display_name || [addr.street_area, addr.city, addr.state].filter(Boolean).join(', ');
+            if (mapAddrText && summary) mapAddrText.textContent = summary;
+            const locSumEl = document.getElementById('cust-location-summary');
+            if (locSumEl && summary) locSumEl.value = summary;
+
+            const houseEl = document.getElementById('cust-house-no');
+            const streetEl = document.getElementById('cust-street-area');
+            const cityEl = document.getElementById('cust-city');
+            const pinEl = document.getElementById('cust-pincode');
+
+            if (addr.house_no && houseEl && !houseEl.value.trim()) {
+              houseEl.value = addr.house_no;
+            }
+            if (addr.street_area && streetEl) {
+              streetEl.value = addr.street_area;
+            }
+            if (addr.city && cityEl) {
+              cityEl.value = addr.city;
+            }
+            if (addr.state) {
+              selectMatchingStateOption(addr.state);
+            }
+            if (addr.pincode && pinEl && /^\d{6}$/.test(addr.pincode)) {
+              pinEl.value = addr.pincode;
+              verifyPincodeLive(addr.pincode, false);
+            }
+            syncSplitAddressFields('split');
+            updateAddressConfirmationPreview();
+
+            if (mapStatus) {
+              mapStatus.textContent = 'Map locality filled. Please check your exact House/Flat No. and 6-digit PIN code below.';
+              mapStatus.className = 'mt-0.5 text-[11px] text-emerald-900';
+            }
+          } catch (err) {
+            if (mapStatus) {
+              mapStatus.textContent = 'Reverse geocoding service is unreachable. Coordinates are saved; please fill address fields manually.';
+              mapStatus.className = 'mt-0.5 text-[11px] text-amber-900';
+            }
+          }
+        }, 350);
+      }
+    }
+
+    let currentCheckoutUser = null;
+    let isAddressControlsBound = false;
+
+    function clearMapPinCoordinates(locationSummary = '') {
+      const latInput = document.getElementById('cust-lat');
+      const lngInput = document.getElementById('cust-lng');
+      const locSumEl = document.getElementById('cust-location-summary');
+      const coordsBadge = document.getElementById('map-coords-badge');
+      const mapAddrText = document.getElementById('map-selected-address-text');
+      const mapStatus = document.getElementById('map-geocode-status');
+
+      if (latInput) latInput.value = '';
+      if (lngInput) lngInput.value = '';
+      if (locSumEl) locSumEl.value = locationSummary || '';
+      if (coordsBadge) coordsBadge.textContent = 'Not pinned yet';
+      if (mapAddrText) {
+        mapAddrText.textContent = locationSummary || 'Click the map, drag the pin, or search above to set map coordinates';
+      }
+      if (mapStatus) {
+        mapStatus.textContent = '';
+        mapStatus.className = 'mt-0.5 text-[11px] text-muted-foreground';
+      }
+    }
+
+    function initDeliveryMap() {
+      const mapEl = document.getElementById('delivery-map');
+      if (!mapEl || typeof L === 'undefined') {
+        const mapStatus = document.getElementById('map-geocode-status');
+        if (mapStatus) {
+          mapStatus.textContent = 'Interactive map library unavailable. Please enter your delivery address and PIN code manually.';
+        }
+        return;
+      }
+
+      if (deliveryMap) {
+        setTimeout(() => {
+          if (deliveryMap) deliveryMap.invalidateSize();
+        }, 100);
+        return;
+      }
+
+      const defaultLat = 26.9124;
+      const defaultLng = 75.7873;
+      const latInput = document.getElementById('cust-lat');
+      const lngInput = document.getElementById('cust-lng');
+      const locSumEl = document.getElementById('cust-location-summary');
+      const existingLat = latInput && latInput.value !== '' ? Number(latInput.value) : NaN;
+      const existingLng = lngInput && lngInput.value !== '' ? Number(lngInput.value) : NaN;
+      const hasExistingCoords = Number.isFinite(existingLat) && Number.isFinite(existingLng);
+      const startLat = hasExistingCoords ? existingLat : defaultLat;
+      const startLng = hasExistingCoords ? existingLng : defaultLng;
+
+      deliveryMap = L.map('delivery-map', {
+        center: [startLat, startLng],
+        zoom: hasExistingCoords ? 15 : 13,
+        scrollWheelZoom: false
+      });
+
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors'
+      }).addTo(deliveryMap);
+
+      deliveryMarker = L.marker([startLat, startLng], {
+        draggable: true,
+        title: 'Drag to your delivery location'
+      }).addTo(deliveryMap);
+
+      if (hasExistingCoords) {
+        setMapPinLocation(existingLat, existingLng, {
+          reverseGeocode: false,
+          pan: false,
+          displaySummary: locSumEl ? locSumEl.value : ''
+        });
+      }
+
+      deliveryMap.on('click', (e) => {
+        if (e && e.latlng) {
+          markAddressConfirmedState(false);
+          setMapPinLocation(e.latlng.lat, e.latlng.lng, { reverseGeocode: true, pan: true });
+          saveCheckoutFormDraft();
+        }
+      });
+
+      deliveryMarker.on('dragend', () => {
+        const pos = deliveryMarker.getLatLng();
+        if (pos) {
+          markAddressConfirmedState(false);
+          setMapPinLocation(pos.lat, pos.lng, { reverseGeocode: true, pan: false });
+          saveCheckoutFormDraft();
+        }
+      });
+
+      setTimeout(() => {
+        if (deliveryMap) deliveryMap.invalidateSize();
+      }, 250);
+    }
+
+    function setupGeolocationButton() {
+      const btn = document.getElementById('use-current-location-btn');
+      const btnText = document.getElementById('use-current-location-text');
+      const mapStatus = document.getElementById('map-geocode-status');
+      if (!btn || btn.dataset.bound === 'true') return;
+      btn.dataset.bound = 'true';
+
+      btn.addEventListener('click', () => {
+        if (!navigator.geolocation) {
+          const msg = 'Browser geolocation is not supported on this device. Please search your area or drag the map pin.';
+          if (mapStatus) {
+            mapStatus.textContent = msg;
+            mapStatus.className = 'mt-0.5 text-[11px] text-destructive';
+          }
+          getToast().error(msg);
+          return;
+        }
+
+        btn.disabled = true;
+        if (btnText) btnText.textContent = 'Detecting location…';
+        if (mapStatus) {
+          mapStatus.textContent = 'Requesting browser GPS permission…';
+          mapStatus.className = 'mt-0.5 text-[11px] text-primary animate-pulse';
+        }
+
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            btn.disabled = false;
+            if (btnText) btnText.textContent = 'Use my current location';
+            const { latitude, longitude } = pos.coords;
+            markAddressConfirmedState(false);
+            setMapPinLocation(latitude, longitude, { reverseGeocode: true, pan: true });
+            saveCheckoutFormDraft();
+            getToast().info('Map pin moved to your current location!');
+          },
+          (err) => {
+            btn.disabled = false;
+            if (btnText) btnText.textContent = 'Use my current location';
+            let errMsg = 'Unable to retrieve your location. Please search your address or drag the map pin.';
+            if (err && err.code === 1) {
+              errMsg = 'Location permission was denied. You can search your locality above or drag the map pin manually.';
+            } else if (err && err.code === 3) {
+              errMsg = 'Location request timed out. Please search your locality or move the map pin.';
+            }
+            if (mapStatus) {
+              mapStatus.textContent = errMsg;
+              mapStatus.className = 'mt-0.5 text-[11px] text-amber-900';
+            }
+            getToast().error(errMsg);
+          },
+          { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+        );
+      });
+    }
+
+    function setupAddressAutocomplete() {
+      const searchInput = document.getElementById('address-search-input');
+      const dropdown = document.getElementById('address-autocomplete-dropdown');
+      const spinner = document.getElementById('address-search-spinner');
+      const clearBtn = document.getElementById('address-search-clear-btn');
+      if (!searchInput || !dropdown || searchInput.dataset.bound === 'true') return;
+      searchInput.dataset.bound = 'true';
+
+      const closeDropdown = () => {
+        dropdown.classList.add('hidden');
+        dropdown.innerHTML = '';
+      };
+
+      const renderMessageRow = (text, tone = 'muted') => {
+        dropdown.innerHTML = '';
+        const div = document.createElement('div');
+        div.className = tone === 'error'
+          ? 'p-3 text-xs text-destructive bg-destructive/5'
+          : 'p-3 text-xs text-muted-foreground';
+        div.textContent = text;
+        dropdown.appendChild(div);
+        dropdown.classList.remove('hidden');
+      };
+
+      searchInput.addEventListener('input', () => {
+        const q = searchInput.value.trim();
+        if (clearBtn) clearBtn.classList.toggle('hidden', q.length === 0);
+        clearTimeout(autocompleteTimer);
+
+        if (q.length < 3) {
+          if (spinner) spinner.classList.add('hidden');
+          closeDropdown();
+          return;
+        }
+
+        // Debounce requests (420ms) to respect Nominatim usage policy and avoid per-keystroke spam
+        autocompleteTimer = setTimeout(async () => {
+          if (spinner) spinner.classList.remove('hidden');
+          renderMessageRow('Searching addresses via OpenStreetMap…');
+          try {
+            const { res, data } = await safeFetchJson(`/api/address/autocomplete?q=${encodeURIComponent(q)}`);
+            if (spinner) spinner.classList.add('hidden');
+
+            if (!res.ok || !data || !data.ok) {
+              renderMessageRow(
+                data?.error || 'Address autocomplete is temporarily unavailable. Please enter your address details manually below.',
+                'error'
+              );
+              return;
+            }
+
+            const list = Array.isArray(data.suggestions) ? data.suggestions : [];
+            if (list.length === 0) {
+              renderMessageRow(data.message || 'No matching addresses found. Try a nearby landmark or enter your address manually below.');
+              return;
+            }
+
+            dropdown.innerHTML = '';
+            list.forEach((item) => {
+              const btn = document.createElement('button');
+              btn.type = 'button';
+              btn.setAttribute('role', 'option');
+              btn.className = 'w-full text-left px-3.5 py-2.5 hover:bg-primary/5 transition flex items-start gap-2.5 cursor-pointer';
+
+              const iconSpan = document.createElement('span');
+              iconSpan.className = 'text-primary mt-0.5 shrink-0';
+              iconSpan.textContent = '📍';
+
+              const textWrap = document.createElement('div');
+              textWrap.className = 'min-w-0 flex-1';
+
+              const titleP = document.createElement('p');
+              titleP.className = 'font-semibold text-foreground text-xs truncate';
+              titleP.textContent = item.street_area || (item.display_name || '').split(',')[0] || 'Selected Location';
+
+              const subP = document.createElement('p');
+              subP.className = 'text-[11px] text-muted-foreground line-clamp-2';
+              subP.textContent = item.display_name || '';
+
+              textWrap.appendChild(titleP);
+              textWrap.appendChild(subP);
+              btn.appendChild(iconSpan);
+              btn.appendChild(textWrap);
+
+              btn.addEventListener('click', () => {
+                searchInput.value = item.display_name || '';
+                closeDropdown();
+                markAddressConfirmedState(false);
+
+                const houseEl = document.getElementById('cust-house-no');
+                const streetEl = document.getElementById('cust-street-area');
+                const cityEl = document.getElementById('cust-city');
+                const pinEl = document.getElementById('cust-pincode');
+
+                if (item.house_no && houseEl) houseEl.value = item.house_no;
+                if (item.street_area && streetEl) streetEl.value = item.street_area;
+                if (item.city && cityEl) cityEl.value = item.city;
+                if (item.state) selectMatchingStateOption(item.state);
+                if (item.pincode && pinEl && /^\d{6}$/.test(item.pincode)) {
+                  pinEl.value = item.pincode;
+                  verifyPincodeLive(item.pincode, false);
+                }
+
+                syncSplitAddressFields('split');
+                if (item.lat !== null && item.lon !== null) {
+                  setMapPinLocation(item.lat, item.lon, {
+                    reverseGeocode: false,
+                    pan: true,
+                    displaySummary: item.display_name || ''
+                  });
+                }
+                updateAddressConfirmationPreview();
+                saveCheckoutFormDraft();
+              });
+
+              dropdown.appendChild(btn);
+            });
+
+            const attrFooter = document.createElement('div');
+            attrFooter.className = 'px-3 py-1.5 bg-secondary/30 text-[10px] text-muted-foreground flex items-center justify-between';
+            attrFooter.textContent = data.attribution || '© OpenStreetMap contributors';
+            dropdown.appendChild(attrFooter);
+            dropdown.classList.remove('hidden');
+          } catch (err) {
+            if (spinner) spinner.classList.add('hidden');
+            renderMessageRow('Live address search is currently unreachable. Please enter your address manually below.', 'error');
+          }
+        }, 420);
+      });
+
+      if (clearBtn) {
+        clearBtn.addEventListener('click', () => {
+          searchInput.value = '';
+          clearBtn.classList.add('hidden');
+          closeDropdown();
+          searchInput.focus();
+        });
+      }
+
+      document.addEventListener('click', (e) => {
+        const container = document.getElementById('address-autocomplete-container');
+        if (container && !container.contains(e.target)) {
+          closeDropdown();
+        }
+      });
+    }
+
+    function setAddressLabelUI(label) {
+      const cleanLabel = ['Home', 'Work', 'Other'].includes(label) ? label : 'Home';
+      const hiddenEl = document.getElementById('cust-address-label');
+      if (hiddenEl) hiddenEl.value = cleanLabel;
+      document.querySelectorAll('.addr-label-btn').forEach((btn) => {
+        const isMatch = btn.getAttribute('data-label') === cleanLabel;
+        if (isMatch) {
+          btn.className = 'addr-label-btn border border-primary bg-primary text-primary-foreground px-3 py-1 text-xs font-medium cursor-pointer transition';
+        } else {
+          btn.className = 'addr-label-btn border border-border bg-background text-foreground hover:border-primary px-3 py-1 text-xs font-medium cursor-pointer transition';
+        }
+      });
+      updateAddressConfirmationPreview();
+    }
+
     function getCustomerFormData() {
+      syncSplitAddressFields('addr1');
       const form = document.getElementById('checkout-form');
       const formData = new FormData(form);
+      const houseNo = (formData.get('house_no') || '').trim();
+      const streetArea = (formData.get('street_area') || '').trim();
+      let address1 = (formData.get('address_line1') || '').trim();
+      if (!address1 && (houseNo || streetArea)) {
+        address1 = [houseNo, streetArea].filter(Boolean).join(', ');
+      }
+      const rawLat = (formData.get('latitude') || '').trim();
+      const rawLng = (formData.get('longitude') || '').trim();
       return {
         name: (formData.get('name') || '').trim(),
         phone: (formData.get('phone') || '').trim(),
         email: (formData.get('email') || '').trim(),
-        address_line1: (formData.get('address_line1') || '').trim(),
+        house_no: houseNo,
+        street_area: streetArea,
+        address_line1: address1,
         address_line2: (formData.get('address_line2') || '').trim(),
         city: (formData.get('city') || '').trim(),
         state: (formData.get('state') || '').trim(),
-        pincode: (formData.get('pincode') || '').trim()
+        pincode: (formData.get('pincode') || '').trim(),
+        latitude: rawLat !== '' ? Number(rawLat) : null,
+        longitude: rawLng !== '' ? Number(rawLng) : null,
+        location_summary: (formData.get('location_summary') || '').trim(),
+        address_label: (formData.get('address_label') || 'Home').trim()
       };
     }
 
-    function validateCustomerForm(data) {
-      if (!data.name || data.name.length < 2) return 'Please enter your full name.';
-      if (!data.phone || !/^\d{10}$/.test(data.phone.replace(/[\s\-\+]/g, '').slice(-10))) return 'Please enter a valid 10-digit mobile number.';
-      if (!data.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) return 'Please enter a valid email address.';
-      if (!data.address_line1 || data.address_line1.length < 5) return 'Please enter your delivery street address.';
-      if (!data.city || data.city.length < 2) return 'Please enter your city.';
-      if (!data.state) return 'Please select your state.';
-      if (!data.pincode || !/^\d{6}$/.test(data.pincode.replace(/\s/g, ''))) return 'Please enter a valid 6-digit PIN code.';
+    function validateCustomerForm(data, options = {}) {
+      if (!data.name || data.name.length < 2 || !/[A-Za-z]{2,}/.test(data.name) || isClientPlaceholderText(data.name, 2)) {
+        return 'Please enter a valid recipient full name.';
+      }
+      const cleanPhone = String(data.phone || '').replace(/[\s\-]/g, '').replace(/^(\+91|91)/, '');
+      if (!/^[6-9]\d{9}$/.test(cleanPhone) || new Set(cleanPhone.split('')).size === 1) {
+        return 'Please enter a valid 10-digit Indian mobile number starting with 6, 7, 8, or 9.';
+      }
+      if (!data.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
+        return 'Please enter a valid email address.';
+      }
+      if (options.requireSplitFields || data.house_no || data.street_area) {
+        if (!data.house_no || isClientPlaceholderText(data.house_no, 1)) {
+          return 'Please enter your House / Flat / Floor number.';
+        }
+        if (!data.street_area || data.street_area.length < 3 || !/[A-Za-z]{2,}/.test(data.street_area) || isClientPlaceholderText(data.street_area, 3)) {
+          return 'Please enter a valid Street / Society / Locality name.';
+        }
+      }
+      const addr1Words = String(data.address_line1 || '')
+        .split(/[\s,./\-_]+/)
+        .map(w => w.replace(/[^a-zA-Z0-9]/g, ''))
+        .filter(Boolean);
+      if (!data.address_line1 || data.address_line1.length < 5 || addr1Words.length < 2 || !/[A-Za-z]{2,}/.test(data.address_line1) || isClientPlaceholderText(data.address_line1, 4)) {
+        return 'Please enter your complete delivery street address (placeholder values like "abcd" are not accepted).';
+      }
+      if (data.address_line2 && isClientPlaceholderText(data.address_line2, 2)) {
+        return 'Please enter a valid landmark or leave the optional field blank.';
+      }
+      if (!data.city || data.city.length < 2 || !/[A-Za-z]{2,}/.test(data.city) || /^\d+$/.test(data.city) || isClientPlaceholderText(data.city, 2)) {
+        return 'Please enter a valid city or district.';
+      }
+      if (!data.state || isClientPlaceholderText(data.state, 2)) {
+        return 'Please select your state.';
+      }
+      const cleanPin = String(data.pincode || '').replace(/\s+/g, '');
+      if (!/^[1-8]\d{5}$/.test(cleanPin) || new Set(cleanPin.split('')).size === 1 || cleanPin === '123456' || cleanPin === '654321') {
+        return 'Please enter a valid 6-digit Indian PIN code.';
+      }
+      if (lastPincodeLookup && lastPincodeLookup.pincode === cleanPin && lastPincodeLookup.ok === false) {
+        return lastPincodeLookup.error || 'Entered PIN code does not exist in India Post records.';
+      }
+      if (data.latitude !== null || data.longitude !== null) {
+        const lat = Number(data.latitude);
+        const lng = Number(data.longitude);
+        if (!Number.isFinite(lat) || !Number.isFinite(lng) || lat < 6.0 || lat > 38.5 || lng < 68.0 || lng > 98.0) {
+          return 'Selected map coordinates are outside India delivery bounds.';
+        }
+      }
       return null;
+    }
+
+    function fillCheckoutAddressFields(addr, fallbackUser = null) {
+      if (!addr || typeof addr !== 'object') return;
+      const userRef = fallbackUser || currentCheckoutUser || {};
+
+      const nameInput = document.getElementById('cust-name');
+      const phoneInput = document.getElementById('cust-phone');
+      const emailInput = document.getElementById('cust-email');
+      const houseEl = document.getElementById('cust-house-no');
+      const streetEl = document.getElementById('cust-street-area');
+      const a1 = document.getElementById('cust-address1');
+      const a2 = document.getElementById('cust-address2');
+      const cityEl = document.getElementById('cust-city');
+      const stateEl = document.getElementById('cust-state');
+      const pinEl = document.getElementById('cust-pincode');
+
+      if (nameInput) {
+        nameInput.value = addr.name || userRef.name || nameInput.value || '';
+      }
+      if (phoneInput && (addr.phone || userRef.phone)) {
+        const rawPhone = String(addr.phone || userRef.phone);
+        const cleanPhone = rawPhone.replace(/[\s\-\+]/g, '').slice(-10);
+        phoneInput.value = /^\d{10}$/.test(cleanPhone) ? cleanPhone : rawPhone;
+      }
+      if (emailInput && !emailInput.value && userRef.email) {
+        emailInput.value = userRef.email;
+      }
+
+      if (houseEl) houseEl.value = addr.house_no || '';
+      if (streetEl) streetEl.value = addr.street_area || '';
+      if (a1) a1.value = addr.address_line1 || '';
+      if (a2) a2.value = addr.address_line2 || '';
+      if (cityEl) cityEl.value = addr.city || '';
+      if (stateEl) {
+        if (addr.state) {
+          selectMatchingStateOption(addr.state);
+          if (!stateEl.value) stateEl.value = addr.state;
+        } else {
+          stateEl.value = '';
+        }
+      }
+      if (pinEl) pinEl.value = addr.pincode || '';
+
+      if (addr.house_no || addr.street_area) {
+        syncSplitAddressFields('split');
+      } else if (addr.address_line1) {
+        syncSplitAddressFields('addr1');
+      }
+
+      setAddressLabelUI(addr.address_label || 'Home');
+
+      const hasLat = addr.latitude !== null && addr.latitude !== undefined && addr.latitude !== '';
+      const hasLng = addr.longitude !== null && addr.longitude !== undefined && addr.longitude !== '';
+      if (hasLat && hasLng && Number.isFinite(Number(addr.latitude)) && Number.isFinite(Number(addr.longitude))) {
+        setMapPinLocation(Number(addr.latitude), Number(addr.longitude), {
+          reverseGeocode: false,
+          pan: true,
+          displaySummary: addr.location_summary || ''
+        });
+      } else {
+        clearMapPinCoordinates(addr.location_summary || '');
+      }
+
+      if (addr.pincode && /^\d{6}$/.test(String(addr.pincode).trim())) {
+        verifyPincodeLive(String(addr.pincode).trim(), false);
+      }
+
+      updateAddressConfirmationPreview();
+      saveCheckoutFormDraft();
+    }
+
+    function renderSavedAddressChips(addresses, fallbackUser = null) {
+      const quickWrap = document.getElementById('saved-addresses-quickfill');
+      const chipsWrap = document.getElementById('saved-addresses-chips');
+      if (!quickWrap || !chipsWrap) return;
+
+      if (!Array.isArray(addresses) || addresses.length === 0) {
+        quickWrap.classList.add('hidden');
+        chipsWrap.innerHTML = '';
+        return;
+      }
+
+      quickWrap.classList.remove('hidden');
+      chipsWrap.innerHTML = addresses.map((addr, idx) => {
+        const safeName = escapeHtmlText(addr.name || 'Saved Address');
+        const safeLabel = addr.address_label ? escapeHtmlText(addr.address_label) : '';
+        const displayAddrLine = addr.address_line1 || [addr.house_no, addr.street_area].filter(Boolean).join(', ');
+        const safeAddrLine = escapeHtmlText(displayAddrLine);
+        const safeCity = escapeHtmlText(addr.city || '');
+        const safePin = escapeHtmlText(addr.pincode || '');
+        return `
+          <button type="button" data-addr-idx="${idx}" class="saved-addr-chip text-left border border-border bg-background hover:border-primary px-3 py-2 rounded-xs text-xs transition cursor-pointer">
+            <span class="font-semibold text-foreground block">
+              ${safeName}
+              ${safeLabel ? `<span class="text-[10px] uppercase tracking-wider text-muted-foreground ml-1">[${safeLabel}]</span>` : ''}
+              ${addr.is_default ? '<span class="text-[10px] text-primary ml-1">(Default)</span>' : ''}
+            </span>
+            <span class="text-muted-foreground text-[11px] block">${safeAddrLine}, ${safeCity} - ${safePin}</span>
+          </button>
+        `;
+      }).join('');
+
+      chipsWrap.querySelectorAll('.saved-addr-chip').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const addr = addresses[Number(btn.dataset.addrIdx)];
+          if (addr) {
+            markAddressConfirmedState(false);
+            fillCheckoutAddressFields(addr, fallbackUser || currentCheckoutUser);
+            getToast().info('Delivery address filled!');
+          }
+        });
+      });
+    }
+
+    function setupAddressFormControls() {
+      if (isAddressControlsBound) return;
+      isAddressControlsBound = true;
+
+      document.querySelectorAll('.addr-label-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const label = btn.getAttribute('data-label') || 'Home';
+          markAddressConfirmedState(false);
+          setAddressLabelUI(label);
+          saveCheckoutFormDraft();
+        });
+      });
+
+      const confirmBtn = document.getElementById('confirm-address-btn');
+      if (confirmBtn) {
+        confirmBtn.addEventListener('click', () => {
+          handleConfirmAddress();
+        });
+      }
+
+      const houseEl = document.getElementById('cust-house-no');
+      const streetEl = document.getElementById('cust-street-area');
+      const addr1El = document.getElementById('cust-address1');
+      const pinEl = document.getElementById('cust-pincode');
+      const stateEl = document.getElementById('cust-state');
+
+      [houseEl, streetEl].forEach((el) => {
+        if (!el) return;
+        el.addEventListener('input', () => {
+          syncSplitAddressFields('split');
+          markAddressConfirmedState(false);
+          updateAddressConfirmationPreview();
+          saveCheckoutFormDraft();
+        });
+      });
+
+      if (addr1El) {
+        addr1El.addEventListener('input', () => {
+          syncSplitAddressFields('addr1');
+          markAddressConfirmedState(false);
+          updateAddressConfirmationPreview();
+          saveCheckoutFormDraft();
+        });
+      }
+
+      if (pinEl) {
+        pinEl.addEventListener('input', () => {
+          markAddressConfirmedState(false);
+          updateAddressConfirmationPreview();
+          saveCheckoutFormDraft();
+          clearTimeout(pincodeLookupTimer);
+          const val = pinEl.value.trim();
+          pincodeLookupTimer = setTimeout(() => {
+            verifyPincodeLive(val, true);
+          }, 280);
+        });
+        pinEl.addEventListener('change', () => {
+          const val = pinEl.value.trim();
+          if (/^\d{6}$/.test(val)) {
+            clearTimeout(pincodeLookupTimer);
+            verifyPincodeLive(val, true);
+          }
+        });
+      }
+
+      if (stateEl) {
+        stateEl.addEventListener('change', () => {
+          markAddressConfirmedState(false);
+          updateAddressConfirmationPreview();
+          saveCheckoutFormDraft();
+          if (pinEl && /^\d{6}$/.test(pinEl.value.trim())) {
+            verifyPincodeLive(pinEl.value.trim(), false);
+          }
+        });
+      }
+
+      ['cust-name', 'cust-phone', 'cust-email', 'cust-city', 'cust-address2'].forEach((id) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.addEventListener('input', () => {
+          markAddressConfirmedState(false);
+          updateAddressConfirmationPreview();
+          saveCheckoutFormDraft();
+        });
+      });
+    }
+
+    async function handleConfirmAddress() {
+      hideError();
+      syncSplitAddressFields('split');
+      const customerData = getCustomerFormData();
+      const validationError = validateCustomerForm(customerData, { requireSplitFields: true });
+      if (validationError) {
+        markAddressConfirmedState(false, validationError);
+        showError(validationError);
+        return false;
+      }
+
+      const confirmBtn = document.getElementById('confirm-address-btn');
+      if (confirmBtn) {
+        confirmBtn.disabled = true;
+        confirmBtn.textContent = 'Validating & Saving…';
+      }
+
+      try {
+        const { res, data } = await safeFetchJson('/api/address/validate', {
+          method: 'POST',
+          headers: getCustomerAuthHeaders({ 'Content-Type': 'application/json' }),
+          credentials: 'same-origin',
+          body: JSON.stringify({
+            address: customerData,
+            require_split_fields: true,
+            save_to_account: true,
+            is_default: true
+          })
+        });
+
+        if (res.status === 401 || data?.auth_required) {
+          clearUserSession();
+          redirectToLoginForCheckout();
+          return false;
+        }
+
+        if (!res.ok || !data || !data.ok) {
+          const errMsg = data?.error || 'Could not validate delivery address.';
+          markAddressConfirmedState(false, errMsg);
+          showError(errMsg);
+          return false;
+        }
+
+        markAddressConfirmedState(
+          true,
+          `✓ Address confirmed & saved to your account (${customerData.city}, ${customerData.state} - ${customerData.pincode}).`
+        );
+        saveCheckoutFormDraft();
+        if (Array.isArray(data.addresses) && data.addresses.length > 0) {
+          renderSavedAddressChips(data.addresses);
+        }
+        getToast().success('Delivery address confirmed & saved!');
+        return true;
+      } catch (err) {
+        const errMsg = err.message || 'Unable to confirm address right now.';
+        markAddressConfirmedState(false, errMsg);
+        showError(errMsg);
+        return false;
+      } finally {
+        if (confirmBtn) {
+          confirmBtn.disabled = false;
+          confirmBtn.textContent = isAddressConfirmed ? '✓ Address Confirmed (Update)' : 'Confirm Delivery Address';
+        }
+      }
     }
 
     function showError(msg) {
@@ -786,10 +1998,17 @@
         return;
       }
 
+      syncSplitAddressFields('split');
       const customerData = getCustomerFormData();
-      const validationError = validateCustomerForm(customerData);
+      const validationError = validateCustomerForm(customerData, { requireSplitFields: true });
       if (validationError) {
         showError(validationError);
+        return;
+      }
+
+      const { couponError: activeCouponError } = computeCheckoutAmounts();
+      if (activeCouponError) {
+        showError(activeCouponError);
         return;
       }
 
@@ -841,12 +2060,13 @@
             pincode: customerData.pincode,
             payment_method: 'cod',
             payment_status: 'cod_confirmed',
+            order_status: data.order_status || 'confirmed',
             subtotal: data.subtotal ?? clientSub,
             shipping: data.shipping ?? clientShip,
             discount_amount: data.discount_amount ?? clientDisc,
-            coupon_code: activeCoupon ? activeCoupon.code : '',
+            coupon_code: data.coupon_code ?? (activeCoupon ? activeCoupon.code : ''),
             total_amount: serverTotal,
-            items: cart,
+            items: Array.isArray(data.items) && data.items.length > 0 ? data.items : cart,
             created_at: new Date().toISOString()
           };
           try {
@@ -979,14 +2199,17 @@
                   pincode: customerData.pincode,
                   payment_method: 'razorpay',
                   payment_status: 'paid',
+                  order_status: verifyData.order_status || 'confirmed',
                   razorpay_order_id: response.razorpay_order_id,
                   razorpay_payment_id: response.razorpay_payment_id,
-                  subtotal: serverSubtotal,
-                  shipping: serverShipping,
-                  discount_amount: serverDiscount,
-                  coupon_code: createData.coupon_code || '',
-                  total_amount: serverTotal,
-                  items: cart,
+                  subtotal: verifyData.subtotal ?? serverSubtotal,
+                  shipping: verifyData.shipping ?? serverShipping,
+                  discount_amount: verifyData.discount_amount ?? serverDiscount,
+                  coupon_code: verifyData.coupon_code ?? (createData.coupon_code || ''),
+                  total_amount: verifyData.total_amount ?? serverTotal,
+                  items: (Array.isArray(verifyData.items) && verifyData.items.length > 0)
+                    ? verifyData.items
+                    : ((Array.isArray(createData.items) && createData.items.length > 0) ? createData.items : cart),
                   created_at: new Date().toISOString()
                 };
                 try {
@@ -1031,6 +2254,7 @@
 
     async function prefillAuthenticatedCustomer(user) {
       if (!user) return;
+      currentCheckoutUser = user;
       const nameInput = document.getElementById('cust-name');
       const emailInput = document.getElementById('cust-email');
       const phoneInput = document.getElementById('cust-phone');
@@ -1060,53 +2284,25 @@
           credentials: 'same-origin'
         });
         if (res.ok && data && Array.isArray(data.addresses) && data.addresses.length > 0) {
-          const quickWrap = document.getElementById('saved-addresses-quickfill');
-          const chipsWrap = document.getElementById('saved-addresses-chips');
-          if (quickWrap && chipsWrap) {
-            quickWrap.classList.remove('hidden');
-            chipsWrap.innerHTML = data.addresses.map((addr, idx) => `
-              <button type="button" data-addr-idx="${idx}" class="saved-addr-chip text-left border border-border bg-background hover:border-primary px-3 py-2 rounded-xs text-xs transition cursor-pointer">
-                <span class="font-semibold text-foreground block">${addr.name} ${addr.is_default ? '<span class="text-[10px] text-primary">(Default)</span>' : ''}</span>
-                <span class="text-muted-foreground text-[11px] block">${addr.address_line1}, ${addr.city} - ${addr.pincode}</span>
-              </button>
-            `).join('');
+          renderSavedAddressChips(data.addresses, user);
 
-            const fillAddress = (addr) => {
-              if (nameInput) nameInput.value = addr.name || user.name || '';
-              if (phoneInput && (addr.phone || user.phone)) {
-                phoneInput.value = String(addr.phone || user.phone).replace(/[\s\-\+]/g, '').slice(-10) || addr.phone || user.phone || '';
-              }
-              const a1 = document.getElementById('cust-address1');
-              const a2 = document.getElementById('cust-address2');
-              const cityEl = document.getElementById('cust-city');
-              const stateEl = document.getElementById('cust-state');
-              const pinEl = document.getElementById('cust-pincode');
-              if (a1) a1.value = addr.address_line1 || '';
-              if (a2) a2.value = addr.address_line2 || '';
-              if (cityEl) cityEl.value = addr.city || '';
-              if (stateEl && addr.state) stateEl.value = addr.state;
-              if (pinEl) pinEl.value = addr.pincode || '';
-            };
-
-            // Auto-fill default address on load if address_line1 is not already filled
-            const a1El = document.getElementById('cust-address1');
-            const defAddr = data.addresses.find(a => a.is_default) || data.addresses[0];
-            if (defAddr && (!a1El || !a1El.value)) {
-              fillAddress(defAddr);
-            }
-
-            chipsWrap.querySelectorAll('.saved-addr-chip').forEach(btn => {
-              btn.addEventListener('click', () => {
-                const addr = data.addresses[Number(btn.dataset.addrIdx)];
-                if (addr) {
-                  fillAddress(addr);
-                  getToast().info('Delivery address filled!');
-                }
-              });
-            });
+          // Auto-fill default address on load if address_line1/house_no/street_area are not already filled
+          const a1El = document.getElementById('cust-address1');
+          const houseEl = document.getElementById('cust-house-no');
+          const streetEl = document.getElementById('cust-street-area');
+          const hasExistingAddress = Boolean(
+            (a1El && a1El.value.trim()) ||
+            (houseEl && houseEl.value.trim()) ||
+            (streetEl && streetEl.value.trim())
+          );
+          const defAddr = data.addresses.find(a => a.is_default) || data.addresses[0];
+          if (defAddr && !hasExistingAddress) {
+            fillCheckoutAddressFields(defAddr, user);
           }
         }
       } catch (e) {}
+
+      updateAddressConfirmationPreview();
     }
 
     document.addEventListener('DOMContentLoaded', async () => {
@@ -1119,6 +2315,7 @@
 
       const authUser = await ensureCheckoutAuthenticated();
       if (!authUser) return;
+      currentCheckoutUser = authUser;
 
       window.addEventListener('naari:authChanged', (e) => {
         if (!e.detail || !e.detail.user) {
@@ -1129,7 +2326,12 @@
       await loadServerConfig();
       renderOrderSummary();
       setupPaymentMethodRadios();
+      initDeliveryMap();
+      setupGeolocationButton();
+      setupAddressAutocomplete();
+      setupAddressFormControls();
       await prefillAuthenticatedCustomer(authUser);
+      updateAddressConfirmationPreview();
 
       const placeBtn = document.getElementById('place-order-btn');
       if (placeBtn) {
