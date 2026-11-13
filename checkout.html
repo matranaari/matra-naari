@@ -418,42 +418,7 @@
             </h2>
 
             <div class="mt-6 space-y-4" role="radiogroup" aria-label="Payment Method">
-              <!-- Online Payment via Razorpay (Disabled in COD-Only Mode) -->
-              <label
-                data-method="razorpay"
-                role="radio"
-                aria-checked="false"
-                aria-disabled="true"
-                tabindex="-1"
-                class="payment-option-label hidden relative flex cursor-not-allowed items-start gap-3 border border-border p-4 transition rounded-sm opacity-60"
-              >
-                <input
-                  type="radio"
-                  id="payment-method-razorpay"
-                  name="payment_method"
-                  value="razorpay"
-                  disabled
-                  class="mt-1 h-4 w-4 cursor-not-allowed accent-[#6B2D31]"
-                />
-                <div class="flex-1">
-                  <div class="flex flex-wrap items-center justify-between gap-2">
-                    <span class="font-semibold text-foreground text-sm">Pay Online (UPI, Cards, NetBanking, Wallets)</span>
-                    <span class="rounded bg-primary/10 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-primary">Unavailable</span>
-                  </div>
-                  <p class="mt-1 text-xs text-muted-foreground">
-                    Instant & secure checkout powered by <strong>Razorpay</strong>.
-                  </p>
-                  <!-- Payment Mode Badges -->
-                  <div class="mt-3 flex flex-wrap items-center gap-2 text-[11px] text-foreground/80">
-                    <span class="rounded border border-border bg-background px-2 py-1">UPI (GPay, PhonePe, Paytm)</span>
-                    <span class="rounded border border-border bg-background px-2 py-1">Credit & Debit Cards</span>
-                    <span class="rounded border border-border bg-background px-2 py-1">Net Banking</span>
-                    <span class="rounded border border-border bg-background px-2 py-1">Wallets</span>
-                  </div>
-                </div>
-              </label>
-
-              <!-- Cash on Delivery (COD) -->
+              <!-- Cash on Delivery (COD) — Enabled & Selectable -->
               <label
                 data-method="cod"
                 role="radio"
@@ -469,14 +434,52 @@
                   checked
                   class="mt-1 h-4 w-4 cursor-pointer accent-[#6B2D31]"
                 />
-                <div class="flex-1">
-                  <div class="flex items-center justify-between">
+                <div class="flex-1 min-w-0">
+                  <div class="flex flex-wrap items-center justify-between gap-2">
                     <span class="font-semibold text-foreground text-sm">Cash on Delivery (COD)</span>
                     <span class="rounded bg-primary/10 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-primary">Pay at doorstep</span>
                   </div>
                   <p class="mt-1 text-xs text-muted-foreground">
                     Pay in cash when your courier arrives. Please keep exact change ready.
                   </p>
+                </div>
+              </label>
+
+              <!-- Online Payment via Razorpay (Visible & Disabled while awaiting production activation) -->
+              <label
+                data-method="razorpay"
+                role="radio"
+                aria-checked="false"
+                aria-disabled="true"
+                tabindex="-1"
+                class="payment-option-label relative flex cursor-not-allowed items-start gap-3 border border-border bg-secondary/20 p-4 transition rounded-sm opacity-75"
+              >
+                <input
+                  type="radio"
+                  id="payment-method-razorpay"
+                  name="payment_method"
+                  value="razorpay"
+                  disabled
+                  class="mt-1 h-4 w-4 cursor-not-allowed accent-[#6B2D31]"
+                />
+                <div class="flex-1 min-w-0">
+                  <div class="flex flex-wrap items-center justify-between gap-2">
+                    <span class="font-semibold text-foreground text-sm">Razorpay Online Payment (UPI, Cards, Net Banking)</span>
+                    <span id="razorpay-status-badge" class="rounded bg-amber-900/10 border border-amber-800/30 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-amber-900">Temporarily Unavailable · Coming Soon</span>
+                  </div>
+                  <p class="mt-1 text-xs text-muted-foreground">
+                    Instant &amp; secure checkout powered by <strong>Razorpay</strong>.
+                  </p>
+                  <p id="razorpay-unavailable-note" class="mt-1.5 text-[11px] font-medium text-amber-900">
+                    Online payments (UPI, Cards, Net Banking) are temporarily unavailable and coming soon. Please place your order using Cash on Delivery (COD).
+                  </p>
+                  <!-- Payment Mode Badges -->
+                  <div class="mt-3 flex flex-wrap items-center gap-2 text-[11px] text-foreground/75">
+                    <span class="rounded border border-border bg-background/80 px-2 py-1">UPI (GPay, PhonePe, Paytm)</span>
+                    <span class="rounded border border-border bg-background/80 px-2 py-1">Credit &amp; Debit Cards</span>
+                    <span class="rounded border border-border bg-background/80 px-2 py-1">Net Banking</span>
+                    <span class="rounded border border-border bg-background/80 px-2 py-1">Wallets</span>
+                  </div>
                 </div>
               </label>
             </div>
@@ -912,12 +915,16 @@
         r.checked = (r.value === method);
       });
 
-      // Update visual styles on card labels
+      // Update visual styles on card labels (keep both options visible)
       document.querySelectorAll('.payment-option-label').forEach(label => {
         const labelMethod = label.getAttribute('data-method');
+        label.classList.remove('hidden');
         if (labelMethod === 'razorpay' && !isRazorpayEnabledInConfig()) {
-          label.classList.add('hidden');
+          label.classList.remove('border-primary', 'bg-primary/5', 'ring-1', 'ring-primary/40', 'cursor-pointer');
+          label.classList.add('border-border', 'bg-secondary/20', 'cursor-not-allowed', 'opacity-75');
           label.setAttribute('aria-checked', 'false');
+          label.setAttribute('aria-disabled', 'true');
+          label.setAttribute('tabindex', '-1');
           return;
         }
         const isMatch = (labelMethod === method);
@@ -2922,25 +2929,49 @@
         });
       }
 
-      // Enforce COD-only mode while Razorpay is on hold; automatically reveal Razorpay when enabled & configured
+      // Keep both payment options visible: COD enabled & selected; Razorpay visible & disabled while on hold, and automatically activated when enabled & configured
       const rzpLabel = document.querySelector('.payment-option-label[data-method="razorpay"]');
       const rzpRadio = document.getElementById('payment-method-razorpay');
+      const rzpBadge = document.getElementById('razorpay-status-badge');
+      const rzpNote = document.getElementById('razorpay-unavailable-note');
       if (!isRazorpayEnabledInConfig()) {
-        if (rzpLabel) rzpLabel.classList.add('hidden');
+        if (rzpLabel) {
+          rzpLabel.classList.remove('hidden', 'cursor-pointer', 'border-primary', 'bg-primary/5', 'ring-1', 'ring-primary/40');
+          rzpLabel.classList.add('border-border', 'bg-secondary/20', 'cursor-not-allowed', 'opacity-75');
+          rzpLabel.setAttribute('aria-disabled', 'true');
+          rzpLabel.setAttribute('aria-checked', 'false');
+          rzpLabel.setAttribute('tabindex', '-1');
+        }
         if (rzpRadio) {
           rzpRadio.checked = false;
           rzpRadio.disabled = true;
         }
+        if (rzpBadge) {
+          rzpBadge.textContent = 'Temporarily Unavailable · Coming Soon';
+          rzpBadge.className = 'rounded bg-amber-900/10 border border-amber-800/30 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-amber-900';
+        }
+        if (rzpNote) {
+          rzpNote.classList.remove('hidden');
+        }
         setPaymentMethod('cod');
       } else {
         if (rzpLabel) {
-          rzpLabel.classList.remove('hidden', 'cursor-not-allowed', 'opacity-60');
-          rzpLabel.classList.add('cursor-pointer');
+          rzpLabel.classList.remove('hidden', 'cursor-not-allowed', 'opacity-60', 'opacity-75', 'bg-secondary/20');
+          rzpLabel.classList.add('cursor-pointer', 'hover:border-primary/60');
           rzpLabel.setAttribute('aria-disabled', 'false');
           rzpLabel.setAttribute('tabindex', '0');
         }
         if (rzpRadio) {
           rzpRadio.disabled = false;
+          rzpRadio.classList.remove('cursor-not-allowed');
+          rzpRadio.classList.add('cursor-pointer');
+        }
+        if (rzpBadge) {
+          rzpBadge.textContent = 'Instant & Secure';
+          rzpBadge.className = 'rounded bg-primary/10 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-primary';
+        }
+        if (rzpNote) {
+          rzpNote.classList.add('hidden');
         }
         if (serverConfig && serverConfig.cod_enabled === false) {
           const codLabel = document.querySelector('.payment-option-label[data-method="cod"]');

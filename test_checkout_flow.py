@@ -4803,11 +4803,15 @@ vm.runInContext(inlineCode, sandbox);
         adm_stats_r = cod_client.get("/api/admin/stats", headers=adm_hdrs)
         assert adm_stats_r.status_code == 200 and adm_stats_r.get_json()["ok"] is True
 
-        # E. Verify checkout.html defaults to COD-only while keeping Razorpay code ready for future activation
+        # E. Verify checkout.html keeps both payment options visible (COD enabled & selected; Razorpay visible & disabled with Temporarily Unavailable · Coming Soon badge) while ready for future activation
         assert "let selectedPaymentMethod = 'cod';" in checkout_html
         assert "function isRazorpayEnabledInConfig()" in checkout_html
         assert "Place Cash on Delivery Order" in checkout_html
         assert "new Razorpay(options)" in checkout_html
+        assert "Razorpay Online Payment (UPI, Cards, Net Banking)" in checkout_html
+        assert "Temporarily Unavailable · Coming Soon" in checkout_html
+        assert 'class="payment-option-label hidden' not in checkout_html
+        assert "rzpLabel.classList.add('hidden')" not in checkout_html
 
     print(" [PASS] 30. Production COD-Only Mode (Razorpay On Hold + Ready for Future Activation), Real Stock Verification, Order Saving, Stock Deduction & Admin Visibility Verified!")
     passed += 1
