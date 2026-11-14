@@ -6,16 +6,16 @@
   <link rel="icon" type="image/png" href="favicon.png"/>
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous"/>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Kalam:wght@300;400;700&family=Karla:wght@400;500;600&display=swap"/>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=Manrope:wght@400;500;600;700&display=swap"/>
   <link rel="stylesheet" href="assets/styles.css"/>
-  <title>Contact — Naari</title>
-  <meta name="description" content="Reach Naari on WhatsApp, email or Instagram."/>
+  <title>Contact Support — Matra Naari</title>
+  <meta name="description" content="Reach Matra Naari on WhatsApp, email, or Instagram for sizing, styling, and order assistance."/>
   <meta property="og:type" content="website"/>
-  <meta property="og:title" content="Contact — Naari"/>
-  <meta property="og:description" content="Reach Naari on WhatsApp, email or Instagram."/>
+  <meta property="og:title" content="Contact Support — Matra Naari"/>
+  <meta property="og:description" content="Reach Matra Naari on WhatsApp, email or Instagram."/>
   <meta name="twitter:card" content="summary_large_image"/>
-  <meta name="twitter:title" content="Contact — Naari"/>
-  <meta name="twitter:description" content="Reach Naari on WhatsApp, email or Instagram."/>
+  <meta name="twitter:title" content="Contact Support — Matra Naari"/>
+  <meta name="twitter:description" content="Reach Matra Naari on WhatsApp, email or Instagram."/>
   <style>
     body {
       background-image: url('images/paper.jpg'), url('/images/paper.jpg');
@@ -26,41 +26,42 @@
 <body class="text-foreground antialiased selection:bg-primary/20 selection:text-primary">
 
   <!-- Top Announcement Bar -->
-  <div id="top-announcement-bar" class="bg-primary text-primary-foreground py-2 px-4 text-xs font-sans tracking-wider text-center flex items-center justify-center">
-    <div class="flex items-center gap-2">
-      <span class="text-xs">✿</span>
-      <span class="announcement-text transition-opacity duration-300 font-medium">FREE EXPRESS SHIPPING ON ALL ORDERS · USE CODE: NAARI10 FOR 10% OFF</span>
-      <span class="text-xs">✿</span>
+  <div id="top-announcement-bar" class="mn-announcement-bar py-2 px-3 sm:px-4 text-center flex items-center justify-center">
+    <div class="flex items-center gap-2 max-w-full overflow-hidden">
+      <span class="text-[10px] opacity-80 shrink-0">✦</span>
+      <span class="announcement-text transition-opacity duration-300 font-medium truncate">FREE EXPRESS SHIPPING ON ALL ORDERS · USE CODE: NAARI10 FOR 10% OFF</span>
+      <span class="text-[10px] opacity-80 shrink-0">✦</span>
     </div>
   </div>
 
   <!-- Sticky Header -->
-  <header class="sticky top-0 z-40 border-b border-border/80 bg-background/90 backdrop-blur-md">
-    <div class="mx-auto flex max-w-7xl items-center justify-between px-4 py-2.5 sm:px-6">
-      <a aria-label="Matra Naari Home" href="index.html" class="flex items-center gap-3">
+  <header class="mn-site-header sticky top-0 z-40">
+    <div class="mx-auto flex max-w-7xl items-center justify-between px-3.5 py-2.5 sm:px-6 sm:py-3">
+      <a aria-label="Matra Naari Home" href="index.html" class="flex items-center gap-2.5 shrink-0">
         <img src="images/naari-logo.png" alt="Matra Naari" class="h-10 w-auto sm:h-12 mix-blend-multiply"/>
       </a>
-      <nav class="hidden md:flex items-center gap-8 font-hand text-lg">
-        <a class="text-foreground/80 hover:text-primary transition" href="index.html">Home</a>
-        <a class="text-foreground/80 hover:text-primary transition" href="shop.html">Collection</a>
-        <a class="text-foreground/80 hover:text-primary transition" href="story.html">Our Story</a>
-        <a class="text-primary font-bold active" href="contact.html" aria-current="page">Contact</a>
+      <nav class="hidden md:flex items-center gap-7 lg:gap-9" aria-label="Primary Navigation">
+        <a class="mn-nav-link" href="index.html">Home</a>
+        <a class="mn-nav-link" href="shop.html">Collections</a>
+        <a class="mn-nav-link" href="shop.html?category=Anarkali">Festive</a>
+        <a class="mn-nav-link" href="story.html">Our Story</a>
+        <a class="mn-nav-link active" href="contact.html" aria-current="page">Contact</a>
       </nav>
-      <div class="flex items-center gap-3 sm:gap-5">
+      <div class="flex items-center gap-1.5 sm:gap-3.5">
         <button type="button" class="open-search-modal-btn p-2 text-foreground/80 hover:text-primary transition cursor-pointer" aria-label="Search">
-          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
         </button>
         <button type="button" class="open-wishlist-drawer-btn relative p-2 text-foreground/80 hover:text-primary transition cursor-pointer" aria-label="Wishlist">
-          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
-          <span class="wishlist-count-badge absolute -top-1 -right-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-primary-foreground font-sans" style="display:none;">0</span>
+          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
+          <span class="wishlist-count-badge absolute -top-0.5 -right-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-primary-foreground font-sans" style="display:none;">0</span>
         </button>
         <button type="button" class="open-auth-modal-btn p-2 text-foreground/80 hover:text-primary transition flex items-center gap-1.5 cursor-pointer" aria-label="Account">
-          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
-          <span class="header-user-label hidden sm:inline text-xs font-sans font-medium text-foreground/80">Account</span>
+          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+          <span class="header-user-label hidden sm:inline text-xs font-sans font-medium text-foreground/85">Account</span>
         </button>
-        <button type="button" class="open-cart-drawer-btn flex items-center gap-2 bg-primary/10 hover:bg-primary/20 text-primary px-3 py-1.5 rounded-xs transition cursor-pointer" aria-label="Bag">
-          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
-          <span class="font-hand text-base">Bag</span>
+        <button type="button" class="open-cart-drawer-btn flex items-center gap-1.5 sm:gap-2 border border-primary/25 bg-primary/10 hover:bg-primary hover:text-primary-foreground text-primary px-2.5 sm:px-3.5 py-1.5 rounded-xs transition cursor-pointer" aria-label="Bag">
+          <svg class="h-4 w-4 sm:h-5 sm:w-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
+          <span class="text-xs font-semibold uppercase tracking-wider">Bag</span>
           <span class="bag-count-badge flex h-4 min-w-[16px] items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-primary-foreground font-sans" style="display:none;">0</span>
         </button>
       </div>
@@ -69,30 +70,34 @@
 
   <!-- Main Contact Content -->
   <main>
-    <section class="mx-auto max-w-3xl px-5 py-16 text-center">
-      <p class="font-hand text-lg text-primary">say namaste</p>
-      <h1 class="text-5xl font-semibold">Get in touch</h1>
-      <p class="mt-4 font-hand text-xl text-muted-foreground">For orders, sizing help or custom requests — we'd love to hear from you.</p>
+    <section class="mx-auto max-w-3xl px-4 py-12 sm:px-5 sm:py-16 text-center">
+      <p class="mn-eyebrow mb-2">Customer Care</p>
+      <h1 class="font-display text-4xl sm:text-5xl font-semibold">Get in Touch</h1>
+      <p class="mt-3 font-sans text-sm sm:text-base text-muted-foreground max-w-lg mx-auto">For order updates, size &amp; fit guidance, or styling questions—our customer support team is here to assist you.</p>
 
-      <div class="mt-12 grid gap-4 sm:grid-cols-2">
-        <a href="https://wa.me/918849366915?text=Hi%20Naari!%20I'd%20like%20to%20enquire%20about%20your%20kurtis." target="_blank" rel="noreferrer" class="bg-card/70 p-6 ring-1 ring-border hover:ring-primary transition text-left block">
-          <p class="text-xs uppercase tracking-widest text-muted-foreground">WhatsApp</p>
-          <p class="mt-2 font-display text-2xl text-primary">+91 88493 66915</p>
+      <div class="mt-10 grid gap-4 sm:grid-cols-2">
+        <a href="https://wa.me/918849366915?text=Hi%20Naari!%20I'd%20like%20to%20enquire%20about%20your%20kurtis." target="_blank" rel="noreferrer" class="mn-pillar-card text-left block">
+          <p class="text-[11px] uppercase tracking-[0.18em] text-muted-foreground font-sans">WhatsApp Support</p>
+          <p class="mt-1.5 font-display text-2xl font-semibold text-primary">+91 88493 66915</p>
+          <p class="mt-1 text-xs text-muted-foreground font-sans">Direct sizing &amp; order support</p>
         </a>
 
-        <a href="mailto:hello@naari.in" target="_blank" rel="noreferrer" class="bg-card/70 p-6 ring-1 ring-border hover:ring-primary transition text-left block">
-          <p class="text-xs uppercase tracking-widest text-muted-foreground">Email</p>
-          <p class="mt-2 font-display text-2xl text-primary">hello@naari.in</p>
+        <a href="mailto:hello@naari.in" target="_blank" rel="noreferrer" class="mn-pillar-card text-left block">
+          <p class="text-[11px] uppercase tracking-[0.18em] text-muted-foreground font-sans">Email Support</p>
+          <p class="mt-1.5 font-display text-2xl font-semibold text-primary">hello@naari.in</p>
+          <p class="mt-1 text-xs text-muted-foreground font-sans">Order &amp; exchange assistance</p>
         </a>
 
-        <a href="https://instagram.com" target="_blank" rel="noreferrer" class="bg-card/70 p-6 ring-1 ring-border hover:ring-primary transition text-left block">
-          <p class="text-xs uppercase tracking-widest text-muted-foreground">Instagram</p>
-          <p class="mt-2 font-display text-2xl text-primary">@naari</p>
+        <a href="https://instagram.com" target="_blank" rel="noreferrer" class="mn-pillar-card text-left block">
+          <p class="text-[11px] uppercase tracking-[0.18em] text-muted-foreground font-sans">Instagram</p>
+          <p class="mt-1.5 font-display text-2xl font-semibold text-primary">@matranaari</p>
+          <p class="mt-1 text-xs text-muted-foreground font-sans">Collection updates &amp; styling inspiration</p>
         </a>
 
-        <div class="bg-card/70 p-6 ring-1 ring-border hover:ring-primary transition text-left block">
-          <p class="text-xs uppercase tracking-widest text-muted-foreground">Studio</p>
-          <p class="mt-2 font-display text-2xl text-primary">Your address, City, India</p>
+        <div class="mn-pillar-card text-left block">
+          <p class="text-[11px] uppercase tracking-[0.18em] text-muted-foreground font-sans">Online Store &amp; Shipping</p>
+          <p class="mt-1.5 font-display text-2xl font-semibold text-primary">Pan-India Delivery</p>
+          <p class="mt-1 text-xs text-muted-foreground font-sans">Free shipping above ₹999 · Cash on Delivery available</p>
         </div>
       </div>
     </section>
@@ -105,7 +110,7 @@
         <!-- Brand Info -->
         <div>
           <img src="images/naari-logo.png" alt="Matra Naari" class="h-14 w-auto mix-blend-multiply"/>
-          <p class="mt-3 font-hand text-muted-foreground text-base">Modern Indian ethnic wear, woven with authentic craft.</p>
+          <p class="mt-3 font-hand text-muted-foreground text-base">Woven with Meaning · Modern Indian ethnic wear.</p>
           <div class="mt-4 space-y-1 text-xs text-muted-foreground font-sans">
             <p>✉ <a href="mailto:hello@naari.in" class="hover:text-primary transition">hello@naari.in</a></p>
             <p>📱 <a href="https://wa.me/918849366915?text=Hi%20Naari!%20I'd%20like%20to%20enquire%20about%20your%20kurtis." target="_blank" class="hover:text-primary transition">+91 88493 66915</a></p>
@@ -131,22 +136,22 @@
           <ul class="space-y-2 text-xs font-sans text-muted-foreground">
             <li><a href="account.html" class="hover:text-primary transition">Track My Order</a></li>
             <li><a href="account.html" class="hover:text-primary transition">Returns &amp; Exchanges</a></li>
-            <li><a href="story.html" class="hover:text-primary transition">Our Craft &amp; Sourcing</a></li>
+            <li><a href="story.html" class="hover:text-primary transition">Our Story</a></li>
             <li><a href="contact.html" class="hover:text-primary transition">Size Guide &amp; Fit</a></li>
-            <li><a href="contact.html" class="hover:text-primary transition">Contact Studio</a></li>
+            <li><a href="contact.html" class="hover:text-primary transition">Contact Support</a></li>
             <li><a href="admin.html" class="hover:text-primary transition text-foreground/50">Staff Admin Portal</a></li>
           </ul>
         </div>
 
         <!-- Newsletter & Promotions -->
         <div>
-          <h4 class="font-display text-lg font-semibold text-primary mb-3">Exclusive Club</h4>
-          <p class="text-xs text-muted-foreground">Receive private drop previews, artisan stories, and VIP discounts.</p>
+          <h4 class="font-display text-lg font-semibold text-primary mb-3">Stay Connected</h4>
+          <p class="text-xs text-muted-foreground">Receive collection updates, style notes, and subscriber offers.</p>
           <form class="mt-3 flex gap-1" onsubmit="event.preventDefault(); getToast().success('Thank you for subscribing to Matra Naari!'); this.reset();">
             <input type="email" required placeholder="Enter your email" class="min-w-0 flex-1 border border-border bg-background px-3 py-2 text-xs outline-none focus:border-primary"/>
             <button type="submit" class="bg-primary px-3 py-2 text-xs uppercase tracking-wider text-primary-foreground font-semibold cursor-pointer">Join</button>
           </form>
-          <p class="mt-4 text-[11px] text-muted-foreground">© 2026 Matra Naari. Handcrafted in India.</p>
+          <p class="mt-4 text-[11px] text-muted-foreground">© 2026 Matra Naari. All rights reserved.</p>
         </div>
       </div>
     </div>

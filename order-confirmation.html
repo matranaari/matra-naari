@@ -8,10 +8,10 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
   <link rel="stylesheet"
-    href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Kalam:wght@300;400;700&family=Karla:wght@400;500;600&display=swap" />
+    href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=Manrope:wght@400;500;600;700&display=swap" />
   <link rel="stylesheet" href="assets/styles.css" />
-  <title>Order Confirmed — Naari</title>
-  <meta name="description" content="Thank you for your order with Naari." />
+  <title>Order Confirmed — Matra Naari</title>
+  <meta name="description" content="Thank you for your order with Matra Naari." />
   <style>
     body {
       background-image: url('images/paper.jpg'), url('/images/paper.jpg');
@@ -20,19 +20,19 @@
   </style>
 </head>
 
-<body>
+<body class="text-foreground antialiased selection:bg-primary/20 selection:text-primary">
   <!-- Header -->
-  <header class="sticky top-0 z-30 border-b border-border/60 bg-background/85 backdrop-blur">
-    <div class="mx-auto flex max-w-6xl items-center justify-between px-5 py-2">
-      <a aria-label="Naari home" href="index.html">
-        <img src="images/naari-logo.png" alt="Naari" class="h-11 w-auto sm:h-14 mix-blend-multiply" />
+  <header class="mn-site-header sticky top-0 z-30">
+    <div class="mx-auto flex max-w-6xl items-center justify-between px-4 py-2.5 sm:px-5 sm:py-3">
+      <a aria-label="Matra Naari home" href="index.html" class="shrink-0">
+        <img src="images/naari-logo.png" alt="Matra Naari" class="h-10 w-auto sm:h-12 mix-blend-multiply" />
       </a>
-      <nav class="flex gap-5 font-hand text-lg sm:gap-8">
-        <a class="hidden text-foreground/80 hover:text-primary sm:inline" href="index.html">Home</a>
-        <a class="hidden text-foreground/80 hover:text-primary sm:inline" href="shop.html">Shop</a>
-        <a class="hidden text-foreground/80 hover:text-primary sm:inline" href="story.html">Our Story</a>
-        <a class="hidden text-foreground/80 hover:text-primary sm:inline" href="contact.html">Contact</a>
-        <a class="text-primary" href="cart.html">Bag (<span class="bag-count-badge">0</span>)</a>
+      <nav class="flex items-center gap-4 sm:gap-7 font-sans text-xs uppercase tracking-wider">
+        <a class="hidden text-foreground/80 hover:text-primary sm:inline mn-nav-link" href="index.html">Home</a>
+        <a class="hidden text-foreground/80 hover:text-primary sm:inline mn-nav-link" href="shop.html">Collections</a>
+        <a class="hidden text-foreground/80 hover:text-primary sm:inline mn-nav-link" href="story.html">Our Story</a>
+        <a class="hidden text-foreground/80 hover:text-primary sm:inline mn-nav-link" href="contact.html">Contact</a>
+        <a class="text-primary font-semibold" href="cart.html">Bag (<span class="bag-count-badge">0</span>)</a>
       </nav>
     </div>
   </header>
@@ -48,7 +48,7 @@
       <!-- Error State -->
       <div id="confirmation-error" class="hidden text-center py-16">
         <p class="font-hand text-2xl text-destructive">Order not found.</p>
-        <p class="mt-2 text-sm text-muted-foreground">Please check your order link or contact our studio.</p>
+        <p class="mt-2 text-sm text-muted-foreground">Please check your order link or contact our customer support team.</p>
         <a href="shop.html"
           class="mt-6 inline-block bg-primary px-7 py-3 text-sm uppercase tracking-[0.2em] text-primary-foreground hover:opacity-90 transition">
           Return to Shop
@@ -63,10 +63,10 @@
             class="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 text-primary text-2xl">
             ✓
           </div>
-          <p class="font-hand text-lg text-primary">handcrafted with love ✿</p>
+          <p class="font-hand text-lg text-primary">Woven with Meaning ✿</p>
           <h1 class="text-3xl font-semibold sm:text-4xl">Order Confirmed!</h1>
           <p class="mt-2 text-muted-foreground text-sm max-w-md mx-auto">
-            Thank you for supporting authentic craft. We have received your order and are preparing your kurtis.
+            Thank you for shopping with Matra Naari. We have received your order and are preparing your kurtis for dispatch.
           </p>
           <div class="mt-4 inline-block bg-background px-4 py-2 border border-border text-xs tracking-wider">
             ORDER ID: <strong id="order-ref-id" class="text-primary select-all"></strong>
@@ -387,7 +387,7 @@
       if (!errorEl) return;
       errorEl.innerHTML = `
         <p class="font-hand text-2xl text-destructive">Order not found.</p>
-        <p class="mt-2 text-sm text-muted-foreground">Please check your order link or contact our studio.</p>
+        <p class="mt-2 text-sm text-muted-foreground">Please check your order link or contact our customer support team.</p>
         <a href="shop.html"
           class="mt-6 inline-block bg-primary px-7 py-3 text-sm uppercase tracking-[0.2em] text-primary-foreground hover:opacity-90 transition">
           Return to Shop

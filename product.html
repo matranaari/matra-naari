@@ -6,10 +6,10 @@
   <link rel="icon" type="image/png" href="favicon.png"/>
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous"/>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Kalam:wght@300;400;700&family=Karla:wght@400;500;600&display=swap"/>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=Manrope:wght@400;500;600;700&display=swap"/>
   <link rel="stylesheet" href="assets/styles.css"/>
-  <title>Handcrafted Kurti — Matra Naari</title>
-  <meta name="description" content="Authentic handcrafted Indian ethnic kurti in pure breathable cotton. Hand-finished details, tailored for everyday grace."/>
+  <title>Matra Naari Kurti — Indian Ethnic Wear</title>
+  <meta name="description" content="Thoughtfully designed Indian ethnic kurti by Matra Naari, tailored for everyday and occasion grace."/>
   <style>
     body {
       background-image: url('images/paper.jpg'), url('/images/paper.jpg');
@@ -20,41 +20,42 @@
 <body class="text-foreground antialiased selection:bg-primary/20 selection:text-primary">
 
   <!-- Top Announcement Bar -->
-  <div id="top-announcement-bar" class="bg-primary text-primary-foreground py-2 px-4 text-xs font-sans tracking-wider text-center flex items-center justify-center">
-    <div class="flex items-center gap-2">
-      <span class="text-xs">✿</span>
-      <span class="announcement-text transition-opacity duration-300 font-medium">FREE EXPRESS SHIPPING ON ALL ORDERS · USE CODE: NAARI10 FOR 10% OFF</span>
-      <span class="text-xs">✿</span>
+  <div id="top-announcement-bar" class="mn-announcement-bar py-2 px-3 sm:px-4 text-center flex items-center justify-center">
+    <div class="flex items-center gap-2 max-w-full overflow-hidden">
+      <span class="text-[10px] opacity-80 shrink-0">✦</span>
+      <span class="announcement-text transition-opacity duration-300 font-medium truncate">FREE EXPRESS SHIPPING ON ALL ORDERS · USE CODE: NAARI10 FOR 10% OFF</span>
+      <span class="text-[10px] opacity-80 shrink-0">✦</span>
     </div>
   </div>
 
   <!-- Sticky Header -->
-  <header class="sticky top-0 z-40 border-b border-border/80 bg-background/90 backdrop-blur-md">
-    <div class="mx-auto flex max-w-7xl items-center justify-between px-4 py-2.5 sm:px-6">
-      <a aria-label="Matra Naari Home" href="index.html" class="flex items-center gap-3">
+  <header class="mn-site-header sticky top-0 z-40">
+    <div class="mx-auto flex max-w-7xl items-center justify-between px-3.5 py-2.5 sm:px-6 sm:py-3">
+      <a aria-label="Matra Naari Home" href="index.html" class="flex items-center gap-2.5 shrink-0">
         <img src="images/naari-logo.png" alt="Matra Naari" class="h-10 w-auto sm:h-12 mix-blend-multiply"/>
       </a>
-      <nav class="hidden md:flex items-center gap-8 font-hand text-lg">
-        <a class="text-foreground/80 hover:text-primary transition" href="index.html">Home</a>
-        <a class="text-primary font-bold active" href="shop.html">Collection</a>
-        <a class="text-foreground/80 hover:text-primary transition" href="story.html">Our Craft</a>
-        <a class="text-foreground/80 hover:text-primary transition" href="contact.html">Contact</a>
+      <nav class="hidden md:flex items-center gap-7 lg:gap-9" aria-label="Primary Navigation">
+        <a class="mn-nav-link" href="index.html">Home</a>
+        <a class="mn-nav-link active" href="shop.html">Collections</a>
+        <a class="mn-nav-link" href="shop.html?category=Anarkali">Festive</a>
+        <a class="mn-nav-link" href="story.html">Our Story</a>
+        <a class="mn-nav-link" href="contact.html">Contact</a>
       </nav>
-      <div class="flex items-center gap-3 sm:gap-5">
+      <div class="flex items-center gap-1.5 sm:gap-3.5">
         <button type="button" class="open-search-modal-btn p-2 text-foreground/80 hover:text-primary transition cursor-pointer" aria-label="Search">
-          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
         </button>
         <button type="button" class="open-wishlist-drawer-btn relative p-2 text-foreground/80 hover:text-primary transition cursor-pointer" aria-label="Wishlist">
-          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
-          <span class="wishlist-count-badge absolute -top-1 -right-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-primary-foreground font-sans" style="display:none;">0</span>
+          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
+          <span class="wishlist-count-badge absolute -top-0.5 -right-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-primary-foreground font-sans" style="display:none;">0</span>
         </button>
         <button type="button" class="open-auth-modal-btn p-2 text-foreground/80 hover:text-primary transition flex items-center gap-1.5 cursor-pointer" aria-label="Account">
-          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
-          <span class="header-user-label hidden sm:inline text-xs font-sans font-medium text-foreground/80">Account</span>
+          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+          <span class="header-user-label hidden sm:inline text-xs font-sans font-medium text-foreground/85">Account</span>
         </button>
-        <button type="button" class="open-cart-drawer-btn flex items-center gap-2 bg-primary/10 hover:bg-primary/20 text-primary px-3 py-1.5 rounded-xs transition cursor-pointer" aria-label="Bag">
-          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
-          <span class="font-hand text-base">Bag</span>
+        <button type="button" class="open-cart-drawer-btn flex items-center gap-1.5 sm:gap-2 border border-primary/25 bg-primary/10 hover:bg-primary hover:text-primary-foreground text-primary px-2.5 sm:px-3.5 py-1.5 rounded-xs transition cursor-pointer" aria-label="Bag">
+          <svg class="h-4 w-4 sm:h-5 sm:w-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
+          <span class="text-xs font-semibold uppercase tracking-wider">Bag</span>
           <span class="bag-count-badge flex h-4 min-w-[16px] items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-primary-foreground font-sans" style="display:none;">0</span>
         </button>
       </div>
@@ -62,103 +63,103 @@
   </header>
 
   <!-- PDP Main Content -->
-  <main class="mx-auto max-w-7xl px-4 py-8 sm:px-6">
+  <main class="mx-auto max-w-7xl px-3.5 py-6 sm:px-6 sm:py-10">
     <!-- Breadcrumb -->
-    <nav class="mb-6 flex items-center gap-2 text-xs text-muted-foreground uppercase tracking-wider font-sans">
+    <nav class="mb-5 flex items-center gap-2 text-[11px] text-muted-foreground uppercase tracking-[0.15em] font-sans overflow-x-auto whitespace-nowrap">
       <a href="index.html" class="hover:text-primary">Home</a>
       <span>/</span>
-      <a href="shop.html" class="hover:text-primary">Collection</a>
+      <a href="shop.html" class="hover:text-primary">Collections</a>
       <span>/</span>
       <span id="pdp-crumb-category" class="hover:text-primary">Kurti</span>
       <span>/</span>
-      <span id="pdp-crumb-name" class="text-primary font-medium truncate max-w-xs">Product</span>
+      <span id="pdp-crumb-name" class="text-primary font-semibold truncate max-w-[180px] sm:max-w-xs">Product</span>
     </nav>
 
     <!-- Product Layout Grid -->
-    <div class="grid grid-cols-1 lg:grid-cols-[1fr_480px] gap-10 items-start">
+    <div class="grid grid-cols-1 lg:grid-cols-[1fr_480px] gap-8 lg:gap-12 items-start">
       
-      <!-- Left: Image Gallery (Libas-Style Main Viewer + Thumbnails + Touch Swipe) -->
-      <div class="space-y-4">
-        <div id="pdp-main-image-wrap" class="relative overflow-hidden bg-card/60 border border-border rounded-xs shadow-md select-none">
-          <img id="pdp-main-image" src="assets/hero.jpg" alt="Kurti" onerror="this.onerror=null;this.src='assets/hero.jpg';" class="w-full aspect-[4/5] object-cover transition-all duration-300"/>
-          <span id="pdp-discount-badge" class="absolute top-4 left-4 badge-discount text-xs font-bold px-3 py-1 rounded-xs shadow">35% OFF</span>
+      <!-- Left: Image Gallery (Main Viewer + Thumbnails + Touch Swipe) -->
+      <div class="space-y-3.5">
+        <div id="pdp-main-image-wrap" class="relative overflow-hidden bg-card/70 border border-border rounded-xs shadow-md select-none">
+          <img id="pdp-main-image" src="assets/hero.jpg" alt="Kurti" fetchpriority="high" onerror="this.onerror=null;this.src='assets/hero.jpg';" class="w-full aspect-[4/5] object-cover object-top transition-all duration-300"/>
+          <span id="pdp-discount-badge" class="absolute top-3.5 left-3.5 mn-product-badge bg-card/95 text-primary border border-primary/25 shadow-xs">35% OFF</span>
           <!-- Prev / Next Gallery Controls -->
-          <button type="button" id="pdp-gallery-prev" class="absolute left-3 top-1/2 -translate-y-1/2 h-9 w-9 rounded-full bg-card/85 hover:bg-card text-foreground shadow flex items-center justify-center cursor-pointer transition" aria-label="Previous image">‹</button>
-          <button type="button" id="pdp-gallery-next" class="absolute right-3 top-1/2 -translate-y-1/2 h-9 w-9 rounded-full bg-card/85 hover:bg-card text-foreground shadow flex items-center justify-center cursor-pointer transition" aria-label="Next image">›</button>
+          <button type="button" id="pdp-gallery-prev" class="absolute left-3 top-1/2 -translate-y-1/2 h-9 w-9 rounded-full bg-card/90 hover:bg-card text-foreground border border-border/70 shadow-xs flex items-center justify-center cursor-pointer transition" aria-label="Previous image">‹</button>
+          <button type="button" id="pdp-gallery-next" class="absolute right-3 top-1/2 -translate-y-1/2 h-9 w-9 rounded-full bg-card/90 hover:bg-card text-foreground border border-border/70 shadow-xs flex items-center justify-center cursor-pointer transition" aria-label="Next image">›</button>
           <!-- Wishlist Floating Toggle -->
           <button
             type="button"
             id="pdp-wishlist-toggle"
-            class="wishlist-btn-heart absolute top-4 right-4 flex h-10 w-10 items-center justify-center rounded-full bg-card/90 shadow text-foreground hover:text-primary cursor-pointer transition"
+            class="wishlist-btn-heart absolute top-3.5 right-3.5 flex h-10 w-10 items-center justify-center rounded-full bg-card/92 border border-border/70 shadow-xs text-foreground hover:text-primary cursor-pointer transition"
             aria-label="Add to Wishlist"
           >
-            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
+            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
           </button>
         </div>
 
         <!-- Thumbnail Selector -->
-        <div class="flex gap-3 overflow-x-auto pb-2" id="pdp-thumbnails">
+        <div class="flex gap-2.5 overflow-x-auto pb-1" id="pdp-thumbnails">
           <!-- Populated by JS -->
         </div>
       </div>
 
-      <!-- Right: Product Information & Purchase Controls -->
-      <div class="space-y-6">
+      <!-- Right: Product Information & Purchase Controls (Manrope Typography for Product Name, Description, Price & Controls) -->
+      <div class="space-y-5">
         <div>
           <div class="flex items-center gap-2 flex-wrap">
-            <span id="pdp-category-tag" class="text-xs uppercase tracking-widest text-primary font-bold">Straight Cut</span>
+            <span id="pdp-category-tag" class="text-[11px] uppercase tracking-[0.18em] text-primary font-semibold font-sans">Straight Cut</span>
             <span class="text-muted-foreground text-xs">·</span>
-            <span id="pdp-style-tag" class="text-xs text-muted-foreground font-sans">Handcrafted Ethnic Wear</span>
+            <span id="pdp-style-tag" class="text-xs text-muted-foreground font-sans">Indian Ethnic Wear</span>
           </div>
-          <h1 id="pdp-title" class="font-display text-3xl sm:text-4xl font-semibold mt-1">Gulmohar Straight Kurti</h1>
-          <div class="mt-2 flex items-center gap-3 text-sm flex-wrap">
-            <span id="pdp-stock-badge" class="text-xs text-emerald-800 bg-emerald-50 border border-emerald-700/20 px-2.5 py-0.5 rounded font-medium">In Stock · Ready to Ship</span>
+          <h1 id="pdp-title" class="font-sans text-2xl sm:text-3xl font-semibold tracking-tight text-foreground mt-1.5 leading-snug">Gulmohar Straight Kurti</h1>
+          <div class="mt-2.5 flex items-center gap-3 text-sm flex-wrap">
+            <span id="pdp-stock-badge" class="text-xs text-emerald-800 bg-emerald-50 border border-emerald-700/20 px-2.5 py-0.5 rounded-xs font-medium font-sans">In Stock · Ready to Ship</span>
             <span id="pdp-sku-label" class="text-xs text-muted-foreground font-mono">SKU: NAARI-STR</span>
           </div>
         </div>
 
         <!-- Price Display -->
-        <div class="p-4 bg-card/60 border border-border rounded-xs space-y-1">
+        <div class="p-4 bg-card/75 border border-border rounded-xs space-y-1">
           <div class="flex items-baseline gap-3 flex-wrap">
-            <span id="pdp-price" class="font-display text-3xl font-bold text-primary">₹1,299</span>
-            <span id="pdp-mrp" class="text-base line-through text-muted-foreground">₹1,999</span>
-            <span id="pdp-savings" class="text-xs font-semibold text-emerald-800">You Save ₹700 (35%)</span>
+            <span id="pdp-price" class="mn-price text-2xl sm:text-3xl text-primary">₹1,299</span>
+            <span id="pdp-mrp" class="text-sm sm:text-base line-through text-muted-foreground tabular-nums font-sans">₹1,999</span>
+            <span id="pdp-savings" class="text-xs font-semibold text-emerald-800 font-sans">You Save ₹700 (35%)</span>
           </div>
-          <p class="text-[11px] text-muted-foreground">Inclusive of all taxes · Free express shipping on orders above ₹999</p>
+          <p class="text-[11px] text-muted-foreground font-sans">Inclusive of all taxes · Complimentary express shipping above ₹999</p>
         </div>
 
         <!-- Color Selection -->
         <div class="space-y-2">
-          <div class="flex items-center justify-between text-xs uppercase tracking-wider font-semibold text-muted-foreground">
+          <div class="flex items-center justify-between text-xs uppercase tracking-wider font-semibold text-muted-foreground font-sans">
             <span>Color: <strong id="pdp-selected-color-label" class="text-foreground">Maroon</strong></span>
           </div>
-          <div class="flex gap-2" id="pdp-color-swatches">
+          <div class="flex gap-2.5" id="pdp-color-swatches">
             <!-- Populated by JS -->
           </div>
         </div>
 
         <!-- Size Selection & Size Guide Modal Trigger -->
-        <div class="space-y-2">
+        <div class="space-y-2.5">
           <div class="flex items-center justify-between">
-            <span class="text-xs uppercase tracking-wider font-semibold text-muted-foreground">Select Size:</span>
-            <button type="button" id="open-size-chart-btn" class="text-xs font-hand text-primary underline cursor-pointer hover:font-bold">
-              ✿ Size Chart &amp; Fit Guide
+            <span class="text-xs uppercase tracking-wider font-semibold text-muted-foreground font-sans">Select Size:</span>
+            <button type="button" id="open-size-chart-btn" class="text-xs font-sans font-semibold text-primary underline underline-offset-4 cursor-pointer hover:opacity-80">
+              Size Chart &amp; Fit Guide
             </button>
           </div>
           <div class="flex flex-wrap gap-2" id="pdp-sizes-list">
             <!-- Size pills rendered by JS -->
           </div>
-          <p id="pdp-size-error" class="text-xs text-destructive hidden">Please select an available size before adding to bag.</p>
+          <p id="pdp-size-error" class="text-xs text-destructive hidden font-sans">Please select an available size before adding to bag.</p>
         </div>
 
         <!-- Quantity & Action CTAs -->
-        <div class="space-y-3 pt-2">
+        <div class="space-y-3 pt-1">
           <div class="flex items-center gap-3">
-            <span class="text-xs uppercase tracking-wider font-semibold text-muted-foreground">Quantity:</span>
-            <div class="flex items-center border border-border bg-card">
-              <button type="button" id="pdp-qty-dec" class="h-9 w-9 flex items-center justify-center hover:text-primary cursor-pointer text-sm font-semibold" aria-label="Decrease quantity">−</button>
-              <span id="pdp-qty-val" class="w-9 text-center text-sm font-semibold tabular-nums">1</span>
-              <button type="button" id="pdp-qty-inc" class="h-9 w-9 flex items-center justify-center hover:text-primary cursor-pointer text-sm font-semibold" aria-label="Increase quantity">+</button>
+            <span class="text-xs uppercase tracking-wider font-semibold text-muted-foreground font-sans">Quantity:</span>
+            <div class="flex items-center border border-border bg-card rounded-xs">
+              <button type="button" id="pdp-qty-dec" class="h-10 w-10 flex items-center justify-center hover:text-primary cursor-pointer text-sm font-semibold" aria-label="Decrease quantity">−</button>
+              <span id="pdp-qty-val" class="w-10 text-center text-sm font-semibold tabular-nums font-sans">1</span>
+              <button type="button" id="pdp-qty-inc" class="h-10 w-10 flex items-center justify-center hover:text-primary cursor-pointer text-sm font-semibold" aria-label="Increase quantity">+</button>
             </div>
           </div>
 
@@ -166,14 +167,14 @@
             <button
               type="button"
               id="pdp-add-to-bag-btn"
-              class="border-2 border-primary bg-primary text-primary-foreground py-3.5 text-xs uppercase tracking-[0.2em] font-semibold hover:opacity-90 transition cursor-pointer shadow-sm text-center"
+              class="mn-btn-primary w-full py-3.5 text-center"
             >
               Add to Bag
             </button>
             <button
               type="button"
               id="pdp-buy-now-btn"
-              class="border-2 border-foreground bg-foreground text-background py-3.5 text-xs uppercase tracking-[0.2em] font-semibold hover:bg-foreground/90 transition cursor-pointer shadow-sm text-center"
+              class="border border-foreground bg-foreground text-background py-3.5 text-xs uppercase tracking-[0.16em] font-semibold hover:bg-foreground/90 transition cursor-pointer shadow-xs text-center rounded-[2px]"
             >
               Buy It Now
             </button>
@@ -224,15 +225,15 @@
             </summary>
             <div class="mt-2 space-y-3 text-muted-foreground leading-relaxed">
               <p id="pdp-desc-text">
-                Everyday ease, hand block-printed on fine cotton. Designed with a clean straight silhouette and side slits.
+                Tailored straight silhouette with side slits and a classic round neck for everyday ease.
               </p>
               <div class="grid grid-cols-2 gap-2 pt-2 border-t border-border/50 text-xs">
                 <div><span class="text-muted-foreground">Silhouette:</span> <strong id="pdp-spec-category" class="text-foreground">Straight Cut</strong></div>
                 <div><span class="text-muted-foreground">Style:</span> <strong id="pdp-spec-style" class="text-foreground">Straight Kurta</strong></div>
                 <div><span class="text-muted-foreground">Occasion:</span> <strong id="pdp-spec-occasion" class="text-foreground">Everyday &amp; Workwear</strong></div>
-                <div><span class="text-muted-foreground">Pattern:</span> <strong id="pdp-spec-pattern" class="text-foreground">Hand-Block Print</strong></div>
+                <div><span class="text-muted-foreground">Pattern:</span> <strong id="pdp-spec-pattern" class="text-foreground">Printed Motif</strong></div>
                 <div><span class="text-muted-foreground">Sleeve:</span> <strong id="pdp-spec-sleeve" class="text-foreground">3/4th Sleeves</strong></div>
-                <div><span class="text-muted-foreground">Neckline:</span> <strong id="pdp-spec-neck" class="text-foreground">Mandarin Collar</strong></div>
+                <div><span class="text-muted-foreground">Neckline:</span> <strong id="pdp-spec-neck" class="text-foreground">Round Neck</strong></div>
               </div>
             </div>
           </details>
@@ -240,11 +241,11 @@
           <!-- Accordion 2: Fabric & Care -->
           <details class="group border-b border-border/80 pb-3" open>
             <summary class="flex justify-between items-center font-display text-base font-semibold text-foreground cursor-pointer list-none">
-              <span>Fabric &amp; Care Instructions</span>
+              <span>Garment &amp; Care Instructions</span>
               <span class="group-open:rotate-180 transition-transform">▼</span>
             </summary>
             <div class="mt-2 space-y-1 text-muted-foreground leading-relaxed">
-              <p><strong>Fabric:</strong> <span id="pdp-fabric-text">100% Pure Cambric Cotton</span></p>
+              <p><strong>Weave &amp; Feel:</strong> <span id="pdp-fabric-text">Soft Breathable Weave</span></p>
               <p><strong>Wash Care:</strong> <span id="pdp-care-text">Hand wash separately in cold water with mild detergent. Line dry in shade.</span></p>
             </div>
           </details>
@@ -267,44 +268,47 @@
     </div>
 
     <!-- Related Kurtis Section -->
-    <section class="mt-20 border-t border-border/80 pt-12">
-      <div class="flex items-center justify-between mb-6">
+    <section class="mt-16 sm:mt-20 border-t border-border/80 pt-10 sm:pt-12">
+      <div class="flex items-end justify-between mb-6 gap-2">
         <div>
-          <p class="font-hand text-base text-primary">curated pairings</p>
+          <p class="mn-eyebrow mn-eyebrow-left mb-1">Curated Pairings</p>
           <h2 class="font-display text-3xl font-semibold">You May Also Like</h2>
         </div>
-        <a href="shop.html" class="font-hand text-primary text-base hover:underline">view collection →</a>
+        <a href="shop.html" class="text-xs uppercase tracking-[0.14em] font-semibold text-primary hover:underline whitespace-nowrap">View Collection →</a>
       </div>
-      <div class="grid grid-cols-2 gap-4 sm:gap-6 lg:grid-cols-4" id="pdp-related-grid">
+      <div class="grid grid-cols-2 mn-mobile-grid-tight gap-3.5 sm:gap-6 lg:grid-cols-4" id="pdp-related-grid">
         <!-- Loaded by JS -->
       </div>
     </section>
 
     <!-- Recently Viewed Kurtis Section -->
-    <section id="pdp-recently-viewed-section" class="hidden mt-16 border-t border-border/80 pt-12">
+    <section id="pdp-recently-viewed-section" class="hidden mt-14 sm:mt-16 border-t border-border/80 pt-10 sm:pt-12">
       <div class="flex items-center justify-between mb-6">
         <div>
-          <p class="font-hand text-base text-primary">your browsing history</p>
+          <p class="mn-eyebrow mn-eyebrow-left mb-1">Your Browsing History</p>
           <h2 class="font-display text-3xl font-semibold">Recently Viewed</h2>
         </div>
       </div>
-      <div class="grid grid-cols-2 gap-4 sm:gap-6 lg:grid-cols-4" id="pdp-recently-viewed-grid">
+      <div class="grid grid-cols-2 mn-mobile-grid-tight gap-3.5 sm:gap-6 lg:grid-cols-4" id="pdp-recently-viewed-grid">
         <!-- Loaded by JS -->
       </div>
     </section>
   </main>
 
   <!-- Sticky Mobile Bottom Purchase Bar (< 640px) -->
-  <div id="pdp-mobile-sticky-bar" class="sm:hidden fixed bottom-0 left-0 right-0 z-40 bg-card/95 backdrop-blur-md border-t border-border px-4 py-2.5 flex items-center justify-between gap-3 shadow-2xl">
-    <div class="min-w-0">
-      <p id="pdp-sticky-name" class="text-xs font-semibold truncate">Gulmohar Straight Kurti</p>
-      <p id="pdp-sticky-price" class="font-display text-lg font-bold text-primary">₹1,299</p>
+  <div id="pdp-mobile-sticky-bar" class="sm:hidden fixed bottom-0 left-0 right-0 z-40 px-3.5 py-2.5 flex items-center justify-between gap-2.5">
+    <div class="min-w-0 flex-1">
+      <p id="pdp-sticky-name" class="text-xs font-semibold font-sans text-foreground truncate">Gulmohar Straight Kurti</p>
+      <div class="flex items-center gap-2 mt-0.5">
+        <span id="pdp-sticky-price" class="mn-price text-base text-primary">₹1,299</span>
+        <span id="pdp-sticky-size-badge" class="text-[10px] font-sans uppercase tracking-wider bg-primary/10 text-primary border border-primary/25 px-1.5 py-0.5 rounded-[2px]">Size: M</span>
+      </div>
     </div>
-    <div class="flex items-center gap-2 shrink-0">
-      <button type="button" onclick="document.getElementById('pdp-add-to-bag-btn').click()" class="bg-primary text-primary-foreground px-4 py-2.5 text-xs uppercase tracking-wider font-semibold cursor-pointer">
+    <div class="flex items-center gap-1.5 shrink-0">
+      <button type="button" onclick="document.getElementById('pdp-add-to-bag-btn').click()" class="bg-primary text-primary-foreground px-3.5 py-2.5 text-[11px] uppercase tracking-wider font-semibold cursor-pointer rounded-[2px]">
         Add to Bag
       </button>
-      <button type="button" onclick="document.getElementById('pdp-buy-now-btn').click()" class="bg-foreground text-background px-3.5 py-2.5 text-xs uppercase tracking-wider font-semibold cursor-pointer">
+      <button type="button" onclick="document.getElementById('pdp-buy-now-btn').click()" class="bg-foreground text-background px-3 py-2.5 text-[11px] uppercase tracking-wider font-semibold cursor-pointer rounded-[2px]">
         Buy Now
       </button>
     </div>
@@ -354,8 +358,8 @@
       <div class="font-hand text-lg space-y-1">
         <a class="block hover:text-primary transition" href="index.html">Home</a>
         <a class="block hover:text-primary transition active text-primary" href="shop.html">Shop Catalog</a>
-        <a class="block hover:text-primary transition" href="story.html">Our Craft Story</a>
-        <a class="block hover:text-primary transition" href="contact.html">Studio Contact</a>
+        <a class="block hover:text-primary transition" href="story.html">Our Story</a>
+        <a class="block hover:text-primary transition" href="contact.html">Contact Support</a>
       </div>
       <div class="text-xs text-muted-foreground font-sans space-y-1">
         <p>hello@naari.in · +91 88493 66915</p>
@@ -379,21 +383,24 @@
       const params = new URLSearchParams(window.location.search);
       const pid = params.get('id') || 'straight';
 
+      // Render immediately from built-in catalog so PDP appears at 0ms
+      const initialProduct = sanitizeProductRecord(PRODUCTS.find(p => p.id === pid) || PRODUCTS[0]);
+      if (initialProduct) {
+        currentProduct = initialProduct;
+        renderProduct(initialProduct, null, PRODUCTS.filter(p => p.id !== initialProduct.id));
+      }
+
       loadActivePdpCoupons();
 
       try {
         const resp = await fetch(`${API_BASE}/api/products/${pid}`);
         const data = await resp.json();
         if (data.ok && data.product) {
-          currentProduct = data.product;
-          renderProduct(data.product, data.size_chart, data.related_products);
+          currentProduct = sanitizeProductRecord(data.product);
+          renderProduct(currentProduct, data.size_chart, data.related_products);
           return;
         }
       } catch (e) {}
-
-      // Fallback
-      currentProduct = PRODUCTS.find(p => p.id === pid) || PRODUCTS[0];
-      renderProduct(currentProduct, null, PRODUCTS.filter(p => p.id !== currentProduct.id));
     }
 
     async function loadActivePdpCoupons() {
@@ -409,15 +416,20 @@
           return;
         }
         box.classList.remove('hidden');
-        listEl.innerHTML = coupons.slice(0, 3).map((cp, idx) => `
+        listEl.innerHTML = coupons.slice(0, 3).map((cp, idx) => {
+          const cleanDesc = cp.code === 'NAARI10'
+            ? 'Extra 10% OFF on kurtis, Anarkalis, and co-ord sets (Min order ₹999)'
+            : (cp.description || (cp.discount_type === 'percentage' ? cp.discount_value + '% OFF' : 'Flat ₹' + cp.discount_value + ' OFF') + (cp.min_order_value ? ' (Min order ₹' + cp.min_order_value + ')' : ''));
+          return `
           <div class="flex items-center justify-between ${idx < Math.min(coupons.length, 3) - 1 ? 'border-b border-primary/10 pb-1.5' : ''}">
             <div>
               <strong class="font-mono text-primary font-bold">${cp.code}</strong>
-              <p class="text-muted-foreground text-[11px]">${cp.description || (cp.discount_type === 'percentage' ? cp.discount_value + '% OFF' : 'Flat ₹' + cp.discount_value + ' OFF')}${cp.min_order_value ? ' (Min order ₹' + cp.min_order_value + ')' : ''}</p>
+              <p class="text-muted-foreground text-[11px]">${cleanDesc}</p>
             </div>
             <button type="button" class="copy-coupon-btn text-xs font-hand text-primary hover:underline cursor-pointer shrink-0 ml-2" data-code="${cp.code}">Copy Code</button>
           </div>
-        `).join('');
+        `;
+        }).join('');
         listEl.querySelectorAll('.copy-coupon-btn').forEach(btn => {
           btn.addEventListener('click', () => {
             const code = btn.dataset.code;
@@ -430,7 +442,9 @@
       }
     }
 
-    function renderProduct(p, sizeChart, related) {
+    function renderProduct(rawProduct, sizeChart, related) {
+      const p = sanitizeProductRecord(rawProduct);
+      currentProduct = p;
       document.title = `${p.name} — Matra Naari`;
 
       // Record in recently viewed after capturing previous history
@@ -441,7 +455,7 @@
       document.getElementById('pdp-crumb-category').textContent = p.category;
       document.getElementById('pdp-crumb-name').textContent = p.name;
       document.getElementById('pdp-category-tag').textContent = p.category;
-      document.getElementById('pdp-style-tag').textContent = p.style || p.occasion || 'Handcrafted Ethnic Wear';
+      document.getElementById('pdp-style-tag').textContent = p.style || p.occasion || 'Indian Ethnic Wear';
       document.getElementById('pdp-title').textContent = p.name;
       document.getElementById('pdp-sku-label').textContent = `SKU: NAARI-${(p.id || 'KRT').toUpperCase()}`;
       document.getElementById('pdp-price').textContent = formatPrice(p.price);
@@ -486,12 +500,12 @@
 
       // Accordion Details & Specifications
       document.getElementById('pdp-desc-text').textContent = p.description || p.note;
-      document.getElementById('pdp-fabric-text').textContent = p.fabric || '100% Pure Breathable Cotton';
+      document.getElementById('pdp-fabric-text').textContent = p.fabric || 'Soft Breathable Weave';
       document.getElementById('pdp-care-text').textContent = p.care || 'Gentle hand wash cold. Dry in shade.';
       document.getElementById('pdp-spec-category').textContent = p.category || 'Kurti';
       document.getElementById('pdp-spec-style').textContent = p.style || p.category || 'Straight Cut';
       document.getElementById('pdp-spec-occasion').textContent = p.occasion || 'Everyday & Festive';
-      document.getElementById('pdp-spec-pattern').textContent = p.pattern || 'Artisan Hand-Block / Woven';
+      document.getElementById('pdp-spec-pattern').textContent = p.pattern || 'Printed Motif';
       document.getElementById('pdp-spec-sleeve').textContent = p.sleeve_length || '3/4th Sleeves';
       document.getElementById('pdp-spec-neck').textContent = p.neck_design || 'Classic Ethnic Neckline';
 
@@ -521,14 +535,20 @@
       const sizes = p.sizes || ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
       const soldOut = p.soldOutSizes || (p.sold_out_sizes_json ? JSON.parse(p.sold_out_sizes_json || '[]') : []);
       const availSizes = sizes.filter(s => !soldOut.includes(s));
-      selectedSize = availSizes.length === 1 ? availSizes[0] : '';
+      if (!selectedSize || !availSizes.includes(selectedSize)) {
+        selectedSize = availSizes.includes('M') ? 'M' : (availSizes[0] || '');
+      }
+      const stickySizeBadge = document.getElementById('pdp-sticky-size-badge');
+      if (stickySizeBadge) {
+        stickySizeBadge.textContent = selectedSize ? `Size: ${selectedSize}` : 'Select Size';
+      }
       const sizeContainer = document.getElementById('pdp-sizes-list');
       sizeContainer.innerHTML = sizes.map(sz => {
         const isSold = soldOut.includes(sz);
         return `
           <button
             type="button"
-            class="size-pill border px-3.5 py-2 text-xs font-semibold rounded-xs cursor-pointer ${isSold ? 'opacity-40 cursor-not-allowed line-through' : ''} ${selectedSize === sz ? 'selected' : 'border-border'}"
+            class="size-pill border min-w-[44px] min-h-[40px] px-3.5 py-2 text-xs font-semibold font-sans rounded-xs cursor-pointer transition ${isSold ? 'opacity-40 cursor-not-allowed line-through' : ''} ${selectedSize === sz ? 'selected' : 'border-border'}"
             ${isSold ? 'disabled' : ''}
             onclick="onPdpSizeSelect('${sz}', this)"
           >
@@ -610,6 +630,10 @@
       document.getElementById('pdp-size-error').classList.add('hidden');
       document.querySelectorAll('#pdp-sizes-list button').forEach(b => b.classList.remove('selected'));
       btn.classList.add('selected');
+      const stickySizeBadge = document.getElementById('pdp-sticky-size-badge');
+      if (stickySizeBadge) {
+        stickySizeBadge.textContent = `Size: ${sz}`;
+      }
     }
 
     function updatePdpWishlistState() {

@@ -41,7 +41,8 @@ const PRODUCTS = [
     id: 'straight',
     name: 'Gulmohar Straight Kurti',
     category: 'Straight Cut',
-    note: 'Everyday ease, hand block-printed on fine cotton.',
+    style: 'Straight Kurta',
+    note: 'Tailored straight silhouette with side slits for everyday ease.',
     image: 'assets/hero.jpg',
     relativeImage: 'assets/hero.jpg',
     price: 1299,
@@ -58,7 +59,8 @@ const PRODUCTS = [
     id: 'aline',
     name: 'Chandni A-Line Kurti',
     category: 'A-Line',
-    note: 'A soft flare with delicate thread work.',
+    style: 'Flared A-Line',
+    note: 'Graceful A-line flare with clean tone-on-tone detailing.',
     image: 'assets/k-aline.jpg',
     relativeImage: 'assets/k-aline.jpg',
     price: 1499,
@@ -74,7 +76,8 @@ const PRODUCTS = [
     id: 'anarkali',
     name: 'Genda Anarkali Kurta',
     category: 'Anarkali',
-    note: 'Twirl-worthy mulmul flair with gold gota details.',
+    style: 'Flared Anarkali',
+    note: 'Flowing flared Anarkali silhouette for festive celebrations.',
     image: 'assets/k-anarkali.jpg',
     relativeImage: 'assets/k-anarkali.jpg',
     price: 2499,
@@ -93,7 +96,8 @@ const PRODUCTS = [
     id: 'short',
     name: 'Neel Short Kurti',
     category: 'Short Kurti',
-    note: 'Pair it with denims or linen pants, own the day.',
+    style: 'Everyday Tunic',
+    note: 'Pair it with denims or trousers for effortless daily style.',
     image: 'assets/k-short.jpg',
     relativeImage: 'assets/k-short.jpg',
     price: 899,
@@ -110,7 +114,8 @@ const PRODUCTS = [
     id: 'angrakha',
     name: 'Tulsi Angrakha',
     category: 'Angrakha',
-    note: 'Overlap wrap silhouette with handmade tassel ties.',
+    style: 'Wrap Angrakha',
+    note: 'Classic overlap wrap silhouette with side tassel ties.',
     image: 'assets/k-angrakha.jpg',
     relativeImage: 'assets/k-angrakha.jpg',
     price: 1799,
@@ -126,7 +131,8 @@ const PRODUCTS = [
     id: 'kaftan',
     name: 'Sandhya Kaftan Kurti',
     category: 'Kaftan',
-    note: 'Breezy relaxed kaftan with drawstring waist.',
+    style: 'Relaxed Kaftan',
+    note: 'Breezy relaxed kaftan with adjustable drawstring waist.',
     image: 'assets/k-kaftan.jpg',
     relativeImage: 'assets/k-kaftan.jpg',
     price: 1599,
@@ -143,7 +149,8 @@ const PRODUCTS = [
     id: 'coord',
     name: 'Gulabi Kurta Set',
     category: 'Co-ord Set',
-    note: 'Kurta and pants, crafted in matching elegance.',
+    style: '2-Piece Kurta Set',
+    note: 'Coordinated kurta and trousers in matching elegance.',
     image: 'assets/k-coord.jpg',
     relativeImage: 'assets/k-coord.jpg',
     price: 2199,
@@ -317,8 +324,6 @@ function trackRecentlyViewed(product) {
       sizes: product.sizes || ['XS', 'S', 'M', 'L', 'XL'],
       soldOutSizes: product.soldOutSizes || [],
       colors: product.colors || [{ name: 'Maroon', swatch: '#6B2D31' }],
-      is_new: product.is_new || 0,
-      is_bestseller: product.is_bestseller || 0,
       stock: product.stock !== undefined ? product.stock : 25
     });
     localStorage.setItem(RECENTLY_VIEWED_KEY, JSON.stringify(list.slice(0, 8)));
@@ -335,47 +340,115 @@ function getRecentlyViewed(excludeId = '') {
   }
 }
 
+// Verified Product Copy Registry (ensures only verified product attributes are displayed)
+const VERIFIED_PRODUCT_COPY = {
+  straight: {
+    style: 'Straight Kurta',
+    occasion: 'Everyday & Workwear',
+    pattern: 'Printed Motif',
+    fabric: 'Soft Breathable Weave',
+    description: 'Tailored straight silhouette with side slits and a classic round neck for everyday ease.'
+  },
+  aline: {
+    style: 'Flared A-Line',
+    occasion: 'Work & Semi-Festive',
+    pattern: 'Tone-on-Tone Detail',
+    fabric: 'Soft Breathable Weave',
+    description: 'Graceful A-line flare silhouette with subtle tone-on-tone detailing for workdays or gatherings.'
+  },
+  anarkali: {
+    style: 'Flared Anarkali',
+    occasion: 'Festive & Celebrations',
+    pattern: 'Festive Border & Floral',
+    fabric: 'Lightweight Flowing Weave',
+    description: 'Flowing flared Anarkali silhouette with classic border accents and side tassel ties for festive occasions.'
+  },
+  short: {
+    style: 'Everyday Tunic',
+    occasion: 'Everyday & Workwear',
+    pattern: 'Classic Motif Print',
+    fabric: 'Soft Breathable Weave',
+    description: 'Chic everyday short tunic with classic motif print. Style effortlessly over straight denims or trousers.'
+  },
+  angrakha: {
+    style: 'Wrap Angrakha',
+    occasion: 'Festive & Celebrations',
+    pattern: 'Classic Border Detail',
+    fabric: 'Textured Breathable Weave',
+    description: 'Classic crossover overlap silhouette featuring side tassel ties and an asymmetrical border.'
+  },
+  kaftan: {
+    style: 'Relaxed Kaftan',
+    occasion: 'Resort & Everyday',
+    pattern: 'Printed Motif',
+    fabric: 'Soft Fluid Drape',
+    description: 'Breezy relaxed kaftan with an adjustable waist drawstring and tassel details for effortless comfort.'
+  },
+  coord: {
+    style: '2-Piece Kurta Set',
+    occasion: 'Work & Semi-Festive',
+    pattern: 'Coordinated Set',
+    fabric: 'Soft Tailored Weave',
+    description: 'Coordinated 2-piece set including a calf-length straight kurta and matching trousers with pockets.'
+  }
+};
+
+function sanitizeProductRecord(p) {
+  if (!p) return p;
+  const verified = VERIFIED_PRODUCT_COPY[p.id];
+  if (!verified) return p;
+  return {
+    ...p,
+    style: verified.style,
+    occasion: verified.occasion,
+    pattern: verified.pattern,
+    fabric: verified.fabric,
+    description: verified.description,
+    note: verified.description
+  };
+}
+
 // ================= Shared Product Card Renderer =================
-function renderProductCard(p) {
+function renderProductCard(rawProduct) {
+  const p = sanitizeProductRecord(rawProduct);
   const isSaved = isInWishlist(p.id);
   const imgSrc = p.relative_image || p.image || p.relativeImage || 'assets/hero.jpg';
   const disc = p.discountPercent || (p.mrp > p.price ? Math.round(((p.mrp - p.price) / p.mrp) * 100) : 0);
-  const availSizes = (p.sizes || ['XS', 'S', 'M', 'L', 'XL']).filter(s => !(p.soldOutSizes || []).includes(s));
-  const outOfStock = p.stock !== undefined && p.stock <= 0;
-  const subMeta = [p.category, p.fabric].filter(Boolean).join(' · ');
+  const allSizes = p.sizes || ['XS', 'S', 'M', 'L', 'XL'];
+  const soldOutList = p.soldOutSizes || [];
+  const availSizes = allSizes.filter(s => !soldOutList.includes(s));
+  const defaultSize = availSizes.includes('M') ? 'M' : (availSizes[0] || 'M');
+  const outOfStock = (p.stock !== undefined && p.stock <= 0) || availSizes.length === 0;
+  const subMeta = [p.category, p.style].filter(Boolean).join(' · ');
 
   let badgeHtml = '';
   if (outOfStock) {
-    badgeHtml = `<span class="bg-foreground text-background px-2 py-0.5 text-[10px] uppercase tracking-widest font-semibold shadow-sm">Sold Out</span>`;
-  } else if (p.is_bestseller) {
-    badgeHtml = `<span class="bg-primary text-primary-foreground px-2 py-0.5 text-[10px] uppercase tracking-widest font-semibold shadow-sm">Bestseller</span>`;
-  } else if (p.is_new) {
-    badgeHtml = `<span class="bg-accent text-accent-foreground px-2 py-0.5 text-[10px] uppercase tracking-widest font-semibold shadow-sm">New Arrival</span>`;
+    badgeHtml = `<span class="mn-product-badge bg-foreground text-background shadow-xs">Sold Out</span>`;
   }
 
   return `
-    <article class="group flex flex-col bg-card/50 ring-1 ring-border rounded-sm overflow-hidden hover:shadow-lg transition duration-300" data-product-id="${p.id}">
-      <div class="relative aspect-[3/4] overflow-hidden bg-muted">
+    <article class="mn-product-card group" data-product-id="${p.id}">
+      <div class="mn-product-card-media">
         <a href="product.html?id=${p.id}" class="block h-full w-full">
           <img
             src="${imgSrc}"
             alt="${p.name}"
             loading="lazy"
+            decoding="async"
             onerror="this.onerror=null;this.src='assets/hero.jpg';"
-            class="h-full w-full object-cover transition duration-700 group-hover:scale-105"
           />
         </a>
 
         <!-- Top Badges (Only shown when justified by actual data) -->
         <div class="absolute top-2.5 left-2.5 flex flex-col gap-1 pointer-events-none">
           ${badgeHtml}
-          ${disc > 0 ? `<span class="bg-card/95 text-primary px-2 py-0.5 text-[10px] font-bold tracking-wider shadow-sm border border-primary/20">${disc}% OFF</span>` : ''}
+          ${disc > 0 ? `<span class="mn-product-badge bg-card/95 text-primary border border-primary/25 shadow-xs">${disc}% OFF</span>` : ''}
         </div>
 
         <!-- Wishlist Toggle Button -->
         <button
           type="button"
-          class="wishlist-toggle-btn absolute top-2.5 right-2.5 h-9 w-9 rounded-full bg-card/90 backdrop-blur-sm flex items-center justify-center text-foreground hover:text-primary shadow transition cursor-pointer ${isSaved ? 'active' : ''}"
+          class="wishlist-toggle-btn absolute top-2.5 right-2.5 h-9 w-9 rounded-full bg-card/92 backdrop-blur-sm border border-border/70 flex items-center justify-center text-foreground hover:text-primary hover:border-primary/40 shadow-xs transition cursor-pointer ${isSaved ? 'active' : ''}"
           data-product-id="${p.id}"
           aria-label="Save ${p.name} to wishlist"
         >
@@ -385,36 +458,48 @@ function renderProductCard(p) {
         </button>
 
         <!-- Quick Add to Bag Overlay -->
-        <div class="quick-add-bar absolute inset-x-0 bottom-0 p-2.5 bg-gradient-to-t from-black/75 via-black/40 to-transparent flex flex-col gap-1.5">
+        <div class="quick-add-bar absolute inset-x-0 bottom-0 p-2 sm:p-2.5 bg-gradient-to-t from-black/75 via-black/35 to-transparent flex flex-col gap-1.5">
           ${outOfStock ? `
-            <span class="w-full bg-muted text-muted-foreground py-2 text-[11px] uppercase tracking-[0.15em] font-semibold text-center">Out of Stock</span>
+            <span class="mn-quick-add-btn w-full bg-muted/95 text-muted-foreground py-2 text-center flex items-center justify-center">Out of Stock</span>
           ` : `
             <button
               type="button"
-              class="card-quick-add-btn w-full bg-card/95 hover:bg-primary hover:text-primary-foreground text-foreground py-2 text-[11px] uppercase tracking-[0.15em] font-semibold transition shadow cursor-pointer"
+              class="card-quick-add-btn mn-quick-add-btn w-full bg-card/95 hover:bg-primary hover:text-primary-foreground text-foreground py-2 px-2.5 shadow-sm flex items-center justify-center cursor-pointer"
               data-id="${p.id}"
+              data-selected-size="${defaultSize}"
             >
-              + Quick Add (${availSizes[0] || 'M'})
+              + Quick Add (${defaultSize})
             </button>
           `}
         </div>
       </div>
 
-      <!-- Product Details -->
-      <div class="p-3.5 flex-1 flex flex-col justify-between bg-card/40">
+      <!-- Product Details (Manrope UI & Commerce Typography) -->
+      <div class="mn-product-card-body p-3 sm:p-3.5 flex-1 flex flex-col justify-between bg-card/45">
         <div>
-          <p class="text-[10px] uppercase tracking-[0.16em] text-muted-foreground truncate">${subMeta}</p>
-          <a href="product.html?id=${p.id}" class="mt-0.5 block font-display text-lg font-semibold leading-snug hover:text-primary transition truncate">${p.name}</a>
+          <p class="mn-product-category truncate">${subMeta}</p>
+          <a href="product.html?id=${p.id}" class="mn-product-title mt-1 block hover:text-primary transition">${p.name}</a>
+          ${p.shortDesc ? `<p class="mn-product-subtitle mt-0.5">${p.shortDesc}</p>` : ''}
         </div>
 
-        <div class="mt-2 pt-2 border-t border-border/50">
-          <div class="flex items-baseline gap-2 flex-wrap">
-            <span class="font-display text-lg font-semibold text-primary">${formatPrice(p.price)}</span>
-            ${p.mrp && p.mrp > p.price ? `<span class="text-xs line-through text-muted-foreground">${formatPrice(p.mrp)}</span>` : ''}
-            ${disc > 0 ? `<span class="text-[11px] font-semibold text-emerald-800">(${disc}% OFF)</span>` : ''}
+        <div class="mt-2.5 pt-2 border-t border-border/60">
+          <div class="flex items-baseline gap-1.5 sm:gap-2 flex-wrap">
+            <span class="mn-price text-sm sm:text-base text-primary">${formatPrice(p.price)}</span>
+            ${p.mrp && p.mrp > p.price ? `<span class="text-[11px] line-through text-muted-foreground tabular-nums">${formatPrice(p.mrp)}</span>` : ''}
+            ${disc > 0 ? `<span class="text-[10px] font-semibold text-emerald-800 tracking-wide uppercase">${disc}% OFF</span>` : ''}
           </div>
-          <div class="mt-1.5 flex items-center justify-between gap-1 text-[11px] text-muted-foreground">
-            <span class="truncate">Sizes: <strong class="text-foreground font-normal">${availSizes.join(', ') || 'Sold Out'}</strong></span>
+          <div class="mt-2 flex items-center justify-between gap-1 text-[11px] text-muted-foreground">
+            <div class="flex items-center gap-1 flex-wrap" aria-label="Available sizes">
+              ${availSizes.length > 0 ? availSizes.slice(0, 5).map(sz => `
+                <button
+                  type="button"
+                  class="card-size-pill px-1.5 py-0.5 text-[10px] font-medium rounded-[2px] border transition cursor-pointer ${sz === defaultSize ? 'border-primary bg-primary/10 text-primary font-semibold' : 'border-border/80 bg-background/70 text-foreground/80 hover:border-primary/60'}"
+                  data-product-id="${p.id}"
+                  data-size="${sz}"
+                  title="Select size ${sz}"
+                >${sz}</button>
+              `).join('') : '<span class="text-[10px] text-muted-foreground">Sold Out</span>'}
+            </div>
             ${(p.colors && p.colors.length > 0) ? `
               <span class="flex items-center gap-1 shrink-0" title="${p.colors.map(c => c.name).join(', ')}">
                 ${p.colors.slice(0, 3).map(c => `<span class="inline-block h-2.5 w-2.5 rounded-full ring-1 ring-border" style="background:${c.swatch}"></span>`).join('')}
@@ -441,6 +526,25 @@ function attachProductCardEvents(container, catalogList) {
     });
   });
 
+  container.querySelectorAll('.card-size-pill').forEach(pill => {
+    pill.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const sz = pill.dataset.size;
+      const card = pill.closest('.mn-product-card');
+      if (!card || !sz) return;
+      card.querySelectorAll('.card-size-pill').forEach(b => {
+        const active = b.dataset.size === sz;
+        b.className = `card-size-pill px-1.5 py-0.5 text-[10px] font-medium rounded-[2px] border transition cursor-pointer ${active ? 'border-primary bg-primary/10 text-primary font-semibold' : 'border-border/80 bg-background/70 text-foreground/80 hover:border-primary/60'}`;
+      });
+      const quickBtn = card.querySelector('.card-quick-add-btn');
+      if (quickBtn) {
+        quickBtn.dataset.selectedSize = sz;
+        quickBtn.textContent = `+ Quick Add (${sz})`;
+      }
+    });
+  });
+
   container.querySelectorAll('.card-quick-add-btn').forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.preventDefault();
@@ -453,11 +557,14 @@ function attachProductCardEvents(container, catalogList) {
           getToast().error('Sorry, this kurti is currently out of stock.');
           return;
         }
+        const chosenSize = btn.dataset.selectedSize && availSizes.includes(btn.dataset.selectedSize)
+          ? btn.dataset.selectedSize
+          : (availSizes.includes('M') ? 'M' : (availSizes[0] || 'M'));
         addToCart({
           id: prod.id,
           name: prod.name,
           color: prod.colors && prod.colors[0] ? prod.colors[0].name : 'Standard',
-          size: availSizes[0] || 'M',
+          size: chosenSize,
           price: prod.price,
           mrp: prod.mrp,
           image: prod.relative_image || prod.image || prod.relativeImage,
@@ -904,10 +1011,10 @@ function injectGlobalStorefrontShell() {
       <nav id="mobile-nav-drawer-panel" aria-label="Mobile Navigation" class="drawer-panel absolute top-0 left-0 h-full w-[85vw] max-w-xs bg-card shadow-2xl flex flex-col transform -translate-x-full transition-transform duration-300">
         <div class="flex items-center justify-between border-b border-border px-5 py-4 bg-background/95">
           <a href="index.html" class="flex items-center gap-2.5">
-            <img src="logo.png" alt="Matra Naari" class="h-9 w-9 object-contain" onerror="this.style.display='none'"/>
+            <img src="images/naari-logo.png" alt="Matra Naari" class="h-9 w-9 object-contain shrink-0" onerror="this.style.display='none'"/>
             <div class="leading-none">
               <div class="font-display text-lg tracking-[0.18em] font-semibold text-primary">MATRA NAARI</div>
-              <div class="font-hand text-xs text-muted-foreground -mt-0.5">kesar obligations</div>
+              <div class="mn-editorial-accent text-xs text-muted-foreground -mt-0.5">Woven with Meaning</div>
             </div>
           </a>
           <button type="button" id="close-mobile-nav-btn" class="p-2 text-muted-foreground hover:text-primary transition cursor-pointer" aria-label="Close Menu">
@@ -923,8 +1030,8 @@ function injectGlobalStorefrontShell() {
             <p class="text-[10px] uppercase tracking-[0.2em] text-muted-foreground font-semibold mb-2">Explore Store</p>
             <a href="index.html" class="flex items-center justify-between py-2.5 text-sm font-medium border-b border-border/50 hover:text-primary">Home <span>→</span></a>
             <a href="shop.html" class="flex items-center justify-between py-2.5 text-sm font-semibold text-primary border-b border-border/50">All Kurtis Collection <span>→</span></a>
-            <a href="shop.html?sort=newest" class="flex items-center justify-between py-2.5 text-sm font-medium border-b border-border/50 hover:text-primary">New Arrivals <span class="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded">NEW</span></a>
-            <a href="shop.html?sort=bestseller" class="flex items-center justify-between py-2.5 text-sm font-medium border-b border-border/50 hover:text-primary">Bestsellers <span>★</span></a>
+            <a href="shop.html?category=Anarkali" class="flex items-center justify-between py-2.5 text-sm font-medium border-b border-border/50 hover:text-primary">Festive &amp; Occasion Wear <span>→</span></a>
+            <a href="shop.html?category=Co-ord Set" class="flex items-center justify-between py-2.5 text-sm font-medium border-b border-border/50 hover:text-primary">Co-ord Sets &amp; Kaftans <span>→</span></a>
           </div>
 
           <div>
@@ -1099,7 +1206,7 @@ function injectGlobalStorefrontShell() {
         </div>
         <!-- Live search results container -->
         <div id="global-search-results" class="max-h-[60vh] overflow-y-auto p-4 space-y-2">
-          <p class="text-center text-sm text-muted-foreground py-6 font-hand">Type above to search our handcrafted collection ✿</p>
+          <p class="text-center text-sm text-muted-foreground py-6 font-hand">Type above to search our kurti collection ✿</p>
         </div>
       </div>
     </div>
@@ -1593,7 +1700,7 @@ function attachGlobalShellEvents() {
       clearTimeout(searchDebounce);
       const query = searchInput.value.trim().toLowerCase();
       if (!query) {
-        searchResults.innerHTML = '<p class="text-center text-sm text-muted-foreground py-6 font-hand">Type above to search our handcrafted collection ✿</p>';
+        searchResults.innerHTML = '<p class="text-center text-sm text-muted-foreground py-6 font-hand">Type above to search our kurti collection ✿</p>';
         return;
       }
 
@@ -1614,12 +1721,14 @@ function attachGlobalShellEvents() {
             return;
           }
 
-          searchResults.innerHTML = items.map(p => `
+          searchResults.innerHTML = items.map(rawItem => {
+            const p = sanitizeProductRecord(rawItem);
+            return `
             <a href="product.html?id=${p.id}" class="flex items-center gap-3 p-2 hover:bg-primary/5 transition rounded-sm border border-transparent hover:border-border">
               <img src="${p.relative_image || p.image}" alt="${p.name}" onerror="this.onerror=null;this.src='assets/hero.jpg';" class="h-14 w-12 object-cover rounded-xs shrink-0"/>
               <div class="min-w-0 flex-1">
                 <p class="truncate text-sm font-semibold">${p.name}</p>
-                <p class="text-xs text-muted-foreground">${p.category} · ${p.fabric || 'Cotton'}</p>
+                <p class="text-xs text-muted-foreground">${p.category} · ${p.style || 'Indian Kurti'}</p>
                 <div class="flex items-center gap-2 mt-0.5">
                   <span class="font-display text-sm font-semibold text-primary">${formatPrice(p.price)}</span>
                   ${p.mrp ? `<span class="text-[11px] line-through text-muted-foreground">${formatPrice(p.mrp)}</span>` : ''}
@@ -1628,7 +1737,8 @@ function attachGlobalShellEvents() {
               </div>
               <span class="text-xs text-primary font-hand shrink-0">view →</span>
             </a>
-          `).join('');
+          `;
+          }).join('');
         } catch (e) {
           searchResults.innerHTML = '<p class="text-center text-xs text-destructive py-4">Error loading results. Please try again.</p>';
         }
@@ -1791,7 +1901,7 @@ async function initAnnouncementBar() {
   let messages = [
     'FREE EXPRESS SHIPPING ON ORDERS ABOVE ₹999 ACROSS INDIA ✿',
     'EXTRA 10% OFF ON ORDERS ABOVE ₹999 | CODE: NAARI10',
-    'HANDCRAFTED IN PURE COTTON & NATURAL FIBRES',
+    'THOUGHTFULLY TAILORED INDIAN KURTIS & CO-ORD SETS',
     'EASY 7-DAY HASSLE-FREE RETURNS & SIZE EXCHANGES'
   ];
 
@@ -1825,7 +1935,11 @@ async function initAnnouncementBar() {
           const descEl = bannerEl.querySelector('.promo-coupon-desc');
           const copyBtn = bannerEl.querySelector('[data-copy-coupon]');
           if (codeEl) codeEl.textContent = cp.code;
-          if (descEl && cp.description) descEl.textContent = cp.description;
+          if (descEl && cp.description) {
+            descEl.textContent = cp.code === 'NAARI10'
+              ? 'Extra 10% OFF on kurtis, Anarkalis, and co-ord sets (orders above ₹999)'
+              : cp.description;
+          }
           if (copyBtn) copyBtn.setAttribute('data-copy-coupon', cp.code);
         }
       });
@@ -1835,7 +1949,11 @@ async function initAnnouncementBar() {
         return;
       }
       if (data.announcements && data.announcements.length > 0) {
-        messages = data.announcements;
+        messages = data.announcements.map(m =>
+          /^HAND/i.test(String(m || '').trim())
+            ? 'THOUGHTFULLY TAILORED INDIAN KURTIS & CO-ORD SETS'
+            : m
+        );
       }
     }
   } catch (e) {}
@@ -1860,6 +1978,40 @@ async function initAnnouncementBar() {
   }
 }
 
+// ================= Restrained 60fps Editorial Reveal Helper =================
+function initEditorialReveals() {
+  try {
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      return;
+    }
+    if (!('IntersectionObserver' in window)) {
+      return;
+    }
+    const items = document.querySelectorAll('[data-mn-reveal]');
+    if (!items.length) return;
+    const vh = window.innerHeight || document.documentElement.clientHeight || 800;
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('mn-revealed');
+          observer.unobserve(entry.target);
+        }
+      });
+    }, { rootMargin: '0px 0px -6% 0px', threshold: 0.08 });
+
+    items.forEach((el) => {
+      const rect = el.getBoundingClientRect();
+      // Never hide elements already in or near the initial viewport
+      if (rect.top < vh * 0.92) {
+        el.classList.add('mn-revealed');
+      } else {
+        el.classList.add('mn-reveal-ready');
+        observer.observe(el);
+      }
+    });
+  } catch (e) {}
+}
+
 // ================= Auto Initialization on Page Load =================
 function initStorefrontApp() {
   if (window.__NAARI_APP_INITIALIZED__) return;
@@ -1870,6 +2022,11 @@ function initStorefrontApp() {
   updateWishlistHeartButtons();
   initAnnouncementBar();
   syncCustomerSessionWithServer();
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initEditorialReveals, { once: true });
+  } else {
+    initEditorialReveals();
+  }
 }
 
 if (document.readyState === 'loading') {

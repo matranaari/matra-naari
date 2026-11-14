@@ -6,13 +6,13 @@
   <link rel="icon" type="image/png" href="favicon.png"/>
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous"/>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Kalam:wght@300;400;700&family=Karla:wght@400;500;600&display=swap"/>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=Manrope:wght@400;500;600;700&display=swap"/>
   <link rel="stylesheet" href="assets/styles.css"/>
   <!-- Leaflet Interactive Map (OpenStreetMap) -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-  <title>Checkout — Naari</title>
-  <meta name="description" content="Secure checkout for your Naari order."/>
+  <title>Checkout — Matra Naari</title>
+  <meta name="description" content="Secure checkout for your Matra Naari order."/>
   <style>
     body {
       background-image: url('images/paper.jpg'), url('/images/paper.jpg');
@@ -40,40 +40,40 @@
       }
     }
     .leaflet-container {
-      font-family: 'Karla', sans-serif;
+      font-family: 'Manrope', sans-serif;
     }
   </style>
   <!-- Razorpay Standard Checkout SDK -->
   <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 </head>
-<body>
+<body class="text-foreground antialiased selection:bg-primary/20 selection:text-primary">
   <!-- Header -->
-  <header class="sticky top-0 z-30 border-b border-border/60 bg-background/85 backdrop-blur">
-    <div class="mx-auto flex max-w-6xl items-center justify-between px-5 py-2">
-      <a aria-label="Naari home" href="index.html">
-        <img src="images/naari-logo.png" alt="Naari" class="h-11 w-auto sm:h-14 mix-blend-multiply"/>
+  <header class="mn-site-header sticky top-0 z-30">
+    <div class="mx-auto flex max-w-6xl items-center justify-between px-4 py-2.5 sm:px-5 sm:py-3">
+      <a aria-label="Matra Naari home" href="index.html" class="shrink-0">
+        <img src="images/naari-logo.png" alt="Matra Naari" class="h-10 w-auto sm:h-12 mix-blend-multiply"/>
       </a>
-      <nav class="flex gap-5 font-hand text-lg sm:gap-8">
-        <a class="hidden text-foreground/80 hover:text-primary sm:inline" href="index.html">Home</a>
-        <a class="hidden text-foreground/80 hover:text-primary sm:inline" href="shop.html">Shop</a>
-        <a class="hidden text-foreground/80 hover:text-primary sm:inline" href="story.html">Our Story</a>
-        <a class="hidden text-foreground/80 hover:text-primary sm:inline" href="contact.html">Contact</a>
-        <a class="text-primary active !inline" href="cart.html">Bag (<span class="bag-count-badge">0</span>)</a>
+      <nav class="flex items-center gap-4 sm:gap-7 font-sans text-xs uppercase tracking-wider">
+        <a class="hidden text-foreground/80 hover:text-primary sm:inline mn-nav-link" href="index.html">Home</a>
+        <a class="hidden text-foreground/80 hover:text-primary sm:inline mn-nav-link" href="shop.html">Collections</a>
+        <a class="hidden text-foreground/80 hover:text-primary sm:inline mn-nav-link" href="story.html">Our Story</a>
+        <a class="hidden text-foreground/80 hover:text-primary sm:inline mn-nav-link" href="contact.html">Contact</a>
+        <a class="text-primary font-semibold active !inline" href="cart.html">Bag (<span class="bag-count-badge">0</span>)</a>
       </nav>
     </div>
   </header>
 
   <!-- Main Checkout Content -->
   <main>
-    <section class="mx-auto max-w-6xl px-4 py-10 sm:px-5 sm:py-14">
+    <section class="mx-auto max-w-6xl px-3.5 py-8 sm:px-5 sm:py-12">
       <!-- Breadcrumb / Header -->
-      <div class="mb-8 text-center sm:mb-12">
-        <p class="font-hand text-lg text-primary">seamless & secure</p>
-        <h1 class="text-4xl font-semibold sm:text-5xl">Checkout</h1>
-        <div class="mt-3 flex items-center justify-center gap-2 text-xs uppercase tracking-widest text-muted-foreground">
+      <div class="mb-7 text-center sm:mb-10">
+        <p class="mn-eyebrow mb-1">Seamless &amp; Assured</p>
+        <h1 class="font-display text-4xl font-semibold sm:text-5xl">Checkout</h1>
+        <div class="mt-2.5 flex items-center justify-center gap-2 text-[11px] uppercase tracking-[0.16em] text-muted-foreground font-sans">
           <a href="cart.html" class="hover:text-primary">Bag</a>
           <span>→</span>
-          <span class="text-primary font-medium">Delivery & Payment</span>
+          <span class="text-primary font-semibold">Delivery &amp; Payment</span>
           <span>→</span>
           <span>Confirmation</span>
         </div>
@@ -319,7 +319,7 @@
                     name="city"
                     type="text"
                     required
-                    placeholder="Jaipur"
+                    placeholder="City"
                     class="w-full border border-border bg-background px-3 py-2.5 text-sm outline-none focus:border-primary"
                   />
                 </div>
@@ -566,8 +566,8 @@
             </div>
 
             <div class="mt-6 rounded border border-dashed border-primary/40 bg-primary/5 p-3 text-xs text-foreground/80">
-              <p class="font-medium text-primary">✿ Naari Craft Promise</p>
-              <p class="mt-0.5">Every kurti is hand-finished with care and packed with eco-conscious materials.</p>
+              <p class="font-medium text-primary">✿ Matra Naari Assurance</p>
+              <p class="mt-0.5">Every order is carefully inspected and packed for safe pan-India delivery.</p>
             </div>
           </div>
         </div>
