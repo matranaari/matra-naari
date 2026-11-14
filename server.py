@@ -6877,27 +6877,403 @@ def serve_index():
     return send_from_directory(BASE_DIR, "index.html")
 
 
+SEO_VERIFIED_PRODUCTS = {
+    "straight": {
+        "name": "Gulmohar Straight Kurti",
+        "category": "Straight Cut",
+        "style": "Straight Kurta",
+        "occasion": "Everyday & Workwear",
+        "pattern": "Printed Motif",
+        "fabric": "Soft Breathable Weave",
+        "description": "Tailored straight silhouette with side slits and a classic round neck for everyday ease.",
+        "seo_title": "Gulmohar Straight Kurti — Straight Cut Kurti in Maroon, Ivory & Indigo | Matra Naari",
+        "seo_desc": "Shop the Gulmohar Straight Kurti by Matra Naari (₹1,299). Tailored straight-cut Indian kurti with side slits, round neck, and 3/4th sleeves in Maroon, Ivory & Indigo across sizes XS to XXL.",
+        "image": "assets/hero.jpg",
+        "price": 1299,
+        "mrp": 1899,
+        "sizes": ["XS", "S", "M", "L", "XL", "XXL"],
+        "colors": ["Maroon", "Ivory", "Indigo"],
+    },
+    "aline": {
+        "name": "Chandni A-Line Kurti",
+        "category": "A-Line",
+        "style": "Flared A-Line",
+        "occasion": "Work & Semi-Festive",
+        "pattern": "Tone-on-Tone Detail",
+        "fabric": "Soft Breathable Weave",
+        "description": "Graceful A-line flare silhouette with subtle tone-on-tone detailing for workdays or gatherings.",
+        "seo_title": "Chandni A-Line Kurti — Flared A-Line Kurti in Ivory & Blush | Matra Naari",
+        "seo_desc": "Shop the Chandni A-Line Kurti by Matra Naari (₹1,499). Graceful flared A-line kurti with subtle tone-on-tone detailing, keyhole neck, and 3/4th sleeves in Ivory & Blush (Sizes S to XL).",
+        "image": "assets/k-aline.jpg",
+        "price": 1499,
+        "mrp": 2199,
+        "sizes": ["S", "M", "L", "XL"],
+        "colors": ["Ivory", "Blush"],
+    },
+    "anarkali": {
+        "name": "Genda Anarkali Kurta",
+        "category": "Anarkali",
+        "style": "Flared Anarkali",
+        "occasion": "Festive & Celebrations",
+        "pattern": "Festive Border & Floral",
+        "fabric": "Lightweight Flowing Weave",
+        "description": "Flowing flared Anarkali silhouette with classic border accents and side tassel ties for festive occasions.",
+        "seo_title": "Genda Anarkali Kurta — Festive Flared Anarkali in Marigold, Maroon & Emerald | Matra Naari",
+        "seo_desc": "Shop the Genda Anarkali Kurta by Matra Naari (₹2,499). Flowing festive flared Anarkali kurta with classic border accents, V-neck, full sleeves, and side tassel ties in sizes XS to XXL.",
+        "image": "assets/k-anarkali.jpg",
+        "price": 2499,
+        "mrp": 3499,
+        "sizes": ["XS", "S", "M", "L", "XL", "XXL"],
+        "colors": ["Marigold", "Maroon", "Emerald", "Rani Pink"],
+    },
+    "short": {
+        "name": "Neel Short Kurti",
+        "category": "Short Kurti",
+        "style": "Everyday Tunic",
+        "occasion": "Everyday & Workwear",
+        "pattern": "Classic Motif Print",
+        "fabric": "Soft Breathable Weave",
+        "description": "Chic everyday short tunic with classic motif print. Style effortlessly over straight denims or trousers.",
+        "seo_title": "Neel Short Kurti — Everyday Printed Tunic in Indigo, White & Black | Matra Naari",
+        "seo_desc": "Shop the Neel Short Kurti by Matra Naari (₹899). Chic everyday short tunic with classic motif print, mandarin collar, and 3/4th sleeves. Pair effortlessly with denims or trousers (Sizes XS to XL).",
+        "image": "assets/k-short.jpg",
+        "price": 899,
+        "mrp": 1399,
+        "sizes": ["XS", "S", "M", "L", "XL"],
+        "colors": ["Indigo", "White", "Black"],
+    },
+    "angrakha": {
+        "name": "Tulsi Angrakha",
+        "category": "Angrakha",
+        "style": "Wrap Angrakha",
+        "occasion": "Festive & Celebrations",
+        "pattern": "Classic Border Detail",
+        "fabric": "Textured Breathable Weave",
+        "description": "Classic crossover overlap silhouette featuring side tassel ties and an asymmetrical border.",
+        "seo_title": "Tulsi Angrakha — Wrap Angrakha Kurti in Sage & Ivory | Matra Naari",
+        "seo_desc": "Shop the Tulsi Angrakha Kurti by Matra Naari (₹1,799). Classic crossover wrap angrakha silhouette with side tassel ties, V-neck, and 3/4th sleeves in Sage & Ivory (Sizes S to XXL).",
+        "image": "assets/k-angrakha.jpg",
+        "price": 1799,
+        "mrp": 2599,
+        "sizes": ["S", "M", "L", "XL", "XXL"],
+        "colors": ["Sage", "Ivory"],
+    },
+    "kaftan": {
+        "name": "Sandhya Kaftan Kurti",
+        "category": "Kaftan",
+        "style": "Relaxed Kaftan",
+        "occasion": "Resort & Everyday",
+        "pattern": "Printed Motif",
+        "fabric": "Soft Fluid Drape",
+        "description": "Breezy relaxed kaftan with an adjustable waist drawstring and tassel details for effortless comfort.",
+        "seo_title": "Sandhya Kaftan Kurti — Relaxed Drawstring Kaftan in Rust, Sand & Olive | Matra Naari",
+        "seo_desc": "Shop the Sandhya Kaftan Kurti by Matra Naari (₹1,599). Breezy relaxed kaftan kurti with adjustable waist drawstring, V-neck, and tassel details in Rust, Sand & Olive (Free Size).",
+        "image": "assets/k-kaftan.jpg",
+        "price": 1599,
+        "mrp": 2299,
+        "sizes": ["Free Size"],
+        "colors": ["Rust", "Sand", "Olive"],
+    },
+    "coord": {
+        "name": "Gulabi Kurta Set",
+        "category": "Co-ord Set",
+        "style": "2-Piece Kurta Set",
+        "occasion": "Work & Semi-Festive",
+        "pattern": "Coordinated Set",
+        "fabric": "Soft Tailored Weave",
+        "description": "Coordinated 2-piece set including a calf-length straight kurta and matching trousers with pockets.",
+        "seo_title": "Gulabi Kurta Set — 2-Piece Straight Kurta & Trousers Co-ord Set | Matra Naari",
+        "seo_desc": "Shop the Gulabi Kurta Set by Matra Naari (₹2,199). Coordinated 2-piece Indian kurta set featuring a calf-length straight kurta and matching trousers with pockets in Dusty Pink & Powder Blue (XS to XXL).",
+        "image": "assets/k-coord.jpg",
+        "price": 2199,
+        "mrp": 3199,
+        "sizes": ["XS", "S", "M", "L", "XL", "XXL"],
+        "colors": ["Dusty Pink", "Powder Blue"],
+    },
+}
+
+
+def _html_escape(val: str) -> str:
+    return (
+        str(val or "")
+        .replace("&", "&amp;")
+        .replace("<", "&lt;")
+        .replace(">", "&gt;")
+        .replace('"', "&quot;")
+    )
+
+
+def _format_inr(amount) -> str:
+    try:
+        return f"₹{int(round(float(amount))):,}"
+    except Exception:
+        return "₹1,299"
+
+
 def _serve_public_html(page_name: str):
     full_path = os.path.join(BASE_DIR, page_name)
     if page_name == "product.html" and os.path.isfile(full_path):
-        raw_pid = (request.args.get("id") or "").strip()
-        if raw_pid and re.match(r"^[A-Za-z0-9_-]{1,64}$", raw_pid):
+        raw_pid = (request.args.get("id") or "straight").strip()
+        if not re.match(r"^[A-Za-z0-9_-]{1,64}$", raw_pid):
+            raw_pid = "straight"
+        try:
+            with open(full_path, "r", encoding="utf-8") as pf:
+                html = pf.read()
+
+            db_row = None
             try:
-                with open(full_path, "r", encoding="utf-8") as pf:
-                    html = pf.read()
-                canon_url = f"https://matranaari.com/product.html?id={urllib.parse.quote(raw_pid)}"
-                html = html.replace(
-                    'href="https://matranaari.com/product.html?id=straight"',
-                    f'href="{canon_url}"',
-                    1,
-                ).replace(
-                    'content="https://matranaari.com/product.html?id=straight"',
-                    f'content="{canon_url}"',
-                    1,
+                conn = get_db()
+                c = conn.cursor()
+                c.execute(
+                    "SELECT * FROM products WHERE id = ? AND COALESCE(is_archived, 0) = 0",
+                    (raw_pid,),
                 )
-                return Response(html, status=200, mimetype="text/html; charset=utf-8")
+                row = c.fetchone()
+                conn.close()
+                if row:
+                    db_row = dict(row)
             except Exception:
-                pass
+                db_row = None
+
+            preset = SEO_VERIFIED_PRODUCTS.get(raw_pid)
+            if not preset and not db_row:
+                raw_pid = "straight"
+                preset = SEO_VERIFIED_PRODUCTS["straight"]
+
+            p_name = (db_row.get("name") if db_row else None) or (preset["name"] if preset else "Matra Naari Kurti")
+            p_cat = (db_row.get("category") if db_row else None) or (preset["category"] if preset else "Kurti")
+            p_style = (preset["style"] if preset else None) or (db_row.get("style") if db_row else None) or "Indian Ethnic Wear"
+            p_desc = (preset["description"] if preset else None) or (db_row.get("description") if db_row else None) or "Thoughtfully designed Indian ethnic kurti by Matra Naari."
+            p_price = int(round(float((db_row.get("price") if db_row and db_row.get("price") is not None else (preset["price"] if preset else 1299)))))
+            p_mrp = int(round(float((db_row.get("mrp") if db_row and db_row.get("mrp") is not None else (preset["mrp"] if preset else p_price)))))
+            p_stock = int(db_row.get("stock")) if (db_row and db_row.get("stock") is not None) else 25
+            p_img_rel = str((db_row.get("relative_image") or db_row.get("image") if db_row else None) or (preset["image"] if preset else "assets/hero.jpg")).lstrip("/")
+            p_img_abs = p_img_rel if p_img_rel.startswith("http") else f"https://matranaari.com/{p_img_rel}"
+
+            p_sizes = preset["sizes"] if preset else ["XS", "S", "M", "L", "XL"]
+            if db_row and db_row.get("sizes_json"):
+                try:
+                    parsed_s = json.loads(db_row["sizes_json"])
+                    if isinstance(parsed_s, list) and parsed_s:
+                        p_sizes = [str(s) for s in parsed_s]
+                except Exception:
+                    pass
+
+            p_sold_out = []
+            if db_row and db_row.get("sold_out_sizes_json"):
+                try:
+                    parsed_so = json.loads(db_row["sold_out_sizes_json"])
+                    if isinstance(parsed_so, list):
+                        p_sold_out = [str(s) for s in parsed_so]
+                except Exception:
+                    pass
+
+            p_colors = preset["colors"] if preset else []
+            if db_row and db_row.get("colors_json"):
+                try:
+                    parsed_c = json.loads(db_row["colors_json"])
+                    if isinstance(parsed_c, list) and parsed_c:
+                        p_colors = [str(c.get("name") if isinstance(c, dict) else c) for c in parsed_c if c]
+                except Exception:
+                    pass
+
+            seo_title = preset["seo_title"] if preset else f"{p_name} — {p_cat} Kurti | Matra Naari"
+            seo_desc = preset["seo_desc"] if preset else f"Shop {p_name} by Matra Naari ({_format_inr(p_price)}). {p_desc}"
+            canon_url = f"https://matranaari.com/product.html?id={urllib.parse.quote(raw_pid)}"
+            sku_code = f"NAARI-{raw_pid.upper()}"
+            avail_sizes = [s for s in p_sizes if s not in p_sold_out]
+            is_in_stock = (p_stock > 0) and (len(avail_sizes) > 0 or len(p_sizes) == 0)
+
+            cat_url = f"https://matranaari.com/shop.html?category={urllib.parse.quote(p_cat)}"
+            product_ld = {
+                "@context": "https://schema.org",
+                "@graph": [
+                    {
+                        "@type": "Organization",
+                        "@id": "https://matranaari.com/#organization",
+                        "name": "Matra Naari",
+                        "alternateName": ["Matra Naari Kurtis", "matranaari"],
+                        "url": "https://matranaari.com/",
+                        "logo": "https://matranaari.com/images/logo-icon.png",
+                        "email": "hello@naari.in",
+                        "telephone": "+91-88493-66915",
+                    },
+                    {
+                        "@type": "BreadcrumbList",
+                        "@id": f"{canon_url}#breadcrumb",
+                        "itemListElement": [
+                            {"@type": "ListItem", "position": 1, "name": "Home", "item": "https://matranaari.com/"},
+                            {"@type": "ListItem", "position": 2, "name": "Shop Kurtis", "item": "https://matranaari.com/shop.html"},
+                            {"@type": "ListItem", "position": 3, "name": p_cat, "item": cat_url},
+                            {"@type": "ListItem", "position": 4, "name": p_name, "item": canon_url},
+                        ],
+                    },
+                    {
+                        "@type": "Product",
+                        "@id": f"{canon_url}#product",
+                        "name": p_name,
+                        "sku": sku_code,
+                        "mpn": sku_code,
+                        "description": p_desc,
+                        "image": [p_img_abs],
+                        "url": canon_url,
+                        "category": p_cat,
+                        "color": ", ".join(p_colors) if p_colors else "Multi",
+                        "size": p_sizes,
+                        "brand": {"@type": "Brand", "name": "Matra Naari"},
+                        "offers": {
+                            "@type": "Offer",
+                            "url": canon_url,
+                            "priceCurrency": "INR",
+                            "price": str(p_price),
+                            "availability": "https://schema.org/InStock" if is_in_stock else "https://schema.org/OutOfStock",
+                            "itemCondition": "https://schema.org/NewCondition",
+                            "seller": {
+                                "@type": "Organization",
+                                "name": "Matra Naari",
+                                "url": "https://matranaari.com/",
+                            },
+                        },
+                    },
+                ],
+            }
+            jsonld_str = json.dumps(product_ld, ensure_ascii=False, indent=2)
+
+            # Replace head SEO tags
+            html = re.sub(
+                r'<title id="pdp-doc-title">.*?</title>',
+                f'<title id="pdp-doc-title">{_html_escape(seo_title)}</title>',
+                html,
+                count=1,
+                flags=re.S,
+            )
+            html = re.sub(
+                r'<meta id="meta-description" name="description" content="[^"]*"/>',
+                f'<meta id="meta-description" name="description" content="{_html_escape(seo_desc)}"/>',
+                html,
+                count=1,
+            )
+            html = re.sub(
+                r'<link id="canonical-link" rel="canonical" href="[^"]*"/>',
+                f'<link id="canonical-link" rel="canonical" href="{_html_escape(canon_url)}"/>',
+                html,
+                count=1,
+            )
+            html = re.sub(
+                r'<meta id="og-url-meta" property="og:url" content="[^"]*"/>',
+                f'<meta id="og-url-meta" property="og:url" content="{_html_escape(canon_url)}"/>',
+                html,
+                count=1,
+            )
+            html = re.sub(
+                r'<meta id="og-title-meta" property="og:title" content="[^"]*"/>',
+                f'<meta id="og-title-meta" property="og:title" content="{_html_escape(seo_title)}"/>',
+                html,
+                count=1,
+            )
+            html = re.sub(
+                r'<meta id="og-desc-meta" property="og:description" content="[^"]*"/>',
+                f'<meta id="og-desc-meta" property="og:description" content="{_html_escape(seo_desc)}"/>',
+                html,
+                count=1,
+            )
+            html = re.sub(
+                r'<meta id="og-image-meta" property="og:image" content="[^"]*"/>',
+                f'<meta id="og-image-meta" property="og:image" content="{_html_escape(p_img_abs)}"/>',
+                html,
+                count=1,
+            )
+            html = re.sub(
+                r'<meta id="twitter-title-meta" name="twitter:title" content="[^"]*"/>',
+                f'<meta id="twitter-title-meta" name="twitter:title" content="{_html_escape(seo_title)}"/>',
+                html,
+                count=1,
+            )
+            html = re.sub(
+                r'<meta id="twitter-desc-meta" name="twitter:description" content="[^"]*"/>',
+                f'<meta id="twitter-desc-meta" name="twitter:description" content="{_html_escape(seo_desc)}"/>',
+                html,
+                count=1,
+            )
+            html = re.sub(
+                r'<meta id="twitter-image-meta" name="twitter:image" content="[^"]*"/>',
+                f'<meta id="twitter-image-meta" name="twitter:image" content="{_html_escape(p_img_abs)}"/>',
+                html,
+                count=1,
+            )
+            html = re.sub(
+                r'<script id="pdp-jsonld" type="application/ld\+json">.*?</script>',
+                f'<script id="pdp-jsonld" type="application/ld+json">\n{jsonld_str}\n  </script>',
+                html,
+                count=1,
+                flags=re.S,
+            )
+
+            # Replace visible body SSR elements so crawlers see exact product details without JS
+            html = re.sub(
+                r'<a id="pdp-crumb-category" href="[^"]*" class="hover:text-primary">.*?</a>',
+                f'<a id="pdp-crumb-category" href="shop.html?category={urllib.parse.quote(p_cat)}" class="hover:text-primary">{_html_escape(p_cat)}</a>',
+                html,
+                count=1,
+            )
+            html = re.sub(
+                r'<span id="pdp-crumb-name"([^>]*)>.*?</span>',
+                f'<span id="pdp-crumb-name"\\1>{_html_escape(p_name)}</span>',
+                html,
+                count=1,
+            )
+            html = re.sub(
+                r'<span id="pdp-category-tag"([^>]*)>.*?</span>',
+                f'<span id="pdp-category-tag"\\1>{_html_escape(p_cat)}</span>',
+                html,
+                count=1,
+            )
+            html = re.sub(
+                r'<span id="pdp-style-tag"([^>]*)>.*?</span>',
+                f'<span id="pdp-style-tag"\\1>{_html_escape(p_style)}</span>',
+                html,
+                count=1,
+            )
+            html = re.sub(
+                r'<h1 id="pdp-title"([^>]*)>.*?</h1>',
+                f'<h1 id="pdp-title"\\1>{_html_escape(p_name)}</h1>',
+                html,
+                count=1,
+            )
+            html = re.sub(
+                r'<span id="pdp-sku-label"([^>]*)>.*?</span>',
+                f'<span id="pdp-sku-label"\\1>SKU: {_html_escape(sku_code)}</span>',
+                html,
+                count=1,
+            )
+            html = re.sub(
+                r'<span id="pdp-price"([^>]*)>.*?</span>',
+                f'<span id="pdp-price"\\1>{_html_escape(_format_inr(p_price))}</span>',
+                html,
+                count=1,
+            )
+            html = re.sub(
+                r'<span id="pdp-mrp"([^>]*)>.*?</span>',
+                f'<span id="pdp-mrp"\\1>{_html_escape(_format_inr(p_mrp))}</span>',
+                html,
+                count=1,
+            )
+            html = re.sub(
+                r'<p id="pdp-desc-text">.*?</p>',
+                f'<p id="pdp-desc-text">{_html_escape(p_desc)}</p>',
+                html,
+                count=1,
+                flags=re.S,
+            )
+            html = re.sub(
+                r'<img id="pdp-main-image" src="[^"]*" alt="[^"]*"',
+                f'<img id="pdp-main-image" src="{_html_escape(p_img_rel)}" alt="{_html_escape(f"{p_name} — {p_cat} Kurti by Matra Naari")}"',
+                html,
+                count=1,
+            )
+            return Response(html, status=200, mimetype="text/html; charset=utf-8")
+        except Exception:
+            pass
     return send_from_directory(BASE_DIR, page_name)
 
 

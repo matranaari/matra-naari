@@ -8,11 +8,79 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous"/>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=Manrope:wght@400;500;600;700&display=swap"/>
   <link rel="stylesheet" href="assets/styles.css"/>
-  <title>Shop Indian Ethnic Kurtis &amp; Sets — Matra Naari</title>
-  <meta name="description" content="Explore Indian ethnic kurtis: straight cut, A-line, Anarkali, angrakha, kaftans, and co-ord sets. Filter by size, color, price and silhouette."/>
+  <title>Shop Women's Indian Kurtis &amp; Kurta Sets Online — Straight, A-Line, Anarkali &amp; Co-ords | Matra Naari</title>
+  <meta name="description" content="Browse the complete Matra Naari kurti collection online. Shop women's straight cut kurtis, flared A-line kurtis, festive Anarkalis, wrap angrakhas, everyday short kurtis, kaftans &amp; 2-piece kurta sets in sizes XS to XXL."/>
   <meta name="robots" content="index, follow"/>
   <link rel="canonical" href="https://matranaari.com/shop.html"/>
+  <meta property="og:site_name" content="Matra Naari"/>
+  <meta property="og:locale" content="en_IN"/>
+  <meta property="og:type" content="website"/>
   <meta property="og:url" content="https://matranaari.com/shop.html"/>
+  <meta property="og:title" content="Shop Women's Indian Kurtis &amp; Kurta Sets — Matra Naari"/>
+  <meta property="og:description" content="Explore all 7 Matra Naari kurti silhouettes: Straight Cut, A-Line, Anarkali, Short Kurti, Angrakha, Kaftan, and Co-ord Sets in sizes XS to XXL."/>
+  <meta property="og:image" content="https://matranaari.com/assets/hero.jpg"/>
+  <meta name="twitter:card" content="summary_large_image"/>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Organization",
+        "@id": "https://matranaari.com/#organization",
+        "name": "Matra Naari",
+        "alternateName": ["Matra Naari Kurtis", "matranaari"],
+        "url": "https://matranaari.com/",
+        "logo": "https://matranaari.com/images/logo-icon.png",
+        "email": "hello@naari.in",
+        "telephone": "+91-88493-66915"
+      },
+      {
+        "@type": "BreadcrumbList",
+        "@id": "https://matranaari.com/shop.html#breadcrumb",
+        "itemListElement": [
+          {
+            "@type": "ListItem",
+            "position": 1,
+            "name": "Home",
+            "item": "https://matranaari.com/"
+          },
+          {
+            "@type": "ListItem",
+            "position": 2,
+            "name": "Shop Kurtis",
+            "item": "https://matranaari.com/shop.html"
+          }
+        ]
+      },
+      {
+        "@type": "CollectionPage",
+        "@id": "https://matranaari.com/shop.html#collection",
+        "url": "https://matranaari.com/shop.html",
+        "name": "Matra Naari — The Kurti Collection",
+        "description": "Seven Indian kurti silhouettes tailored across sizes XS to XXL by Matra Naari.",
+        "isPartOf": {
+          "@id": "https://matranaari.com/#website"
+        },
+        "breadcrumb": {
+          "@id": "https://matranaari.com/shop.html#breadcrumb"
+        },
+        "mainEntity": {
+          "@type": "ItemList",
+          "numberOfItems": 7,
+          "itemListElement": [
+            {"@type": "ListItem", "position": 1, "name": "Gulmohar Straight Kurti", "url": "https://matranaari.com/product.html?id=straight"},
+            {"@type": "ListItem", "position": 2, "name": "Chandni A-Line Kurti", "url": "https://matranaari.com/product.html?id=aline"},
+            {"@type": "ListItem", "position": 3, "name": "Genda Anarkali Kurta", "url": "https://matranaari.com/product.html?id=anarkali"},
+            {"@type": "ListItem", "position": 4, "name": "Neel Short Kurti", "url": "https://matranaari.com/product.html?id=short"},
+            {"@type": "ListItem", "position": 5, "name": "Tulsi Angrakha", "url": "https://matranaari.com/product.html?id=angrakha"},
+            {"@type": "ListItem", "position": 6, "name": "Sandhya Kaftan Kurti", "url": "https://matranaari.com/product.html?id=kaftan"},
+            {"@type": "ListItem", "position": 7, "name": "Gulabi Kurta Set", "url": "https://matranaari.com/product.html?id=coord"}
+          ]
+        }
+      }
+    ]
+  }
+  </script>
   <style>
     body {
       background-image: url('images/paper.jpg'), url('/images/paper.jpg');
@@ -75,7 +143,7 @@
           <span>/</span>
           <span id="collection-breadcrumb-label" class="text-primary font-semibold">All Kurtis</span>
         </div>
-        <h1 id="collection-heading-title" class="font-display text-3xl sm:text-5xl font-semibold leading-tight">The Kurti Collection</h1>
+        <h1 id="collection-heading-title" class="font-display text-3xl sm:text-5xl font-semibold leading-tight"><span class="sr-only">Matra Naari — </span>The Kurti Collection</h1>
         <p id="collection-heading-desc" class="font-sans text-xs sm:text-sm text-muted-foreground mt-1">Seven Indian silhouettes tailored across sizes XS to XXL for everyday and festive wear</p>
       </div>
       <div class="flex flex-wrap items-center justify-between md:justify-end gap-2.5 sm:gap-3">
@@ -254,7 +322,91 @@
 
         <!-- Main Products Grid -->
         <div id="shop-products-grid" class="grid grid-cols-2 mn-mobile-grid-tight gap-3.5 sm:gap-6 lg:grid-cols-3">
-          <!-- Loaded dynamically -->
+          <!-- Static SSR fallback catalog for immediate crawler indexing; hydrated dynamically by JS -->
+          <article class="mn-product-card group" data-product-id="straight">
+            <div class="mn-product-card-media">
+              <a href="product.html?id=straight" class="block h-full w-full">
+                <img src="assets/hero.jpg" alt="Gulmohar Straight Kurti — Straight Cut Kurti by Matra Naari" loading="lazy" decoding="async"/>
+              </a>
+            </div>
+            <div class="mn-product-card-body">
+              <div class="mn-product-meta">Straight Cut · Straight Kurta</div>
+              <h3 class="mn-product-title"><a href="product.html?id=straight">Gulmohar Straight Kurti</a></h3>
+              <div class="mn-product-price-row"><span class="mn-price text-base">₹1,299</span></div>
+            </div>
+          </article>
+          <article class="mn-product-card group" data-product-id="aline">
+            <div class="mn-product-card-media">
+              <a href="product.html?id=aline" class="block h-full w-full">
+                <img src="assets/k-aline.jpg" alt="Chandni A-Line Kurti — Flared A-Line Kurti by Matra Naari" loading="lazy" decoding="async"/>
+              </a>
+            </div>
+            <div class="mn-product-card-body">
+              <div class="mn-product-meta">A-Line · Flared A-Line</div>
+              <h3 class="mn-product-title"><a href="product.html?id=aline">Chandni A-Line Kurti</a></h3>
+              <div class="mn-product-price-row"><span class="mn-price text-base">₹1,499</span></div>
+            </div>
+          </article>
+          <article class="mn-product-card group" data-product-id="anarkali">
+            <div class="mn-product-card-media">
+              <a href="product.html?id=anarkali" class="block h-full w-full">
+                <img src="assets/k-anarkali.jpg" alt="Genda Anarkali Kurta — Festive Flared Anarkali by Matra Naari" loading="lazy" decoding="async"/>
+              </a>
+            </div>
+            <div class="mn-product-card-body">
+              <div class="mn-product-meta">Anarkali · Flared Anarkali</div>
+              <h3 class="mn-product-title"><a href="product.html?id=anarkali">Genda Anarkali Kurta</a></h3>
+              <div class="mn-product-price-row"><span class="mn-price text-base">₹2,499</span></div>
+            </div>
+          </article>
+          <article class="mn-product-card group" data-product-id="short">
+            <div class="mn-product-card-media">
+              <a href="product.html?id=short" class="block h-full w-full">
+                <img src="assets/k-short.jpg" alt="Neel Short Kurti — Everyday Printed Tunic by Matra Naari" loading="lazy" decoding="async"/>
+              </a>
+            </div>
+            <div class="mn-product-card-body">
+              <div class="mn-product-meta">Short Kurti · Everyday Tunic</div>
+              <h3 class="mn-product-title"><a href="product.html?id=short">Neel Short Kurti</a></h3>
+              <div class="mn-product-price-row"><span class="mn-price text-base">₹899</span></div>
+            </div>
+          </article>
+          <article class="mn-product-card group" data-product-id="angrakha">
+            <div class="mn-product-card-media">
+              <a href="product.html?id=angrakha" class="block h-full w-full">
+                <img src="assets/k-angrakha.jpg" alt="Tulsi Angrakha — Wrap Angrakha Kurti by Matra Naari" loading="lazy" decoding="async"/>
+              </a>
+            </div>
+            <div class="mn-product-card-body">
+              <div class="mn-product-meta">Angrakha · Wrap Angrakha</div>
+              <h3 class="mn-product-title"><a href="product.html?id=angrakha">Tulsi Angrakha</a></h3>
+              <div class="mn-product-price-row"><span class="mn-price text-base">₹1,799</span></div>
+            </div>
+          </article>
+          <article class="mn-product-card group" data-product-id="kaftan">
+            <div class="mn-product-card-media">
+              <a href="product.html?id=kaftan" class="block h-full w-full">
+                <img src="assets/k-kaftan.jpg" alt="Sandhya Kaftan Kurti — Relaxed Drawstring Kaftan by Matra Naari" loading="lazy" decoding="async"/>
+              </a>
+            </div>
+            <div class="mn-product-card-body">
+              <div class="mn-product-meta">Kaftan · Relaxed Kaftan</div>
+              <h3 class="mn-product-title"><a href="product.html?id=kaftan">Sandhya Kaftan Kurti</a></h3>
+              <div class="mn-product-price-row"><span class="mn-price text-base">₹1,599</span></div>
+            </div>
+          </article>
+          <article class="mn-product-card group" data-product-id="coord">
+            <div class="mn-product-card-media">
+              <a href="product.html?id=coord" class="block h-full w-full">
+                <img src="assets/k-coord.jpg" alt="Gulabi Kurta Set — 2-Piece Straight Kurta &amp; Trousers Set by Matra Naari" loading="lazy" decoding="async"/>
+              </a>
+            </div>
+            <div class="mn-product-card-body">
+              <div class="mn-product-meta">Co-ord Set · 2-Piece Kurta Set</div>
+              <h3 class="mn-product-title"><a href="product.html?id=coord">Gulabi Kurta Set</a></h3>
+              <div class="mn-product-price-row"><span class="mn-price text-base">₹2,199</span></div>
+            </div>
+          </article>
         </div>
 
         <!-- Empty State -->
@@ -293,21 +445,40 @@
 
   <!-- Footer -->
   <footer class="mt-20 border-t border-border bg-card/90">
-    <div class="mx-auto grid max-w-7xl gap-8 px-4 py-12 sm:px-6 sm:grid-cols-3">
+    <div class="mx-auto grid max-w-7xl gap-8 px-4 py-12 sm:px-6 sm:grid-cols-4">
       <div>
         <img src="images/naari-logo.png" alt="Matra Naari" class="h-14 w-auto mix-blend-multiply"/>
         <p class="mt-2 font-hand text-muted-foreground">Woven with Meaning · Modern Indian silhouettes.</p>
+        <p class="mt-3 text-xs text-muted-foreground font-sans">hello@naari.in · +91 88493 66915</p>
+        <p class="mt-2 text-[11px] text-muted-foreground font-sans">© 2026 Matra Naari.</p>
       </div>
-      <div class="font-hand text-lg space-y-1">
-        <a class="block hover:text-primary transition" href="index.html">Home</a>
-        <a class="block hover:text-primary transition active text-primary" href="shop.html">Shop Catalog</a>
-        <a class="block hover:text-primary transition" href="story.html">Our Story</a>
-        <a class="block hover:text-primary transition" href="contact.html">Contact Support</a>
+      <div class="text-xs font-sans space-y-1.5">
+        <h4 class="font-display text-lg font-semibold text-primary mb-2">The Seven Silhouettes</h4>
+        <a class="block text-muted-foreground hover:text-primary transition" href="shop.html?category=Straight Cut">Straight Cut Kurtis</a>
+        <a class="block text-muted-foreground hover:text-primary transition" href="shop.html?category=A-Line">A-Line Kurtis</a>
+        <a class="block text-muted-foreground hover:text-primary transition" href="shop.html?category=Anarkali">Festive Anarkalis</a>
+        <a class="block text-muted-foreground hover:text-primary transition" href="shop.html?category=Short Kurti">Short Everyday Kurtis</a>
+        <a class="block text-muted-foreground hover:text-primary transition" href="shop.html?category=Angrakha">Angrakha Kurtis</a>
+        <a class="block text-muted-foreground hover:text-primary transition" href="shop.html?category=Kaftan">Relaxed Kaftans</a>
+        <a class="block text-muted-foreground hover:text-primary transition" href="shop.html?category=Co-ord Set">Co-ord Kurta Sets</a>
       </div>
-      <div class="text-xs text-muted-foreground font-sans space-y-1">
-        <p>hello@naari.in · +91 88493 66915</p>
-        <p class="pt-2">✿ Free delivery above ₹999 across India · Easy 7-day returns</p>
-        <p class="pt-4">© 2026 Matra Naari.</p>
+      <div class="text-xs font-sans space-y-1.5">
+        <h4 class="font-display text-lg font-semibold text-primary mb-2">Signature Kurtis</h4>
+        <a class="block text-muted-foreground hover:text-primary transition" href="product.html?id=straight">Gulmohar Straight Kurti</a>
+        <a class="block text-muted-foreground hover:text-primary transition" href="product.html?id=aline">Chandni A-Line Kurti</a>
+        <a class="block text-muted-foreground hover:text-primary transition" href="product.html?id=anarkali">Genda Anarkali Kurta</a>
+        <a class="block text-muted-foreground hover:text-primary transition" href="product.html?id=short">Neel Short Kurti</a>
+        <a class="block text-muted-foreground hover:text-primary transition" href="product.html?id=angrakha">Tulsi Angrakha</a>
+        <a class="block text-muted-foreground hover:text-primary transition" href="product.html?id=kaftan">Sandhya Kaftan Kurti</a>
+        <a class="block text-muted-foreground hover:text-primary transition" href="product.html?id=coord">Gulabi Kurta Set</a>
+      </div>
+      <div class="text-xs font-sans space-y-1.5">
+        <h4 class="font-display text-lg font-semibold text-primary mb-2">Explore Matra Naari</h4>
+        <a class="block text-muted-foreground hover:text-primary transition" href="index.html">Home</a>
+        <a class="block text-primary font-semibold transition" href="shop.html">Shop All Kurtis</a>
+        <a class="block text-muted-foreground hover:text-primary transition" href="story.html">Our Story</a>
+        <a class="block text-muted-foreground hover:text-primary transition" href="contact.html">Contact Support</a>
+        <p class="pt-3 text-[11px] text-muted-foreground">✿ Free delivery above ₹999 across India · Easy 7-day returns</p>
       </div>
     </div>
   </footer>
