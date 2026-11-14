@@ -393,12 +393,40 @@ const VERIFIED_PRODUCT_COPY = {
   }
 };
 
+function normalizeProductGallery(p) {
+  if (!p) return ['assets/hero.jpg'];
+  const primaryImg = String(p.relative_image || p.image || p.relativeImage || 'assets/hero.jpg').trim() || 'assets/hero.jpg';
+  let rawList = [];
+  if (Array.isArray(p.gallery)) {
+    rawList = p.gallery;
+  } else if (typeof p.gallery_json === 'string' && p.gallery_json.trim()) {
+    try {
+      const parsed = JSON.parse(p.gallery_json);
+      if (Array.isArray(parsed)) rawList = parsed;
+    } catch (e) {}
+  }
+  const clean = rawList.map(x => String(x || '').trim()).filter(Boolean);
+  return clean.length > 0 ? clean : [primaryImg];
+}
+
 function sanitizeProductRecord(p) {
   if (!p) return p;
+  const gallery = normalizeProductGallery(p);
+  const primary = gallery[0] || p.image || 'assets/hero.jpg';
   const verified = VERIFIED_PRODUCT_COPY[p.id];
-  if (!verified) return p;
+  if (!verified) {
+    return {
+      ...p,
+      image: p.image || primary,
+      relative_image: p.relative_image || p.image || primary,
+      gallery
+    };
+  }
   return {
     ...p,
+    image: p.image || primary,
+    relative_image: p.relative_image || p.image || primary,
+    gallery,
     style: verified.style,
     occasion: verified.occasion,
     pattern: verified.pattern,
@@ -1950,7 +1978,7 @@ async function initAnnouncementBar() {
       }
       if (data.announcements && data.announcements.length > 0) {
         messages = data.announcements.map(m =>
-          /^HAND/i.test(String(m || '').trim())
+          /hand|100%|cotton|artisan|jaipur|sanganer/i.test(String(m || '').trim())
             ? 'THOUGHTFULLY TAILORED INDIAN KURTIS & CO-ORD SETS'
             : m
         );
