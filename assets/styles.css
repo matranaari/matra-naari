@@ -949,13 +949,15 @@ textarea.font-hand,
   }
 }
 
-.mn-boutique-header-inner .header-user-label {
+.mn-boutique-header-inner .header-user-label,
+.mn-boutique-header-inner .header-logout-btn {
   display: none !important;
 }
 
 @media (min-width: 1120px) {
-  .mn-boutique-header-inner .header-user-label {
-    display: inline !important;
+  .mn-boutique-header-inner .header-user-label,
+  .mn-boutique-header-inner .header-logout-btn {
+    display: inline-flex !important;
   }
 }
 
