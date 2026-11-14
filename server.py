@@ -6709,7 +6709,7 @@ PUBLIC_HTML_PAGES = {
     "contact.html",
 }
 PUBLIC_ROUTE_SLUGS = {page[:-5] for page in PUBLIC_HTML_PAGES}
-PUBLIC_ROOT_FILES = {"favicon.png"}
+PUBLIC_ROOT_FILES = {"favicon.png", "robots.txt", "sitemap.xml"}
 PUBLIC_ASSET_DIRS = {"assets", "images"}
 ALLOWED_PUBLIC_ASSET_EXTS = (
     ".jpg", ".jpeg", ".png", ".webp", ".gif", ".svg", ".ico",
@@ -6773,9 +6773,132 @@ def serve_favicon():
     return send_from_directory(BASE_DIR, "favicon.png", mimetype="image/png")
 
 
+@app.route("/robots.txt")
+def serve_robots_txt():
+    robots_path = os.path.join(BASE_DIR, "robots.txt")
+    if os.path.isfile(robots_path):
+        with open(robots_path, "r", encoding="utf-8") as rf:
+            body = rf.read()
+    else:
+        body = (
+            "User-agent: *\n"
+            "Allow: /\n"
+            "Disallow: /admin.html\n"
+            "Disallow: /admin\n"
+            "Disallow: /account.html\n"
+            "Disallow: /account\n"
+            "Disallow: /cart.html\n"
+            "Disallow: /cart\n"
+            "Disallow: /checkout.html\n"
+            "Disallow: /checkout\n"
+            "Disallow: /order-confirmation.html\n"
+            "Disallow: /order-confirmation\n"
+            "Disallow: /api/\n\n"
+            "Sitemap: https://matranaari.com/sitemap.xml\n"
+        )
+    return Response(
+        body,
+        status=200,
+        mimetype="text/plain",
+        headers={"Cache-Control": "public, max-age=3600"},
+    )
+
+
+@app.route("/sitemap.xml")
+def serve_sitemap_xml():
+    base_url = "https://matranaari.com"
+    today_str = datetime.now().strftime("%Y-%m-%d")
+
+    static_entries = [
+        (f"{base_url}/", today_str, "daily", "1.0"),
+        (f"{base_url}/shop.html", today_str, "daily", "0.9"),
+        (f"{base_url}/story.html", today_str, "monthly", "0.7"),
+        (f"{base_url}/contact.html", today_str, "monthly", "0.7"),
+    ]
+
+    product_entries = []
+    seen_pids = set()
+    try:
+        conn = get_db()
+        c = conn.cursor()
+        c.execute(
+            "SELECT id, created_at FROM products WHERE COALESCE(is_archived, 0) = 0 ORDER BY id ASC"
+        )
+        rows = c.fetchall()
+        conn.close()
+        for r in rows:
+            pid = str(r["id"] or "").strip()
+            if not pid or pid in seen_pids:
+                continue
+            seen_pids.add(pid)
+            raw_dt = str(r["created_at"] or "").strip() if r["created_at"] is not None else ""
+            lastmod = raw_dt[:10] if (len(raw_dt) >= 10 and raw_dt[4:5] == "-" and raw_dt[7:8] == "-") else today_str
+            safe_loc = f"{base_url}/product.html?id={urllib.parse.quote(pid)}"
+            product_entries.append((safe_loc, lastmod, "weekly", "0.8"))
+    except Exception:
+        for p in DEFAULT_PRODUCTS:
+            pid = str(p.get("id") or "").strip()
+            if pid and pid not in seen_pids:
+                seen_pids.add(pid)
+                product_entries.append((f"{base_url}/product.html?id={urllib.parse.quote(pid)}", today_str, "weekly", "0.8"))
+
+    xml_lines = [
+        '<?xml version="1.0" encoding="UTF-8"?>',
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
+    ]
+    for loc, lastmod, freq, prio in (static_entries + product_entries):
+        esc_loc = (
+            loc.replace("&", "&amp;")
+            .replace("<", "&lt;")
+            .replace(">", "&gt;")
+            .replace('"', "&quot;")
+            .replace("'", "&apos;")
+        )
+        xml_lines.extend([
+            "  <url>",
+            f"    <loc>{esc_loc}</loc>",
+            f"    <lastmod>{lastmod}</lastmod>",
+            f"    <changefreq>{freq}</changefreq>",
+            f"    <priority>{prio}</priority>",
+            "  </url>",
+        ])
+    xml_lines.append("</urlset>\n")
+
+    return Response(
+        "\n".join(xml_lines),
+        status=200,
+        mimetype="application/xml",
+        headers={"Cache-Control": "public, max-age=3600"},
+    )
+
+
 @app.route("/")
 def serve_index():
     return send_from_directory(BASE_DIR, "index.html")
+
+
+def _serve_public_html(page_name: str):
+    full_path = os.path.join(BASE_DIR, page_name)
+    if page_name == "product.html" and os.path.isfile(full_path):
+        raw_pid = (request.args.get("id") or "").strip()
+        if raw_pid and re.match(r"^[A-Za-z0-9_-]{1,64}$", raw_pid):
+            try:
+                with open(full_path, "r", encoding="utf-8") as pf:
+                    html = pf.read()
+                canon_url = f"https://matranaari.com/product.html?id={urllib.parse.quote(raw_pid)}"
+                html = html.replace(
+                    'href="https://matranaari.com/product.html?id=straight"',
+                    f'href="{canon_url}"',
+                    1,
+                ).replace(
+                    'content="https://matranaari.com/product.html?id=straight"',
+                    f'content="{canon_url}"',
+                    1,
+                )
+                return Response(html, status=200, mimetype="text/html; charset=utf-8")
+            except Exception:
+                pass
+    return send_from_directory(BASE_DIR, page_name)
 
 
 @app.route("/<path:filename>")
@@ -6795,16 +6918,16 @@ def serve_static_file(filename):
     if len(parts) == 1:
         single = parts[0]
         if single in PUBLIC_HTML_PAGES and os.path.isfile(os.path.join(BASE_DIR, single)):
-            return send_from_directory(BASE_DIR, single)
+            return _serve_public_html(single)
         if single in PUBLIC_ROUTE_SLUGS and os.path.isfile(os.path.join(BASE_DIR, single + ".html")):
-            return send_from_directory(BASE_DIR, single + ".html")
+            return _serve_public_html(single + ".html")
         if single in PUBLIC_ROOT_FILES and os.path.isfile(os.path.join(BASE_DIR, single)):
             return send_from_directory(BASE_DIR, single)
 
     if len(parts) == 2 and parts[1] == "index.html" and parts[0] in PUBLIC_ROUTE_SLUGS:
         root_page = parts[0] + ".html"
         if os.path.isfile(os.path.join(BASE_DIR, root_page)):
-            return send_from_directory(BASE_DIR, root_page)
+            return _serve_public_html(root_page)
 
     # 3. Strict allowlist for public static asset directories (assets/* and images/* only)
     if parts[0] in PUBLIC_ASSET_DIRS and len(parts) >= 2:

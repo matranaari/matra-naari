@@ -10,6 +10,9 @@
   <link rel="stylesheet" href="assets/styles.css"/>
   <title>Matra Naari Kurti — Indian Ethnic Wear</title>
   <meta name="description" content="Thoughtfully designed Indian ethnic kurti by Matra Naari, tailored for everyday and occasion grace."/>
+  <meta name="robots" content="index, follow"/>
+  <link id="canonical-link" rel="canonical" href="https://matranaari.com/product.html?id=straight"/>
+  <meta id="og-url-meta" property="og:url" content="https://matranaari.com/product.html?id=straight"/>
   <style>
     body {
       background-image: url('images/paper.jpg'), url('/images/paper.jpg');
@@ -446,6 +449,13 @@
       const p = sanitizeProductRecord(rawProduct);
       currentProduct = p;
       document.title = `${p.name} — Matra Naari`;
+      if (p && p.id) {
+        const canonicalHref = `https://matranaari.com/product.html?id=${encodeURIComponent(p.id)}`;
+        const canonicalEl = document.getElementById('canonical-link');
+        const ogUrlEl = document.getElementById('og-url-meta');
+        if (canonicalEl) canonicalEl.setAttribute('href', canonicalHref);
+        if (ogUrlEl) ogUrlEl.setAttribute('content', canonicalHref);
+      }
 
       // Record in recently viewed after capturing previous history
       const prevViewed = getRecentlyViewed(p.id);

@@ -1,0 +1,24 @@
+User-agent: *
+Allow: /
+Allow: /shop.html
+Allow: /product.html
+Allow: /story.html
+Allow: /contact.html
+Allow: /assets/
+Allow: /images/
+
+# Private admin, customer account, and transactional checkout/cart pages
+Disallow: /admin.html
+Disallow: /admin
+Disallow: /account.html
+Disallow: /account
+Disallow: /cart.html
+Disallow: /cart
+Disallow: /checkout.html
+Disallow: /checkout
+Disallow: /order-confirmation.html
+Disallow: /order-confirmation
+Disallow: /api/
+
+Sitemap: https://matranaari.com/sitemap.xml
+
