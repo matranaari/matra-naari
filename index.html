@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
   <link rel="stylesheet"
     href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=Manrope:wght@400;500;600;700&display=swap" />
-  <link rel="stylesheet" href="assets/styles.css" />
+  <link rel="stylesheet" href="assets/styles.css?v=20261115.3" />
   <title>Matra Naari — Buy Women's Indian Kurtis, Anarkalis &amp; Kurta Sets Online | Woven with Meaning</title>
   <meta name="description"
     content="Official Matra Naari store (matranaari.com) — Woven with Meaning. Shop women's Indian kurtis online across India: straight cut kurtis, A-line, Anarkali kurtas, angrakhas, short kurtis, kaftans &amp; 2-piece co-ord sets in sizes XS to XXL." />
@@ -133,476 +133,252 @@
 
 <body class="text-foreground antialiased selection:bg-primary/20 selection:text-primary">
 
-  <!-- Top Announcement Bar (Configurable Promo Ticker) -->
+  <!-- Slim Announcement Bar -->
   <div id="top-announcement-bar"
     class="mn-announcement-bar py-2 px-3 sm:px-4 text-center flex items-center justify-center transition-all duration-300">
     <div class="flex items-center gap-2 max-w-full overflow-hidden">
-      <span class="text-[10px] opacity-80 shrink-0">✦</span>
-      <span class="announcement-text transition-opacity duration-300 font-medium truncate">FREE EXPRESS SHIPPING ACROSS INDIA ABOVE ₹999 · CODE: NAARI10 FOR 10% OFF</span>
-      <span class="text-[10px] opacity-80 shrink-0">✦</span>
+      <span class="announcement-text transition-opacity duration-300 font-normal truncate">Complimentary Express Delivery Above ₹999 · Code NAARI10 for 10% Off</span>
     </div>
   </div>
 
-  <!-- 3-Zone Architectural Boutique Navigation Header -->
-  <header class="mn-site-header sticky top-0 z-40">
-    <div class="mn-boutique-header-inner">
+  <!-- Minimalist Sticky Header -->
+  <header class="mn-site-header">
+    <div class="mn-container h-16 sm:h-20 flex items-center justify-between gap-4">
 
-      <!-- Left Zone (Mobile): Menu Drawer & Quick Search -->
-      <div class="mn-header-mobile-left">
-        <button type="button" class="open-mobile-menu-btn mn-icon-btn" aria-label="Open Navigation Menu">
-          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M4 6h16M4 12h16M4 18h12" />
+      <!-- Left Navigation / Mobile Drawer Trigger -->
+      <div class="flex items-center gap-6 flex-1 min-w-0">
+        <button id="mobile-menu-btn" type="button" aria-label="Open menu"
+          class="md:hidden p-2 -ml-2 text-foreground hover:text-primary transition cursor-pointer shrink-0">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="3" x2="21" y1="6" y2="6" />
+            <line x1="3" x2="21" y1="12" y2="12" />
+            <line x1="3" x2="21" y1="18" y2="18" />
           </svg>
         </button>
-        <button type="button" class="open-search-modal-btn mn-icon-btn" aria-label="Search Catalog">
-          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
-              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-          </svg>
-        </button>
+
+        <nav class="hidden md:flex items-center gap-7" aria-label="Primary navigation">
+          <a href="shop.html" class="mn-nav-link">Shop All</a>
+          <a href="shop.html?category=Anarkali" class="mn-nav-link">Festive</a>
+          <a href="shop.html?category=Co-ord%20Set" class="mn-nav-link">Kurta Sets</a>
+          <a href="story.html" class="mn-nav-link">Our Story</a>
+        </nav>
       </div>
 
-      <!-- Left Zone (Desktop): Spacious Editorial Navigation Links -->
-      <nav class="mn-header-nav-left" aria-label="Primary Navigation">
-        <div class="relative group">
-          <a class="mn-nav-link active flex items-center gap-1" href="shop.html">
-            Silhouettes
-            <svg class="h-3 w-3 opacity-70 group-hover:rotate-180 transition-transform duration-200" fill="none"
-              stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-            </svg>
-          </a>
-          <!-- Boutique Dropdown Menu -->
-          <div
-            class="absolute left-0 top-full pt-3 w-64 invisible group-hover:visible opacity-0 group-hover:opacity-100 transition-all duration-200 z-50">
-            <div class="bg-card/95 backdrop-blur-md border border-border shadow-xl p-4 space-y-2 text-xs font-sans rounded-xs">
-              <a href="shop.html" class="block font-semibold text-primary pb-2 border-b border-border uppercase tracking-wider">All 7 Silhouettes</a>
-              <a href="shop.html?category=Straight Cut"
-                class="block py-0.5 text-foreground/85 hover:text-primary transition">01 · Straight Cut Kurtis</a>
-              <a href="shop.html?category=A-Line"
-                class="block py-0.5 text-foreground/85 hover:text-primary transition">02 · A-Line Silhouettes</a>
-              <a href="shop.html?category=Anarkali"
-                class="block py-0.5 text-foreground/85 hover:text-primary transition">03 · Anarkali Kurtas</a>
-              <a href="shop.html?category=Short Kurti"
-                class="block py-0.5 text-foreground/85 hover:text-primary transition">04 · Short Everyday Kurtis</a>
-              <a href="shop.html?category=Angrakha"
-                class="block py-0.5 text-foreground/85 hover:text-primary transition">05 · Angrakha Silhouettes</a>
-              <a href="shop.html?category=Kaftan"
-                class="block py-0.5 text-foreground/85 hover:text-primary transition">06 · Relaxed Kaftans</a>
-              <a href="shop.html?category=Co-ord Set"
-                class="block py-0.5 text-foreground/85 hover:text-primary transition">07 · Co-ord Sets (2-Piece)</a>
-            </div>
-          </div>
-        </div>
-        <a class="mn-nav-link" href="shop.html?category=Anarkali">Festive Edit</a>
-        <a class="mn-nav-link" href="shop.html?category=Co-ord Set">Co-ord Sets</a>
-        <a class="mn-nav-link" href="story.html">Our Story</a>
-      </nav>
+      <!-- Center Brand Crest -->
+      <a href="index.html" class="flex items-center justify-center shrink-0">
+        <img src="images/naari-logo.png" alt="Matra Naari — Woven with Meaning"
+          class="h-10 sm:h-12 md:h-14 w-auto object-contain mix-blend-multiply" />
+      </a>
 
-      <!-- Center Zone: Matra Naari Crest & Wordmark -->
-      <div class="mn-header-brand-center">
-        <a aria-label="Matra Naari Home" href="index.html">
-          <img src="images/naari-logo.png" alt="Matra Naari — Woven with Meaning" />
-        </a>
-      </div>
-
-      <!-- Right Zone: Utility Actions (Search, Wishlist, Account, Bag) -->
-      <div class="mn-header-actions-right">
-        <!-- Desktop Search Trigger -->
-        <button type="button"
-          class="open-search-modal-btn mn-header-desktop-search items-center gap-1.5 px-2.5 py-1.5 text-xs font-sans text-foreground/80 hover:text-primary border border-border/80 bg-card/70 rounded-xs transition cursor-pointer"
-          aria-label="Search Catalog">
-          <svg class="h-3.5 w-3.5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+      <!-- Right Utility Actions -->
+      <div class="flex items-center justify-end gap-1 sm:gap-2 flex-1 min-w-0">
+        <button type="button" aria-label="Search Kurtis" title="Search Collection" class="open-search-modal-btn mn-icon-btn">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8" />
+            <path d="m21 21-4.3-4.3" />
           </svg>
-          <span class="tracking-wider uppercase text-[10px] font-semibold">Search</span>
         </button>
 
-        <!-- Wishlist Trigger -->
-        <button type="button"
-          class="open-wishlist-drawer-btn mn-icon-btn"
-          aria-label="Saved Wishlist">
-          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
-              d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+        <button type="button" aria-label="Saved Wishlist" title="Saved Kurtis" class="open-wishlist-drawer-btn mn-icon-btn">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" />
           </svg>
-          <span
-            class="wishlist-count-badge absolute -top-0.5 -right-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-primary-foreground font-sans"
-            style="display:none;">0</span>
+          <span class="wishlist-badge-count hidden absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[9px] text-primary-foreground font-bold font-sans">0</span>
         </button>
 
-        <!-- Customer Account / Sign In -->
-        <button type="button"
-          class="open-auth-modal-btn mn-icon-btn sm:w-auto sm:px-2 flex items-center gap-1.5"
-          aria-label="Customer Account">
-          <svg class="h-5 w-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
-              d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+        <button type="button" aria-label="Customer Account" title="My Account"
+          class="open-auth-modal-btn mn-icon-btn">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
+            <circle cx="12" cy="7" r="4" />
           </svg>
-          <span
-            class="header-user-label hidden lg:inline text-[11px] font-sans font-semibold uppercase tracking-wider text-foreground/85">Account</span>
+          <span class="nav-auth-label hidden lg:inline text-[11px] uppercase tracking-[0.16em] ml-1.5 font-medium text-foreground/80">Sign In</span>
         </button>
 
-        <!-- Shopping Bag Pill -->
-        <button type="button"
-          class="open-cart-drawer-btn mn-bag-pill-btn"
-          aria-label="Shopping Bag">
-          <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
-              d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+        <button type="button" aria-label="Shopping Bag" class="open-cart-drawer-btn mn-bag-pill-btn ml-1">
+          <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z" />
+            <path d="M3 6h18" />
+            <path d="M16 10a4 4 0 0 1-8 0" />
           </svg>
-          <span>Bag</span>
-          <span
-            class="bag-count-badge flex h-4 min-w-[16px] items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-primary-foreground font-sans"
-            style="display:none;">0</span>
+          <span class="hidden sm:inline text-[11px] uppercase tracking-[0.16em] font-medium">Bag</span>
+          <span class="cart-badge-count hidden flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[9px] text-primary-foreground font-bold">0</span>
         </button>
       </div>
+    </div>
 
+    <!-- Clean Mobile Navigation Drawer -->
+    <div id="mobile-menu" class="hidden md:hidden border-t border-border/70 bg-background px-6 py-6 space-y-4">
+      <div class="flex flex-col space-y-3 text-xs uppercase tracking-[0.18em] font-medium">
+        <a href="shop.html" class="py-1.5 text-foreground hover:text-primary transition">Shop Collection</a>
+        <a href="shop.html?category=Straight%20Cut" class="py-1.5 text-muted-foreground hover:text-primary transition">Straight Kurtis</a>
+        <a href="shop.html?category=Anarkali" class="py-1.5 text-muted-foreground hover:text-primary transition">Festive Anarkalis</a>
+        <a href="shop.html?category=A-Line" class="py-1.5 text-muted-foreground hover:text-primary transition">A-Line Kurtis</a>
+        <a href="shop.html?category=Co-ord%20Set" class="py-1.5 text-muted-foreground hover:text-primary transition">Co-ord Kurta Sets</a>
+        <a href="story.html" class="py-1.5 text-muted-foreground hover:text-primary transition">Our Story</a>
+        <a href="contact.html" class="py-1.5 text-muted-foreground hover:text-primary transition">Customer Care</a>
+        <a href="account.html" class="py-1.5 text-muted-foreground hover:text-primary transition">My Account</a>
+      </div>
     </div>
   </header>
 
   <main>
 
     <!-- =====================================================================
-         SECTION 1 — ATELIER HERO (Asymmetric Editorial Split + Dual Portrait)
+         SECTION 1 — HERO SECTION (Minimalist Editorial Lookbook)
          ===================================================================== -->
     <section class="mn-atelier-hero">
-      <div class="mn-atelier-hero-inner">
+      <div class="mn-container py-5 sm:py-8 lg:py-12">
+        <div class="mn-hero-grid">
 
-        <!-- Left Column: Editorial Narrative, CTAs & Boutique Metrics -->
-        <div class="mn-hero-copy-col">
-          <div class="mn-hero-kicker">
-            <span class="mn-hero-kicker-line" aria-hidden="true"></span>
-            <span>Woven with Meaning · मात्रा नारी</span>
-          </div>
+          <!-- Left Column: Refined Editorial Copy + Single Primary CTA -->
+          <div class="order-2 lg:order-1 flex flex-col items-start text-left max-w-xl">
+            <span class="mn-eyebrow mb-3">Matra Naari · Ready-to-Wear</span>
 
-          <h1 class="mn-hero-title">
-            <span class="sr-only">Matra Naari Indian Kurtis — </span>Where timeless Indian drape meets <em>quiet modern grace.</em>
-          </h1>
+            <h1 class="mn-display-hero text-foreground">
+              Modern Kurtis,<br />
+              <span class="mn-editorial-accent text-primary">Rooted in Craft.</span>
+            </h1>
 
-          <p class="mn-hero-lead">
-            Thoughtfully proportioned across seven classic and contemporary silhouettes—from tailored straight cuts and breezy short kurtis to festive Anarkalis and coordinated two-piece sets in sizes XS to XXL.
-          </p>
+            <p class="mt-3 sm:mt-4 text-sm sm:text-base text-muted-foreground leading-relaxed font-sans max-w-md">
+              Thoughtfully proportioned Indian ethnic silhouettes in breathable weaves, tailored for effortless grace from everyday hours to festive evenings.
+            </p>
 
-          <div class="mn-hero-actions">
-            <a class="mn-btn-primary" href="shop.html">
-              <span>Explore the Collection</span>
-              <span aria-hidden="true">→</span>
-            </a>
-            <a class="mn-btn-outline" href="shop.html?category=Anarkali">
-              <span>Shop Festive Edit</span>
-            </a>
-          </div>
-
-          <div class="mn-hero-metrics">
-            <div class="mn-hero-metric-item">
-              <div class="mn-hero-metric-val">7 Silhouettes</div>
-              <div class="mn-hero-metric-sub">Straight Cut to Anarkali</div>
-            </div>
-            <div class="mn-hero-metric-item">
-              <div class="mn-hero-metric-val">Sizes XS – XXL</div>
-              <div class="mn-hero-metric-sub">Proportionate Indian Fits</div>
-            </div>
-            <div class="mn-hero-metric-item">
-              <div class="mn-hero-metric-val">Pan-India COD</div>
-              <div class="mn-hero-metric-sub">7-Day Easy Exchanges</div>
+            <div class="mt-5 sm:mt-6 w-full sm:w-auto">
+              <a href="shop.html" class="mn-btn-primary">
+                <span>Shop Collection</span>
+                <span aria-hidden="true">→</span>
+              </a>
             </div>
           </div>
-        </div>
 
-        <!-- Right Column: Controlled Dual-Portrait Editorial Stage -->
-        <div class="mn-hero-stage">
-          <div class="mn-hero-diptych">
-
-            <!-- Primary Arch-Topped Portrait Card -->
-            <a href="product.html?id=straight" class="mn-hero-portrait-main group" aria-label="View Gulmohar Straight Kurti">
-              <div class="mn-hero-portrait-main-media">
-                <img src="assets/hero.jpg" alt="Gulmohar Straight Kurti in deep maroon by Matra Naari" width="640" height="800" fetchpriority="high" decoding="async" />
-              </div>
-              <div class="mn-hero-portrait-caption">
-                <div>
-                  <span class="mn-hero-caption-tag">Look 01 · Straight Cut</span>
-                  <div class="mn-hero-caption-title">Gulmohar Straight Kurti</div>
+          <!-- Right Column: Clean Editorial Photography Composition -->
+          <div class="order-1 lg:order-2 w-full">
+            <div class="mn-hero-diptych">
+              <!-- Primary Portrait -->
+              <a href="product.html?id=straight" class="mn-hero-portrait-main group">
+                <div class="mn-hero-portrait-main-media">
+                  <img src="assets/hero.jpg" alt="Gulmohar Straight Kurti by Matra Naari" fetchpriority="high" />
                 </div>
-                <span class="mn-hero-caption-price">₹1,299 →</span>
-              </div>
-            </a>
-
-            <!-- Secondary Offset Lookbook Portrait + Atelier Seal -->
-            <div class="flex flex-col justify-between gap-3">
-              <div class="mn-hero-seal hidden sm:flex" aria-hidden="true">
-                <div>
-                  <span class="mn-hero-seal-deva">मात्रा नारी</span>
-                  <span class="mn-hero-seal-sub">Woven with Meaning</span>
+                <div class="mn-hero-caption">
+                  <span>Gulmohar Straight Kurti</span>
+                  <span class="text-foreground font-medium">₹1,299</span>
                 </div>
-              </div>
+              </a>
 
-              <a href="product.html?id=anarkali" class="mn-hero-portrait-secondary group" aria-label="View Genda Anarkali Kurta">
+              <!-- Secondary Portrait (Desktop / Tablet Asymmetric Accent) -->
+              <a href="product.html?id=anarkali" class="mn-hero-portrait-secondary group">
                 <div class="mn-hero-portrait-secondary-media">
-                  <img src="assets/k-anarkali.jpg" alt="Genda Anarkali Kurta festive silhouette by Matra Naari" width="480" height="600" decoding="async" />
+                  <img src="assets/k-anarkali.jpg" alt="Genda Anarkali Kurta by Matra Naari" loading="eager" />
                 </div>
-                <div class="mn-hero-portrait-caption">
-                  <div>
-                    <span class="mn-hero-caption-tag">Look 02 · Festive</span>
-                    <div class="mn-hero-caption-title">Genda Anarkali</div>
-                  </div>
-                  <span class="mn-hero-caption-price">₹2,499</span>
+                <div class="mn-hero-caption">
+                  <span>Genda Anarkali</span>
+                  <span class="text-foreground font-medium">₹2,199</span>
                 </div>
               </a>
             </div>
-
           </div>
-        </div>
 
+        </div>
       </div>
     </section>
 
     <!-- =====================================================================
-         SECTION 2 — THE SEVEN SILHOUETTES (Architectural Runway Index)
+         SECTION 2 — SHOP BY SILHOUETTE (Clean 3:4 Portrait Navigation)
          ===================================================================== -->
-    <section class="mn-silhouette-section" data-mn-reveal>
+    <section class="mn-section border-t border-border/60" data-mn-reveal>
       <div class="mn-container">
-        <div class="mn-section-header">
+        <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-2 mb-4 sm:mb-8">
           <div>
-            <p class="mn-eyebrow mn-eyebrow-left mb-1">Architectural Index · 01 — 07</p>
-            <h2 class="mn-section-title">The Seven Silhouettes</h2>
+            <span class="mn-eyebrow block mb-1.5">Curated Proportions</span>
+            <h2 class="mn-display-section text-foreground">Shop by Silhouette</h2>
           </div>
-          <a href="shop.html" class="mn-section-link">
-            <span>Browse Full Catalog</span>
+          <a href="shop.html" class="mn-link-editorial self-start sm:self-auto">
+            <span>View All Silhouettes</span>
             <span aria-hidden="true">→</span>
           </a>
         </div>
 
-        <div class="mn-silhouette-runway" id="home-silhouette-track">
-          <a href="shop.html?category=Straight Cut" class="mn-silhouette-card">
+        <div class="mn-silhouette-runway" aria-label="Shop by Silhouette">
+          <!-- Straight Kurtis -->
+          <a href="shop.html?category=Straight%20Cut" class="mn-silhouette-card">
             <div class="mn-silhouette-card-media">
-              <span class="mn-silhouette-index">01</span>
-              <img src="assets/hero.jpg" alt="Straight Cut Kurtis" loading="lazy" />
+              <img src="assets/hero.jpg" alt="Straight Kurtis" loading="lazy" />
             </div>
-            <div class="mn-silhouette-card-body">
-              <div class="mn-silhouette-name">Straight Cut</div>
-              <div class="mn-silhouette-meta">Tailored · ₹1,299</div>
+            <div class="mn-silhouette-card-meta">
+              <h3 class="mn-silhouette-card-title">Straight Kurtis</h3>
+              <p class="mn-silhouette-card-sub">Tailored Everyday</p>
             </div>
           </a>
 
-          <a href="shop.html?category=A-Line" class="mn-silhouette-card">
-            <div class="mn-silhouette-card-media">
-              <span class="mn-silhouette-index">02</span>
-              <img src="assets/k-aline.jpg" alt="A-Line Silhouettes" loading="lazy" />
-            </div>
-            <div class="mn-silhouette-card-body">
-              <div class="mn-silhouette-name">A-Line</div>
-              <div class="mn-silhouette-meta">Flared Hem · ₹1,499</div>
-            </div>
-          </a>
-
+          <!-- Anarkali -->
           <a href="shop.html?category=Anarkali" class="mn-silhouette-card">
             <div class="mn-silhouette-card-media">
-              <span class="mn-silhouette-index">03</span>
               <img src="assets/k-anarkali.jpg" alt="Anarkali Kurtas" loading="lazy" />
             </div>
-            <div class="mn-silhouette-card-body">
-              <div class="mn-silhouette-name">Anarkali</div>
-              <div class="mn-silhouette-meta">Panelled · ₹2,499</div>
+            <div class="mn-silhouette-card-meta">
+              <h3 class="mn-silhouette-card-title">Anarkali</h3>
+              <p class="mn-silhouette-card-sub">Festive Flare</p>
             </div>
           </a>
 
-          <a href="shop.html?category=Short Kurti" class="mn-silhouette-card">
+          <!-- A-Line -->
+          <a href="shop.html?category=A-Line" class="mn-silhouette-card">
             <div class="mn-silhouette-card-media">
-              <span class="mn-silhouette-index">04</span>
+              <img src="assets/k-aline.jpg" alt="A-Line Kurtis" loading="lazy" />
+            </div>
+            <div class="mn-silhouette-card-meta">
+              <h3 class="mn-silhouette-card-title">A-Line</h3>
+              <p class="mn-silhouette-card-sub">Fluid Drape</p>
+            </div>
+          </a>
+
+          <!-- Short Kurtis -->
+          <a href="shop.html?category=Short%20Kurti" class="mn-silhouette-card">
+            <div class="mn-silhouette-card-media">
               <img src="assets/k-short.jpg" alt="Short Kurtis" loading="lazy" />
             </div>
-            <div class="mn-silhouette-card-body">
-              <div class="mn-silhouette-name">Short Kurtis</div>
-              <div class="mn-silhouette-meta">Hip-Length · ₹899</div>
+            <div class="mn-silhouette-card-meta">
+              <h3 class="mn-silhouette-card-title">Short Kurtis</h3>
+              <p class="mn-silhouette-card-sub">Modern Tunics</p>
             </div>
           </a>
 
+          <!-- Angrakha -->
           <a href="shop.html?category=Angrakha" class="mn-silhouette-card">
             <div class="mn-silhouette-card-media">
-              <span class="mn-silhouette-index">05</span>
               <img src="assets/k-angrakha.jpg" alt="Angrakha Kurtis" loading="lazy" />
             </div>
-            <div class="mn-silhouette-card-body">
-              <div class="mn-silhouette-name">Angrakha</div>
-              <div class="mn-silhouette-meta">Tie-Wrap · ₹1,799</div>
+            <div class="mn-silhouette-card-meta">
+              <h3 class="mn-silhouette-card-title">Angrakha</h3>
+              <p class="mn-silhouette-card-sub">Artisanal Tie-Wrap</p>
             </div>
           </a>
 
+          <!-- Kaftan -->
           <a href="shop.html?category=Kaftan" class="mn-silhouette-card">
             <div class="mn-silhouette-card-media">
-              <span class="mn-silhouette-index">06</span>
-              <img src="assets/k-kaftan.jpg" alt="Kaftan Kurtas" loading="lazy" />
+              <img src="assets/k-kaftan.jpg" alt="Kaftan Kurtis" loading="lazy" />
             </div>
-            <div class="mn-silhouette-card-body">
-              <div class="mn-silhouette-name">Kaftan</div>
-              <div class="mn-silhouette-meta">Waist Drawstring · ₹1,599</div>
+            <div class="mn-silhouette-card-meta">
+              <h3 class="mn-silhouette-card-title">Kaftan</h3>
+              <p class="mn-silhouette-card-sub">Relaxed Resort</p>
             </div>
           </a>
 
-          <a href="shop.html?category=Co-ord Set" class="mn-silhouette-card">
+          <!-- Co-ord Sets -->
+          <a href="shop.html?category=Co-ord%20Set" class="mn-silhouette-card">
             <div class="mn-silhouette-card-media">
-              <span class="mn-silhouette-index">07</span>
-              <img src="assets/k-coord.jpg" alt="Co-ord Sets" loading="lazy" />
+              <img src="assets/k-coord.jpg" alt="Co-ord Kurta Sets" loading="lazy" />
             </div>
-            <div class="mn-silhouette-card-body">
-              <div class="mn-silhouette-name">Co-ord Sets</div>
-              <div class="mn-silhouette-meta">Kurta + Pants · ₹2,199</div>
-            </div>
-          </a>
-        </div>
-      </div>
-    </section>
-
-    <!-- =====================================================================
-         SECTION 3 — THE CURATED WARDROBE (Interactive Filter + 4-Col Grid)
-         ===================================================================== -->
-    <section class="mn-wardrobe-section" data-mn-reveal>
-      <div class="mn-container">
-        <div class="mn-section-header">
-          <div>
-            <p class="mn-eyebrow mn-eyebrow-left mb-1">Curated Selection · Sizes XS to XXL</p>
-            <h2 class="mn-section-title">Signature Silhouettes</h2>
-          </div>
-
-          <!-- Interactive Wardrobe Filter Tabs -->
-          <div class="mn-filter-tabs" role="tablist" aria-label="Filter Signature Silhouettes">
-            <button type="button" class="mn-filter-tab active" data-wardrobe-filter="all" role="tab" aria-selected="true">All Styles</button>
-            <button type="button" class="mn-filter-tab" data-wardrobe-filter="everyday" role="tab" aria-selected="false">Everyday &amp; Work</button>
-            <button type="button" class="mn-filter-tab" data-wardrobe-filter="festive" role="tab" aria-selected="false">Festive &amp; Occasion</button>
-            <button type="button" class="mn-filter-tab" data-wardrobe-filter="sets" role="tab" aria-selected="false">Sets &amp; Kaftans</button>
-          </div>
-        </div>
-
-        <div class="mn-product-grid-4" id="home-featured-grid">
-          <!-- Static SSR fallback product cards for immediate crawler indexing; hydrated at 0ms by loadHomepageCatalog() -->
-          <article class="mn-product-card group" data-product-id="straight">
-            <div class="mn-product-card-media">
-              <a href="product.html?id=straight" class="block h-full w-full">
-                <img src="assets/hero.jpg" alt="Gulmohar Straight Kurti — Straight Cut Kurti by Matra Naari" loading="lazy" decoding="async" />
-              </a>
-            </div>
-            <div class="mn-product-card-body">
-              <div class="mn-product-meta">Straight Cut · Straight Kurta</div>
-              <h3 class="mn-product-title"><a href="product.html?id=straight">Gulmohar Straight Kurti</a></h3>
-              <div class="mn-product-price-row"><span class="mn-price text-base">₹1,299</span></div>
-            </div>
-          </article>
-          <article class="mn-product-card group" data-product-id="aline">
-            <div class="mn-product-card-media">
-              <a href="product.html?id=aline" class="block h-full w-full">
-                <img src="assets/k-aline.jpg" alt="Chandni A-Line Kurti — Flared A-Line Kurti by Matra Naari" loading="lazy" decoding="async" />
-              </a>
-            </div>
-            <div class="mn-product-card-body">
-              <div class="mn-product-meta">A-Line · Flared A-Line</div>
-              <h3 class="mn-product-title"><a href="product.html?id=aline">Chandni A-Line Kurti</a></h3>
-              <div class="mn-product-price-row"><span class="mn-price text-base">₹1,499</span></div>
-            </div>
-          </article>
-          <article class="mn-product-card group" data-product-id="anarkali">
-            <div class="mn-product-card-media">
-              <a href="product.html?id=anarkali" class="block h-full w-full">
-                <img src="assets/k-anarkali.jpg" alt="Genda Anarkali Kurta — Festive Flared Anarkali by Matra Naari" loading="lazy" decoding="async" />
-              </a>
-            </div>
-            <div class="mn-product-card-body">
-              <div class="mn-product-meta">Anarkali · Flared Anarkali</div>
-              <h3 class="mn-product-title"><a href="product.html?id=anarkali">Genda Anarkali Kurta</a></h3>
-              <div class="mn-product-price-row"><span class="mn-price text-base">₹2,499</span></div>
-            </div>
-          </article>
-          <article class="mn-product-card group" data-product-id="short">
-            <div class="mn-product-card-media">
-              <a href="product.html?id=short" class="block h-full w-full">
-                <img src="assets/k-short.jpg" alt="Neel Short Kurti — Everyday Printed Tunic by Matra Naari" loading="lazy" decoding="async" />
-              </a>
-            </div>
-            <div class="mn-product-card-body">
-              <div class="mn-product-meta">Short Kurti · Everyday Tunic</div>
-              <h3 class="mn-product-title"><a href="product.html?id=short">Neel Short Kurti</a></h3>
-              <div class="mn-product-price-row"><span class="mn-price text-base">₹899</span></div>
-            </div>
-          </article>
-        </div>
-      </div>
-    </section>
-
-    <!-- =====================================================================
-         SECTION 4 — THREE WARDROBE CHAPTERS (Magazine Lookbook Triptych)
-         ===================================================================== -->
-    <section class="mn-chapters-section" data-mn-reveal>
-      <div class="mn-container">
-        <div class="mn-section-header">
-          <div>
-            <p class="mn-eyebrow mn-eyebrow-left mb-1">Curated Edits</p>
-            <h2 class="mn-section-title">Three Wardrobe Chapters</h2>
-          </div>
-          <a href="shop.html" class="mn-section-link">
-            <span>View Complete Collection</span>
-            <span aria-hidden="true">→</span>
-          </a>
-        </div>
-
-        <div class="mn-chapters-grid">
-          <!-- Chapter I -->
-          <a href="shop.html?category=Straight Cut" class="mn-chapter-card group">
-            <div class="mn-chapter-media">
-              <img src="assets/hero.jpg" alt="Everyday & Work Edit — Straight Cut and Short Kurtis" loading="lazy" />
-            </div>
-            <div class="mn-chapter-body">
-              <div>
-                <span class="mn-chapter-kicker">Chapter I · Nine-to-Nine</span>
-                <h3 class="mn-chapter-title">Everyday &amp; Work Edit</h3>
-                <p class="mn-chapter-desc">
-                  Clean straight cuts, A-line silhouettes, and hip-length short kurtis proportioned for all-day ease.
-                </p>
-              </div>
-              <div class="mn-chapter-footer">
-                <span>Straight · A-Line · Short Kurti</span>
-                <span>Explore Edit →</span>
-              </div>
-            </div>
-          </a>
-
-          <!-- Chapter II -->
-          <a href="shop.html?category=Anarkali" class="mn-chapter-card group">
-            <div class="mn-chapter-media">
-              <img src="assets/k-anarkali.jpg" alt="Festive & Celebration — Anarkalis and Angrakhas" loading="lazy" />
-            </div>
-            <div class="mn-chapter-body">
-              <div>
-                <span class="mn-chapter-kicker">Chapter II · Occasion Wear</span>
-                <h3 class="mn-chapter-title">Festive &amp; Celebration</h3>
-                <p class="mn-chapter-desc">
-                  Full-flare panelled Anarkalis and classic tie-wrap Angrakha kurtis designed for family gatherings and celebrations.
-                </p>
-              </div>
-              <div class="mn-chapter-footer">
-                <span>Anarkali · Angrakha</span>
-                <span>Explore Edit →</span>
-              </div>
-            </div>
-          </a>
-
-          <!-- Chapter III -->
-          <a href="shop.html?category=Co-ord Set" class="mn-chapter-card group">
-            <div class="mn-chapter-media">
-              <img src="assets/k-coord.jpg" alt="Co-ords & Kaftans — Two-Piece Sets and Relaxed Kaftans" loading="lazy" />
-            </div>
-            <div class="mn-chapter-body">
-              <div>
-                <span class="mn-chapter-kicker">Chapter III · Matched Elegance</span>
-                <h3 class="mn-chapter-title">Co-ords &amp; Kaftans</h3>
-                <p class="mn-chapter-desc">
-                  Synchronized two-piece kurta-and-trouser sets alongside waist-cinched kaftans for travel and lounging.
-                </p>
-              </div>
-              <div class="mn-chapter-footer">
-                <span>Co-ord Sets · Kaftans</span>
-                <span>Explore Edit →</span>
-              </div>
+            <div class="mn-silhouette-card-meta">
+              <h3 class="mn-silhouette-card-title">Co-ord Sets</h3>
+              <p class="mn-silhouette-card-sub">2-Piece Ensembles</p>
             </div>
           </a>
         </div>
@@ -610,76 +386,66 @@
     </section>
 
     <!-- =====================================================================
-         SECTION 5 — WOVEN WITH MEANING (Burgundy & Ivory Editorial Manifesto)
+         SECTION 3 — BESTSELLERS (Borderless 3:4 Product Grid)
          ===================================================================== -->
-    <section class="mn-manifesto-band" data-mn-reveal>
+    <section class="mn-section border-t border-border/60" data-mn-reveal>
       <div class="mn-container">
-        <div class="mn-manifesto-grid">
-
-          <!-- Left: Brand Philosophy & Emblem -->
+        <div class="flex flex-col md:flex-row md:items-end justify-between gap-3 mb-4 sm:mb-8">
           <div>
-            <p class="text-[11px] uppercase tracking-[0.24em] font-semibold" style="color: #E2C699;">
-              Our Philosophy · मात्रा नारी
-            </p>
-            <h2 class="font-display text-3xl sm:text-5xl font-semibold mt-2 leading-[1.08]" style="color: #FFFDF9;">
-              Woven with <span class="mn-editorial-accent font-normal" style="color: #E2C699;">Meaning</span>, tailored for life in motion.
+            <span class="mn-eyebrow block mb-1.5">Most Loved</span>
+            <h2 class="mn-display-section text-foreground">Signature Bestsellers</h2>
+          </div>
+
+          <!-- Minimal Underline Filter Tabs -->
+          <div class="flex items-center gap-6 overflow-x-auto pb-1" role="tablist" aria-label="Filter Bestsellers">
+            <button type="button" role="tab" aria-selected="true" data-wardrobe-filter="all"
+              class="mn-filter-tab active shrink-0">All Styles</button>
+            <button type="button" role="tab" aria-selected="false" data-wardrobe-filter="everyday"
+              class="mn-filter-tab shrink-0">Everyday</button>
+            <button type="button" role="tab" aria-selected="false" data-wardrobe-filter="festive"
+              class="mn-filter-tab shrink-0">Festive</button>
+            <button type="button" role="tab" aria-selected="false" data-wardrobe-filter="sets"
+              class="mn-filter-tab shrink-0">Sets &amp; Tunics</button>
+          </div>
+        </div>
+
+        <div id="home-featured-grid" class="mn-product-grid-4">
+          <!-- Populated dynamically via app.js renderProductCard -->
+        </div>
+      </div>
+    </section>
+
+    <!-- =====================================================================
+         SECTION 4 — EDITORIAL COLLECTION SECTION (Magazine Feature)
+         ===================================================================== -->
+    <section class="mn-editorial-section mn-section" data-mn-reveal>
+      <div class="mn-container">
+        <div class="mn-editorial-grid">
+
+          <!-- Left: Editorial Imagery Composition -->
+          <div class="mn-editorial-media-composition">
+            <a href="product.html?id=angrakha" class="mn-editorial-img-primary block">
+              <img src="assets/k-angrakha.jpg" alt="Tulsi Angrakha — Artisanal Detail" loading="lazy" />
+            </a>
+            <a href="product.html?id=anarkali" class="mn-editorial-img-secondary block">
+              <img src="assets/k-anarkali.jpg" alt="Genda Anarkali Kurta — Festive Edit" loading="lazy" />
+            </a>
+          </div>
+
+          <!-- Right: Restrained Editorial Story -->
+          <div class="max-w-lg">
+            <span class="mn-eyebrow block mb-2">Editorial Edit · Festive &amp; Craft</span>
+            <h2 class="mn-display-section text-foreground">
+              The Grace of Unhurried Craft
             </h2>
-            <p class="mt-4 text-sm sm:text-base leading-relaxed font-sans" style="color: rgba(250, 246, 240, 0.84);">
-              The Matra Naari emblem brings together Devanagari and Roman letterforms in a single unbroken stroke—reflecting how today’s Indian woman carries her heritage with quiet, contemporary self-assurance.
+            <p class="mt-2.5 sm:mt-4 text-xs sm:text-base text-muted-foreground leading-relaxed font-sans">
+              Hand-tied Angrakhas and festive Anarkalis pairing heritage Indian motifs with breathable, cloud-soft silhouettes.
             </p>
-
-            <div class="mn-manifesto-emblem-box">
-              <img src="images/naari-logo.png" alt="Matra Naari Crest" />
-              <div>
-                <div class="font-display text-lg font-semibold leading-tight text-foreground">Devanagari Meets Roman</div>
-                <div class="text-[11px] text-muted-foreground font-sans">Seven signature silhouettes · Graded XS to XXL</div>
-              </div>
-            </div>
-
-            <div class="mt-6 flex flex-wrap items-center gap-4">
-              <a href="story.html" class="inline-flex items-center gap-2 px-5 py-2.5 text-xs uppercase tracking-[0.16em] font-semibold border transition" style="background: #FAF6F0; color: #3D1619; border-color: #FAF6F0;">
-                <span>Read Our Story</span>
+            <div class="mt-4 sm:mt-7">
+              <a href="shop.html?category=Anarkali" class="mn-btn-outline">
+                <span>Explore Festive Edit</span>
                 <span aria-hidden="true">→</span>
               </a>
-              <a href="shop.html" class="text-xs uppercase tracking-[0.16em] font-semibold underline underline-offset-4" style="color: #E2C699;">
-                Explore All 7 Silhouettes
-              </a>
-            </div>
-          </div>
-
-          <!-- Right: 3 Verified Brand Pillars -->
-          <div class="mn-manifesto-pillars">
-            <div class="mn-manifesto-pillar">
-              <div>
-                <span class="mn-manifesto-pillar-num">01 / Identity</span>
-                <h3 class="mn-manifesto-pillar-title">Two Scripts, One Emblem</h3>
-                <p class="mn-manifesto-pillar-text">
-                  Devanagari and Roman letterforms unite in the Matra Naari mark—honouring cultural roots with a clean, modern sensibility.
-                </p>
-              </div>
-              <div class="mn-manifesto-pillar-foot">Woven with Meaning</div>
-            </div>
-
-            <div class="mn-manifesto-pillar">
-              <div>
-                <span class="mn-manifesto-pillar-num">02 / Silhouettes</span>
-                <h3 class="mn-manifesto-pillar-title">Seven Versatile Cuts</h3>
-                <p class="mn-manifesto-pillar-text">
-                  From Straight Cut, A-Line, and Short Kurtis to flowing Anarkalis, Angrakhas, Kaftans, and matched Co-ord Sets.
-                </p>
-              </div>
-              <div class="mn-manifesto-pillar-foot">7 Signature Styles</div>
-            </div>
-
-            <div class="mn-manifesto-pillar">
-              <div>
-                <span class="mn-manifesto-pillar-num">03 / Drape</span>
-                <h3 class="mn-manifesto-pillar-title">Proportionate Indian Fits</h3>
-                <p class="mn-manifesto-pillar-text">
-                  Graded across XS to XXL for authentic Indian proportions—flattering shoulders, comfortable armholes, and graceful ease.
-                </p>
-              </div>
-              <div class="mn-manifesto-pillar-foot">Sizes XS to XXL</div>
             </div>
           </div>
 
@@ -688,126 +454,61 @@
     </section>
 
     <!-- =====================================================================
-         SECTION 6 — MORE FROM THE COLLECTION & WELCOME PRIVILEGE
+         SECTION 5 — NEW ARRIVALS (Image-First Showcase)
          ===================================================================== -->
-    <section class="mn-wardrobe-section" data-mn-reveal>
+    <section class="mn-section" data-mn-reveal>
       <div class="mn-container">
-        <div class="mn-section-header">
+        <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-2 mb-4 sm:mb-8">
           <div>
-            <p class="mn-eyebrow mn-eyebrow-left mb-1">Complete Your Wardrobe</p>
-            <h2 class="mn-section-title">Everyday &amp; Occasion Highlights</h2>
+            <span class="mn-eyebrow block mb-1.5">Just Landed</span>
+            <h2 class="mn-display-section text-foreground">New Arrivals</h2>
           </div>
-          <a href="shop.html" class="mn-section-link">
-            <span>Shop All Kurtis &amp; Sets</span>
+          <a href="shop.html" class="mn-link-editorial self-start sm:self-auto">
+            <span>Shop All Kurtis</span>
             <span aria-hidden="true">→</span>
           </a>
         </div>
 
-        <div class="mn-product-grid-4" id="home-collection-grid">
-          <!-- Static SSR fallback product cards for immediate crawler indexing; hydrated at 0ms by loadHomepageCatalog() -->
-          <article class="mn-product-card group" data-product-id="angrakha">
-            <div class="mn-product-card-media">
-              <a href="product.html?id=angrakha" class="block h-full w-full">
-                <img src="assets/k-angrakha.jpg" alt="Tulsi Angrakha — Wrap Angrakha Kurti by Matra Naari" loading="lazy" decoding="async" />
-              </a>
-            </div>
-            <div class="mn-product-card-body">
-              <div class="mn-product-meta">Angrakha · Wrap Angrakha</div>
-              <h3 class="mn-product-title"><a href="product.html?id=angrakha">Tulsi Angrakha</a></h3>
-              <div class="mn-product-price-row"><span class="mn-price text-base">₹1,799</span></div>
-            </div>
-          </article>
-          <article class="mn-product-card group" data-product-id="kaftan">
-            <div class="mn-product-card-media">
-              <a href="product.html?id=kaftan" class="block h-full w-full">
-                <img src="assets/k-kaftan.jpg" alt="Sandhya Kaftan Kurti — Relaxed Drawstring Kaftan by Matra Naari" loading="lazy" decoding="async" />
-              </a>
-            </div>
-            <div class="mn-product-card-body">
-              <div class="mn-product-meta">Kaftan · Relaxed Kaftan</div>
-              <h3 class="mn-product-title"><a href="product.html?id=kaftan">Sandhya Kaftan Kurti</a></h3>
-              <div class="mn-product-price-row"><span class="mn-price text-base">₹1,599</span></div>
-            </div>
-          </article>
-          <article class="mn-product-card group" data-product-id="coord">
-            <div class="mn-product-card-media">
-              <a href="product.html?id=coord" class="block h-full w-full">
-                <img src="assets/k-coord.jpg" alt="Gulabi Kurta Set — 2-Piece Straight Kurta &amp; Trousers Set by Matra Naari" loading="lazy" decoding="async" />
-              </a>
-            </div>
-            <div class="mn-product-card-body">
-              <div class="mn-product-meta">Co-ord Set · 2-Piece Kurta Set</div>
-              <h3 class="mn-product-title"><a href="product.html?id=coord">Gulabi Kurta Set</a></h3>
-              <div class="mn-product-price-row"><span class="mn-price text-base">₹2,199</span></div>
-            </div>
-          </article>
-        </div>
-
-        <!-- Configurable Welcome Privilege Ticket -->
-        <div class="naari-configurable-promo-banner mt-10">
-          <div class="mn-privilege-ticket">
-            <div class="space-y-1.5">
-              <span class="text-[10px] uppercase tracking-[0.22em] font-semibold text-primary block font-sans">
-                Complimentary Welcome Privilege
-              </span>
-              <h3 class="font-display text-2xl sm:text-3xl font-semibold text-foreground">
-                Enjoy 10% Off Your First Matra Naari Order
-              </h3>
-              <p class="promo-coupon-desc text-xs sm:text-sm text-muted-foreground max-w-xl font-sans leading-relaxed">
-                Apply code <strong class="promo-coupon-code text-primary font-mono select-all">NAARI10</strong> at checkout on orders above ₹999. Includes complimentary insured express shipping across India.
-              </p>
-            </div>
-
-            <div class="flex flex-wrap items-center gap-3 shrink-0 w-full md:w-auto">
-              <button type="button" data-copy-coupon="NAARI10"
-                onclick="const c=this.getAttribute('data-copy-coupon')||'NAARI10'; navigator.clipboard?.writeText(c); getToast().success('Copied coupon code '+c+'!');"
-                class="flex-1 md:flex-initial bg-card text-foreground px-4 py-2.5 border border-dashed border-primary text-center cursor-pointer hover:bg-secondary/60 transition rounded-xs">
-                <span class="text-[10px] uppercase tracking-wider block text-muted-foreground font-sans">Tap to Copy Code</span>
-                <strong class="promo-coupon-code font-mono text-sm font-bold text-primary select-all tracking-wider">NAARI10</strong>
-              </button>
-              <a href="shop.html" class="mn-btn-primary flex-1 md:flex-initial">
-                <span>Shop the Edit</span>
-                <span aria-hidden="true">→</span>
-              </a>
-            </div>
-          </div>
+        <div id="home-collection-grid" class="mn-product-grid-4">
+          <!-- Populated dynamically via app.js renderProductCard -->
         </div>
       </div>
     </section>
 
     <!-- =====================================================================
-         SECTION 7 — BOUTIQUE SERVICE GUARANTEES
+         SECTION 6 — TRUST & SHOPPING INFORMATION (Compact Icon-and-Text Rows)
          ===================================================================== -->
-    <section class="border-t border-border/80 bg-secondary/45 py-10 sm:py-12" data-mn-reveal>
+    <section class="mn-trust-ribbon" data-mn-reveal>
       <div class="mn-container">
         <div class="mn-trust-grid">
-          <div class="mn-trust-card">
-            <span class="text-[10px] uppercase tracking-[0.2em] text-primary font-semibold block">01 · Silhouette Index</span>
-            <h4 class="font-display text-xl font-semibold mt-1 text-foreground">Seven Signature Cuts</h4>
-            <p class="text-xs text-muted-foreground font-sans mt-1 leading-relaxed">
-              Straight Cut, A-Line, Anarkali, Short Kurti, Angrakha, Kaftan, and Co-ord Sets in sizes XS to XXL.
-            </p>
+          <div class="mn-trust-row">
+            <span class="mn-trust-icon" aria-hidden="true">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+            </span>
+            <div class="mn-trust-text">
+              <span class="mn-trust-label">Free Shipping Above ₹999</span>
+              <span class="mn-trust-sub">Pan-India delivery across serviceable PIN codes</span>
+            </div>
           </div>
-          <div class="mn-trust-card">
-            <span class="text-[10px] uppercase tracking-[0.2em] text-primary font-semibold block">02 · Pan-India</span>
-            <h4 class="font-display text-xl font-semibold mt-1 text-foreground">Free Express Shipping</h4>
-            <p class="text-xs text-muted-foreground font-sans mt-1 leading-relaxed">
-              Complimentary insured doorstep delivery across India on every order above ₹999.
-            </p>
+
+          <div class="mn-trust-row">
+            <span class="mn-trust-icon" aria-hidden="true">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+            </span>
+            <div class="mn-trust-text">
+              <span class="mn-trust-label">UPI, Cards &amp; Cash on Delivery</span>
+              <span class="mn-trust-sub">Secure Razorpay payments &amp; COD convenience</span>
+            </div>
           </div>
-          <div class="mn-trust-card">
-            <span class="text-[10px] uppercase tracking-[0.2em] text-primary font-semibold block">03 · Pay on Delivery</span>
-            <h4 class="font-display text-xl font-semibold mt-1 text-foreground">Cash on Delivery (COD)</h4>
-            <p class="text-xs text-muted-foreground font-sans mt-1 leading-relaxed">
-              Pay conveniently upon delivery across serviceable Indian PIN codes with zero extra COD fee.
-            </p>
-          </div>
-          <div class="mn-trust-card">
-            <span class="text-[10px] uppercase tracking-[0.2em] text-primary font-semibold block">04 · Assurance</span>
-            <h4 class="font-display text-xl font-semibold mt-1 text-foreground">7-Day Easy Exchanges</h4>
-            <p class="text-xs text-muted-foreground font-sans mt-1 leading-relaxed">
-              Hassle-free size exchanges and return requests directly from your customer account.
-            </p>
+
+          <div class="mn-trust-row">
+            <span class="mn-trust-icon" aria-hidden="true">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+            </span>
+            <div class="mn-trust-text">
+              <span class="mn-trust-label">Sizes XS to XXL · 7-Day Exchanges</span>
+              <span class="mn-trust-sub">Easy size exchanges &amp; WhatsApp support</span>
+            </div>
           </div>
         </div>
       </div>
@@ -816,78 +517,82 @@
   </main>
 
   <!-- =======================================================================
-       BOUTIQUE FOOTER
+       BOUTIQUE FOOTER (Compact + Mobile Collapsible Accordions)
        ======================================================================= -->
-  <footer class="border-t border-border bg-card">
-    <div class="mn-container py-12 sm:py-14">
+  <footer class="border-t border-border/80 bg-card">
+    <div class="mn-container py-6 sm:py-12">
       <div class="mn-footer-grid">
-        <!-- Brand Info -->
+        <!-- Brand Info & Direct Contact -->
         <div>
-          <img src="images/naari-logo.png" alt="Matra Naari" class="h-12 w-auto mix-blend-multiply" />
-          <p class="mt-3 mn-editorial-accent text-muted-foreground text-base leading-relaxed">
-            Woven with Meaning · Thoughtfully proportioned Indian ethnic wear designed for everyday grace.
+          <img src="images/naari-logo.png" alt="Matra Naari" class="h-9 sm:h-10 w-auto mix-blend-multiply" />
+          <p class="mt-2 text-xs text-muted-foreground leading-relaxed max-w-xs">
+            Modern Indian kurtis rooted in craft, comfort, and timeless proportion.
           </p>
-          <div class="mt-4 space-y-1 text-xs text-muted-foreground font-sans">
-            <p>✉ <a href="mailto:matranaari@gmail.com" class="hover:text-primary transition">matranaari@gmail.com</a></p>
-            <p>📱 <a
-                href="https://wa.me/918849366915"
-                target="_blank" rel="noreferrer" class="hover:text-primary transition">+91 88493 66915</a></p>
+          <div class="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground font-sans">
+            <a href="mailto:matranaari@gmail.com" class="hover:text-primary transition">matranaari@gmail.com</a>
+            <span aria-hidden="true" class="opacity-40">·</span>
+            <a href="https://wa.me/918849366915" target="_blank" rel="noreferrer" class="hover:text-primary transition">WhatsApp: +91 88493 66915</a>
           </div>
         </div>
 
-        <!-- Shop Categories -->
-        <div>
-          <h4 class="font-display text-lg font-semibold text-primary mb-3">The Seven Silhouettes</h4>
-          <ul class="space-y-2 text-xs font-sans text-muted-foreground">
-            <li><a href="shop.html?category=Straight Cut" class="hover:text-primary transition">Straight Cut Kurtis</a></li>
+        <!-- Silhouettes (Collapsed by default on mobile, open on desktop) -->
+        <details class="mn-footer-accordion">
+          <summary class="mn-footer-accordion-summary">
+            <span>Silhouettes</span>
+            <span class="mn-footer-accordion-icon" aria-hidden="true">+</span>
+          </summary>
+          <ul class="mn-footer-accordion-list">
+            <li><a href="shop.html?category=Straight%20Cut" class="hover:text-primary transition">Straight Kurtis</a></li>
+            <li><a href="shop.html?category=Anarkali" class="hover:text-primary transition">Anarkali Kurtas</a></li>
             <li><a href="shop.html?category=A-Line" class="hover:text-primary transition">A-Line Kurtis</a></li>
-            <li><a href="shop.html?category=Anarkali" class="hover:text-primary transition">Festive Anarkalis</a></li>
-            <li><a href="shop.html?category=Short Kurti" class="hover:text-primary transition">Short Everyday Kurtis</a></li>
+            <li><a href="shop.html?category=Short%20Kurti" class="hover:text-primary transition">Short Kurtis</a></li>
             <li><a href="shop.html?category=Angrakha" class="hover:text-primary transition">Angrakha Kurtis</a></li>
-            <li><a href="shop.html?category=Kaftan" class="hover:text-primary transition">Relaxed Kaftans</a></li>
-            <li><a href="shop.html?category=Co-ord Set" class="hover:text-primary transition">Co-ord Kurta Sets</a></li>
+            <li><a href="shop.html?category=Kaftan" class="hover:text-primary transition">Kaftan Kurtis</a></li>
+            <li><a href="shop.html?category=Co-ord%20Set" class="hover:text-primary transition">Co-ord Kurta Sets</a></li>
           </ul>
-        </div>
+        </details>
 
-        <!-- Customer Care & Signature Kurtis -->
-        <div>
-          <h4 class="font-display text-lg font-semibold text-primary mb-3">Signature Kurtis</h4>
-          <ul class="space-y-1.5 text-xs font-sans text-muted-foreground">
-            <li><a href="product.html?id=straight" class="hover:text-primary transition">Gulmohar Straight Kurti</a></li>
-            <li><a href="product.html?id=aline" class="hover:text-primary transition">Chandni A-Line Kurti</a></li>
-            <li><a href="product.html?id=anarkali" class="hover:text-primary transition">Genda Anarkali Kurta</a></li>
-            <li><a href="product.html?id=short" class="hover:text-primary transition">Neel Short Kurti</a></li>
-            <li><a href="product.html?id=angrakha" class="hover:text-primary transition">Tulsi Angrakha</a></li>
-            <li><a href="product.html?id=kaftan" class="hover:text-primary transition">Sandhya Kaftan Kurti</a></li>
-            <li><a href="product.html?id=coord" class="hover:text-primary transition">Gulabi Kurta Set</a></li>
+        <!-- Client Care (Collapsed by default on mobile, open on desktop) -->
+        <details class="mn-footer-accordion">
+          <summary class="mn-footer-accordion-summary">
+            <span>Client Care</span>
+            <span class="mn-footer-accordion-icon" aria-hidden="true">+</span>
+          </summary>
+          <ul class="mn-footer-accordion-list">
+            <li><a href="shop.html" class="hover:text-primary transition">Shop All Collection</a></li>
+            <li><a href="story.html" class="hover:text-primary transition">Our Brand Story</a></li>
+            <li><a href="contact.html" class="hover:text-primary transition">Contact &amp; Size Guide</a></li>
+            <li><a href="contact.html#shipping-policy" class="hover:text-primary transition">Shipping &amp; Delivery</a></li>
+            <li><a href="contact.html#returns-policy" class="hover:text-primary transition">7-Day Exchanges</a></li>
+            <li><a href="account.html" rel="nofollow" class="hover:text-primary transition">My Account &amp; Orders</a></li>
+            <li><a href="https://wa.me/918849366915" target="_blank" rel="noreferrer" class="hover:text-primary transition">WhatsApp Concierge</a></li>
           </ul>
-          <div class="mt-4 pt-3 border-t border-border/60 flex flex-wrap gap-x-3 gap-y-1 text-[11px] font-sans text-muted-foreground">
-            <a href="story.html" class="hover:text-primary transition">Our Story</a>
-            <a href="contact.html" class="hover:text-primary transition">Contact &amp; Fit Guide</a>
-            <a href="account.html" rel="nofollow" class="hover:text-primary transition">My Account</a>
-            <a href="admin.html" rel="nofollow" class="hover:text-primary transition text-foreground/50">Staff Portal</a>
-          </div>
-        </div>
+        </details>
 
-        <!-- Newsletter & Updates -->
+        <!-- Newsletter & Essential Policy Links -->
         <div>
-          <h4 class="font-display text-lg font-semibold text-primary mb-3">Join the Atelier List</h4>
-          <p class="text-xs text-muted-foreground font-sans leading-relaxed">
-            Receive collection updates, lookbook dispatches, and subscriber privileges.
-          </p>
-          <form id="newsletter-form" class="mt-3 flex gap-1.5">
-            <input type="email" id="newsletter-email" required placeholder="Enter your email"
-              class="min-w-0 flex-1 border border-border bg-background px-3 py-2 text-xs outline-none focus:border-primary font-sans rounded-xs" />
+          <h4 class="text-[11px] uppercase tracking-[0.2em] font-semibold text-foreground mb-2">Atelier Dispatch</h4>
+          <form id="newsletter-form" class="flex gap-1.5">
+            <input type="email" id="newsletter-email" required placeholder="Your email address"
+              class="min-w-0 flex-1 border border-border bg-background px-3 py-2 text-xs outline-none focus:border-primary font-sans" />
             <button type="submit"
-              class="bg-primary px-4 py-2 text-xs uppercase tracking-wider text-primary-foreground font-semibold cursor-pointer font-sans rounded-xs">Join</button>
+              class="bg-primary px-4 py-2 text-[11px] uppercase tracking-[0.16em] text-primary-foreground font-medium cursor-pointer font-sans hover:bg-primary/90 transition">Join</button>
           </form>
-          <p class="mt-4 text-[11px] text-muted-foreground font-sans">© 2026 Matra Naari. All rights reserved.</p>
+          <div class="mt-3.5 pt-3 border-t border-border/50 flex flex-wrap items-center justify-between gap-2 text-[11px] text-muted-foreground font-sans">
+            <span>© 2026 Matra Naari</span>
+            <div class="flex items-center gap-3">
+              <a href="contact.html#shipping-policy" class="hover:text-primary transition">Shipping</a>
+              <a href="contact.html#returns-policy" class="hover:text-primary transition">Returns</a>
+              <a href="contact.html#size-guide" class="hover:text-primary transition">Size Guide</a>
+              <a href="admin.html" rel="nofollow" class="hover:text-primary transition opacity-60">Staff</a>
+            </div>
+          </div>
         </div>
       </div>
     </div>
   </footer>
 
-  <script src="assets/app.js"></script>
+  <script src="assets/app.js?v=20261116.1"></script>
   <script>
     let _homepageCatalogCache = [];
     let _activeWardrobeFilter = 'all';
@@ -957,7 +662,6 @@
     async function loadHomepageCatalog() {
       initWardrobeFilterTabs();
 
-      // Render immediately at 0ms from built-in catalog so product cards appear without delay
       if (typeof PRODUCTS !== 'undefined' && Array.isArray(PRODUCTS) && PRODUCTS.length > 0) {
         populateHomepageGrids(PRODUCTS);
       }

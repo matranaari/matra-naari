@@ -60,6 +60,11 @@ MAX_CONTENT_LENGTH = int(os.environ.get("MAX_CONTENT_LENGTH", 6 * 1024 * 1024)) 
 CONFIG_PATH = os.environ.get("CONFIG_PATH", os.path.join(BASE_DIR, "config.json"))
 PORT = int(os.environ.get("PORT", 8000))
 ADMIN_SECRET_KEY = os.environ.get("ADMIN_SECRET_KEY", "")
+IS_PRODUCTION = bool(
+    os.environ.get("RENDER")
+    or os.environ.get("PRODUCTION")
+    or os.environ.get("FLASK_ENV") == "production"
+)
 
 _INITIAL_DATA_DIR = DATA_DIR
 _INITIAL_DB_PATH = DB_PATH
@@ -1918,7 +1923,17 @@ def _parse_explicit_whatsapp_opt_in(raw_val) -> int:
 
 def format_product_row(row):
     d = dict(row)
-    d["gallery"] = json.loads(d.get("gallery_json") or "[]")
+    raw_gallery = []
+    try:
+        parsed_gal = json.loads(d.get("gallery_json") or "[]")
+        if isinstance(parsed_gal, list):
+            raw_gallery = [str(x).strip() for x in parsed_gal if str(x or "").strip()]
+    except Exception:
+        raw_gallery = []
+    primary_img = str(d.get("image") or d.get("relative_image") or "assets/hero.jpg").strip() or "assets/hero.jpg"
+    if not raw_gallery:
+        raw_gallery = [primary_img]
+    d["gallery"] = raw_gallery
     d["colors"] = json.loads(d.get("colors_json") or "[]")
     d["sizes"] = json.loads(d.get("sizes_json") or '["S", "M", "L", "XL"]')
     d["soldOutSizes"] = json.loads(d.get("sold_out_sizes_json") or "[]")
@@ -6162,9 +6177,24 @@ def api_admin_product_save():
                 valid_gal.append(g_str)
             elif _public_asset_file_exists(g_str):
                 valid_gal.append(g_str.lstrip("/"))
-        gallery = json.dumps(valid_gal if valid_gal else [image])
+        if valid_gal:
+            if not raw_img or image == fallback_img:
+                image = valid_gal[0]
+                if not raw_rel_img:
+                    rel_img = image
+            gallery = json.dumps(valid_gal)
+        else:
+            gallery = json.dumps([image])
     else:
-        gallery = existing["gallery_json"] if existing else json.dumps([image])
+        if existing:
+            existing_gal = existing.get("gallery") if isinstance(existing.get("gallery"), list) else []
+            if raw_img and image != existing_img:
+                updated_gal = [image] + [g for g in existing_gal if g and g != image]
+                gallery = json.dumps(updated_gal if updated_gal else [image])
+            else:
+                gallery = existing["gallery_json"] if existing.get("gallery_json") else json.dumps([image])
+        else:
+            gallery = json.dumps([image])
     colors = json.dumps(p["colors"]) if "colors" in p else (existing["colors_json"] if existing else json.dumps([{"name": "Maroon", "swatch": "#6B2D31"}]))
     sizes_json_str = json.dumps(sizes_list)
     sold_out_json_str = json.dumps(sold_out_list)
@@ -6219,6 +6249,8 @@ def api_admin_product_save():
         "ok": True,
         "message": f"Product '{name}' saved successfully.",
         "id": pid,
+        "image": image,
+        "gallery": json.loads(gallery),
         "stock": stock,
         "size_stock": size_stock_map
     })
@@ -6970,7 +7002,9 @@ def serve_sitemap_xml():
 
 @app.route("/")
 def serve_index():
-    return send_from_directory(BASE_DIR, "index.html")
+    resp = send_from_directory(BASE_DIR, "index.html", max_age=0)
+    resp.headers["Cache-Control"] = "no-cache, must-revalidate"
+    return resp
 
 
 SEO_VERIFIED_PRODUCTS = {
@@ -7367,17 +7401,26 @@ def _serve_public_html(page_name: str):
                 html,
                 count=1,
             )
-            return Response(html, status=200, mimetype="text/html; charset=utf-8")
+            return Response(
+                html,
+                status=200,
+                mimetype="text/html; charset=utf-8",
+                headers={"Cache-Control": "no-cache, must-revalidate"},
+            )
         except Exception:
             pass
-    return send_from_directory(BASE_DIR, page_name)
+    resp = send_from_directory(BASE_DIR, page_name, max_age=0)
+    resp.headers["Cache-Control"] = "no-cache, must-revalidate"
+    return resp
 
 
 @app.route("/<path:filename>")
 def serve_static_file(filename):
     clean = filename.strip("/")
     if not clean:
-        return send_from_directory(BASE_DIR, "index.html")
+        resp = send_from_directory(BASE_DIR, "index.html", max_age=0)
+        resp.headers["Cache-Control"] = "no-cache, must-revalidate"
+        return resp
 
     parts = [p for p in clean.split("/") if p]
 
@@ -7436,6 +7479,10 @@ def serve_static_file(filename):
             base_abs = os.path.realpath(BASE_DIR)
             target_abs = os.path.realpath(os.path.join(BASE_DIR, clean))
             if target_abs.startswith(base_abs + os.sep) and os.path.isfile(target_abs):
+                if not IS_PRODUCTION and clean.lower().endswith((".css", ".js", ".html")):
+                    resp = send_from_directory(BASE_DIR, clean, max_age=0)
+                    resp.headers["Cache-Control"] = "no-cache, must-revalidate"
+                    return resp
                 return send_from_directory(BASE_DIR, clean)
         return jsonify({"ok": False, "error": f"Asset not found: {clean}"}), 404
 
@@ -7456,7 +7503,11 @@ def main():
     print(f" Admin Dashboard: http://localhost:{PORT}/admin.html")
     print(f" Database: {db_display}")
     print("=" * 60)
-    app.run(host="0.0.0.0", port=PORT, debug=False)
+    bind_host = os.environ.get("HOST", "0.0.0.0" if IS_PRODUCTION else "::")
+    try:
+        app.run(host=bind_host, port=PORT, debug=False)
+    except OSError:
+        app.run(host="0.0.0.0", port=PORT, debug=False)
 
 if __name__ == "__main__":
     main()

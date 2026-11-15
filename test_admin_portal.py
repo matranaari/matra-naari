@@ -390,6 +390,155 @@ def test_admin_flow():
             f"all={c_cust_all}, matched={matched_cust}, leaked={leaked_fields}, ui={ui_wired}"
         )
 
+    # 15. Multi-Image Product Gallery (1, 3, 5, 7 Images, Reorder, Replace, Remove & 1-Image Backwards Compatibility)
+    total += 1
+    gal_test_id = "test_multi_gallery_kurti"
+    gal_1 = ["assets/hero.jpg"]
+    gal_3 = ["assets/hero.jpg", "assets/k-anarkali.jpg", "assets/k-aline.jpg"]
+    gal_5 = [
+        "assets/hero.jpg",
+        "assets/k-anarkali.jpg",
+        "assets/k-aline.jpg",
+        "assets/k-angrakha.jpg",
+        "assets/k-kaftan.jpg"
+    ]
+    gal_7 = [
+        "assets/hero.jpg",
+        "assets/k-anarkali.jpg",
+        "assets/k-aline.jpg",
+        "assets/k-angrakha.jpg",
+        "assets/k-kaftan.jpg",
+        "assets/k-coord.jpg",
+        "assets/k-short.jpg"
+    ]
+    # Reordered 7-image list (k-short becomes cover #1)
+    gal_7_reordered = [
+        "assets/k-short.jpg",
+        "assets/hero.jpg",
+        "assets/k-anarkali.jpg",
+        "assets/k-aline.jpg",
+        "assets/k-angrakha.jpg",
+        "assets/k-kaftan.jpg",
+        "assets/k-coord.jpg"
+    ]
+    # Replaced slot #2 (index 1 -> k-coord.jpg) and removed last 2 slots (back to 5 images)
+    gal_replaced_removed = [
+        "assets/k-short.jpg",
+        "assets/k-coord.jpg",
+        "assets/k-anarkali.jpg",
+        "assets/k-aline.jpg",
+        "assets/k-angrakha.jpg"
+    ]
+    multi_gal_ok = False
+    try:
+        # Step A: 1-image product (backwards-compatible single image without explicit gallery)
+        c_g1, _ = make_req("/api/admin/products", method="POST", data={
+            "id": gal_test_id,
+            "name": "Test Multi-Gallery Kurti",
+            "category": "Festive",
+            "price": 1499,
+            "mrp": 1999,
+            "stock": 12,
+            "image": gal_1[0]
+        })
+        _, r_get1 = make_req(f"/api/products/{gal_test_id}", passkey=None)
+        p_g1 = r_get1.get("product", {})
+
+        # Step B: 3-image gallery
+        c_g3, _ = make_req("/api/admin/products", method="POST", data={
+            "id": gal_test_id,
+            "name": "Test Multi-Gallery Kurti",
+            "category": "Festive",
+            "price": 1499,
+            "mrp": 1999,
+            "stock": 12,
+            "image": gal_3[0],
+            "gallery": gal_3
+        })
+        _, r_get3 = make_req(f"/api/products/{gal_test_id}", passkey=None)
+        p_g3 = r_get3.get("product", {})
+
+        # Step C: 5-image gallery
+        c_g5, _ = make_req("/api/admin/products", method="POST", data={
+            "id": gal_test_id,
+            "name": "Test Multi-Gallery Kurti",
+            "category": "Festive",
+            "price": 1499,
+            "mrp": 1999,
+            "stock": 12,
+            "image": gal_5[0],
+            "gallery": gal_5
+        })
+        _, r_get5 = make_req(f"/api/products/{gal_test_id}", passkey=None)
+        p_g5 = r_get5.get("product", {})
+
+        # Step D: 7-image gallery
+        c_g7, _ = make_req("/api/admin/products", method="POST", data={
+            "id": gal_test_id,
+            "name": "Test Multi-Gallery Kurti",
+            "category": "Festive",
+            "price": 1499,
+            "mrp": 1999,
+            "stock": 12,
+            "image": gal_7[0],
+            "gallery": gal_7
+        })
+        _, r_get7 = make_req(f"/api/products/{gal_test_id}", passkey=None)
+        p_g7 = r_get7.get("product", {})
+
+        # Step E: Reorder gallery (new cover image synced automatically from gallery[0])
+        c_greorder, _ = make_req("/api/admin/products", method="POST", data={
+            "id": gal_test_id,
+            "name": "Test Multi-Gallery Kurti",
+            "category": "Festive",
+            "price": 1499,
+            "mrp": 1999,
+            "stock": 12,
+            "gallery": gal_7_reordered
+        })
+        _, r_get_reorder = make_req(f"/api/products/{gal_test_id}", passkey=None)
+        p_greorder = r_get_reorder.get("product", {})
+
+        # Step F: Replace image in slot #2 & remove 2 images
+        c_grepl, _ = make_req("/api/admin/products", method="POST", data={
+            "id": gal_test_id,
+            "name": "Test Multi-Gallery Kurti",
+            "category": "Festive",
+            "price": 1499,
+            "mrp": 1999,
+            "stock": 12,
+            "gallery": gal_replaced_removed
+        })
+        _, r_get_repl = make_req(f"/api/products/{gal_test_id}", passkey=None)
+        p_grepl = r_get_repl.get("product", {})
+
+        with open("product.html", "r", encoding="utf-8") as pf:
+            prod_html = pf.read()
+        gallery_ui_wired = (
+            'id="p-gallery-manager"' in admin_html
+            and 'id="p-gallery-list"' in admin_html
+            and 'id="pdp-gallery-stage"' in prod_html
+            and 'id="pdp-zoom-lightbox"' in prod_html
+        )
+
+        multi_gal_ok = (
+            c_g1 == 200 and p_g1.get("gallery") == gal_1 and p_g1.get("image") == gal_1[0]
+            and c_g3 == 200 and p_g3.get("gallery") == gal_3 and len(p_g3.get("gallery", [])) == 3
+            and c_g5 == 200 and p_g5.get("gallery") == gal_5 and len(p_g5.get("gallery", [])) == 5
+            and c_g7 == 200 and p_g7.get("gallery") == gal_7 and len(p_g7.get("gallery", [])) == 7
+            and c_greorder == 200 and p_greorder.get("gallery") == gal_7_reordered and p_greorder.get("image") == "assets/k-short.jpg"
+            and c_grepl == 200 and p_grepl.get("gallery") == gal_replaced_removed and p_grepl.get("gallery")[1] == "assets/k-coord.jpg"
+            and gallery_ui_wired
+        )
+    finally:
+        make_req(f"/api/admin/products/{gal_test_id}", method="DELETE")
+
+    if multi_gal_ok:
+        print("✓ Test 15 Passed: Multi-Image Product Gallery verified (1, 3, 5, 7 images, reorder, replace, remove & backwards compatibility)")
+        passed += 1
+    else:
+        print(f"✗ Test 15 Failed: multi_gal_ok={multi_gal_ok}")
+
     print("==================================================")
     print(f"Summary: {passed}/{total} Admin Portal Tests Passed")
     print("==================================================")

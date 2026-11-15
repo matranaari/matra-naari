@@ -9,31 +9,25 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
   <link rel="stylesheet"
     href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=Manrope:wght@400;500;600;700&display=swap" />
-  <link rel="stylesheet" href="assets/styles.css" />
+  <link rel="stylesheet" href="assets/styles.css?v=20261115.3" />
   <title>Order Confirmed — Matra Naari</title>
   <meta name="description" content="Thank you for your order with Matra Naari." />
   <meta name="robots" content="noindex, nofollow" />
-  <style>
-    body {
-      background-image: url('images/paper.jpg'), url('/images/paper.jpg');
-      background-size: 700px;
-    }
-  </style>
 </head>
 
 <body class="text-foreground antialiased selection:bg-primary/20 selection:text-primary">
-  <!-- Header -->
-  <header class="mn-site-header sticky top-0 z-30">
-    <div class="mx-auto flex max-w-6xl items-center justify-between px-4 py-2.5 sm:px-5 sm:py-3">
+  <!-- Minimalist Sticky Header -->
+  <header class="mn-site-header">
+    <div class="mn-container h-16 sm:h-20 flex items-center justify-between gap-4">
       <a aria-label="Matra Naari home" href="index.html" class="shrink-0">
-        <img src="images/naari-logo.png" alt="Matra Naari" class="h-10 w-auto sm:h-12 mix-blend-multiply" />
+        <img src="images/naari-logo.png" alt="Matra Naari" class="h-10 sm:h-12 w-auto object-contain mix-blend-multiply" />
       </a>
-      <nav class="flex items-center gap-4 sm:gap-7 font-sans text-xs uppercase tracking-wider">
-        <a class="hidden text-foreground/80 hover:text-primary sm:inline mn-nav-link" href="index.html">Home</a>
-        <a class="hidden text-foreground/80 hover:text-primary sm:inline mn-nav-link" href="shop.html">Collections</a>
-        <a class="hidden text-foreground/80 hover:text-primary sm:inline mn-nav-link" href="story.html">Our Story</a>
-        <a class="hidden text-foreground/80 hover:text-primary sm:inline mn-nav-link" href="contact.html">Contact</a>
-        <a class="text-primary font-semibold" href="cart.html">Bag (<span class="bag-count-badge">0</span>)</a>
+      <nav class="flex items-center gap-4 sm:gap-7 font-sans text-xs">
+        <a class="hidden text-muted-foreground hover:text-primary sm:inline mn-nav-link" href="index.html">Home</a>
+        <a class="hidden text-muted-foreground hover:text-primary sm:inline mn-nav-link" href="shop.html">Shop All</a>
+        <a class="hidden text-muted-foreground hover:text-primary sm:inline mn-nav-link" href="story.html">Our Story</a>
+        <a class="hidden text-muted-foreground hover:text-primary sm:inline mn-nav-link" href="contact.html">Contact</a>
+        <a class="mn-bag-pill-btn" href="cart.html">Bag (<span class="bag-count-badge">0</span>)</a>
       </nav>
     </div>
   </header>
@@ -43,15 +37,14 @@
     <section class="mx-auto max-w-3xl px-4 py-12 sm:px-5">
       <!-- Loading State -->
       <div id="confirmation-loading" class="text-center py-16">
-        <p class="font-hand text-2xl text-primary animate-pulse">✿ Retrieving your order details…</p>
+        <p class="font-display text-2xl text-foreground animate-pulse">Retrieving your order details…</p>
       </div>
 
       <!-- Error State -->
       <div id="confirmation-error" class="hidden text-center py-16">
-        <p class="font-hand text-2xl text-destructive">Order not found.</p>
+        <p class="font-display text-2xl text-destructive">Order not found.</p>
         <p class="mt-2 text-sm text-muted-foreground">Please check your order link or contact our customer support team.</p>
-        <a href="shop.html"
-          class="mt-6 inline-block bg-primary px-7 py-3 text-sm uppercase tracking-[0.2em] text-primary-foreground hover:opacity-90 transition">
+        <a href="shop.html" class="mt-6 mn-btn-primary">
           Return to Shop
         </a>
       </div>
@@ -59,17 +52,17 @@
       <!-- Populated Confirmation Content -->
       <div id="confirmation-content" class="hidden space-y-8">
         <!-- Success Banner -->
-        <div class="text-center bg-card/80 p-6 ring-1 ring-border sm:p-8">
+        <div class="text-center bg-card p-6 border border-border/80 sm:p-10">
           <div
-            class="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 text-primary text-2xl">
+            class="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary text-xl">
             ✓
           </div>
-          <p class="font-hand text-lg text-primary">Woven with Meaning ✿</p>
-          <h1 class="text-3xl font-semibold sm:text-4xl">Order Confirmed!</h1>
-          <p class="mt-2 text-muted-foreground text-sm max-w-md mx-auto">
-            Thank you for shopping with Matra Naari. We have received your order and are preparing your kurtis for dispatch.
+          <span class="mn-eyebrow block mb-2">Matra Naari · Order Receipt</span>
+          <h1 class="font-display text-3xl font-medium sm:text-4xl">Thank You for Your Order</h1>
+          <p class="mt-2 text-muted-foreground text-xs sm:text-sm max-w-md mx-auto">
+            We have received your order and are preparing your kurtis for dispatch.
           </p>
-          <div class="mt-4 inline-block bg-background px-4 py-2 border border-border text-xs tracking-wider">
+          <div class="mt-5 inline-block bg-background px-4 py-2 border border-border text-xs tracking-wider">
             ORDER ID: <strong id="order-ref-id" class="text-primary select-all"></strong>
           </div>
         </div>
@@ -166,7 +159,7 @@
             </div>
             <div class="flex justify-between text-muted-foreground">
               <span>Delivery</span>
-              <span id="order-shipping-val" class="text-primary font-medium">FREE ✿</span>
+              <span id="order-shipping-val" class="text-primary font-medium">FREE</span>
             </div>
             <div class="flex justify-between items-baseline border-t border-border pt-3 text-base">
               <span class="font-semibold text-foreground">Total Paid / Payable</span>
@@ -191,8 +184,8 @@
         </div>
 
         <!-- Customer Support Block -->
-        <div class="bg-card/70 p-5 ring-1 ring-border text-center">
-          <p class="font-hand text-lg text-primary">Need assistance with this order?</p>
+        <div class="bg-card p-6 border border-border/70 text-center">
+          <p class="font-display text-xl font-medium text-foreground">Need assistance with this order?</p>
           <p class="mt-1 text-xs text-muted-foreground">
             Our team is here to assist with sizing adjustments, delivery queries, or gift notes.
           </p>
@@ -270,29 +263,53 @@
     </div>
   </div>
 
-  <!-- Footer -->
-  <footer class="mt-24 border-t border-border/60">
-    <div class="mx-auto grid max-w-6xl gap-8 px-5 py-12 sm:grid-cols-3">
-      <div>
-        <img src="images/naari-logo.png" alt="Naari" class="h-16 w-auto mix-blend-multiply" />
-        <p class="mt-2 font-hand text-muted-foreground">Modern kurtis, woven with heritage.</p>
-      </div>
-      <div class="font-hand text-lg">
-        <a class="block hover:text-primary" href="index.html">Home</a>
-        <a class="block hover:text-primary" href="shop.html">Shop</a>
-        <a class="block hover:text-primary" href="story.html">Our Story</a>
-        <a class="block hover:text-primary" href="contact.html">Contact</a>
-      </div>
-      <div class="text-sm text-muted-foreground">
-        <p><a href="mailto:matranaari@gmail.com" class="hover:text-primary transition">matranaari@gmail.com</a></p>
-        <p><a href="https://wa.me/918849366915"
-            target="_blank" rel="noreferrer" class="hover:text-primary transition">+91 88493 66915</a></p>
-        <p class="mt-4">© 2026 Matra Naari</p>
+  <!-- Boutique Footer -->
+  <footer class="mt-20 border-t border-border/80 bg-card">
+    <div class="mn-container py-12 sm:py-16">
+      <div class="mn-footer-grid">
+        <div>
+          <img src="images/naari-logo.png" alt="Matra Naari" class="h-11 w-auto mix-blend-multiply"/>
+          <p class="mt-3 text-xs sm:text-sm text-muted-foreground leading-relaxed max-w-xs">
+            Modern Indian kurtis and ethnic ensembles rooted in craft, comfort, and timeless proportion.
+          </p>
+          <div class="mt-4 space-y-1.5 text-xs text-muted-foreground font-sans">
+            <p><a href="mailto:matranaari@gmail.com" class="hover:text-primary transition">matranaari@gmail.com</a></p>
+            <p><a href="https://wa.me/918849366915" target="_blank" rel="noreferrer" class="hover:text-primary transition">WhatsApp: +91 88493 66915</a></p>
+          </div>
+        </div>
+        <div>
+          <h4 class="text-[11px] uppercase tracking-[0.2em] font-semibold text-foreground mb-4">Silhouettes</h4>
+          <ul class="space-y-2 text-xs font-sans text-muted-foreground">
+            <li><a href="shop.html?category=Straight%20Cut" class="hover:text-primary transition">Straight Kurtis</a></li>
+            <li><a href="shop.html?category=Anarkali" class="hover:text-primary transition">Anarkali Kurtas</a></li>
+            <li><a href="shop.html?category=A-Line" class="hover:text-primary transition">A-Line Kurtis</a></li>
+            <li><a href="shop.html?category=Co-ord%20Set" class="hover:text-primary transition">Co-ord Kurta Sets</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="text-[11px] uppercase tracking-[0.2em] font-semibold text-foreground mb-4">Policies</h4>
+          <ul class="space-y-2 text-xs font-sans text-muted-foreground">
+            <li><a href="contact.html#shipping-policy" class="hover:text-primary transition">Shipping &amp; Delivery</a></li>
+            <li><a href="contact.html#returns-policy" class="hover:text-primary transition">7-Day Exchanges &amp; Returns</a></li>
+            <li><a href="contact.html#size-guide" class="hover:text-primary transition">Size &amp; Fit Guide</a></li>
+            <li><a href="contact.html#privacy-policy" class="hover:text-primary transition">Privacy &amp; Terms</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="text-[11px] uppercase tracking-[0.2em] font-semibold text-foreground mb-4">Client Care</h4>
+          <ul class="space-y-2 text-xs font-sans text-muted-foreground">
+            <li><a href="index.html" class="hover:text-primary transition">Home</a></li>
+            <li><a href="shop.html" class="hover:text-primary transition">Shop All Kurtis</a></li>
+            <li><a href="story.html" class="hover:text-primary transition">Our Brand Story</a></li>
+            <li><a href="contact.html" class="hover:text-primary transition">Contact Concierge</a></li>
+          </ul>
+          <p class="mt-5 pt-4 border-t border-border/50 text-[11px] text-muted-foreground font-sans">© 2026 Matra Naari</p>
+        </div>
       </div>
     </div>
   </footer>
 
-  <script src="assets/app.js"></script>
+  <script src="assets/app.js?v=20261116.1"></script>
   <script>
     function getApiBaseUrl() {
       if (typeof window !== 'undefined') {
@@ -387,10 +404,10 @@
     function showDefaultNotFoundError(errorEl) {
       if (!errorEl) return;
       errorEl.innerHTML = `
-        <p class="font-hand text-2xl text-destructive">Order not found.</p>
+        <p class="font-display text-2xl font-medium text-destructive">Order not found</p>
         <p class="mt-2 text-sm text-muted-foreground">Please check your order link or contact our customer support team.</p>
         <a href="shop.html"
-          class="mt-6 inline-block bg-primary px-7 py-3 text-sm uppercase tracking-[0.2em] text-primary-foreground hover:opacity-90 transition">
+          class="mt-6 inline-block bg-primary px-7 py-3 text-xs uppercase tracking-[0.2em] text-primary-foreground hover:opacity-90 transition font-semibold">
           Return to Shop
         </a>
       `;
@@ -427,10 +444,10 @@
           contentEl.classList.add('hidden');
           const redirectUrl = `account.html?redirect=${encodeURIComponent('order-confirmation.html?order_id=' + orderId)}`;
           errorEl.innerHTML = `
-            <p class="font-hand text-2xl text-primary">Login Required</p>
+            <p class="font-display text-2xl font-medium text-primary">Login Required</p>
             <p class="mt-2 text-sm text-muted-foreground">Please sign in to the customer account that placed this order to view confirmation details.</p>
             <a href="${escapeHtml(redirectUrl)}"
-              class="mt-6 inline-block bg-primary px-7 py-3 text-sm uppercase tracking-[0.2em] text-primary-foreground hover:opacity-90 transition">
+              class="mt-6 inline-block bg-primary px-7 py-3 text-xs uppercase tracking-[0.2em] text-primary-foreground hover:opacity-90 transition font-semibold">
               Login to View Order
             </a>
           `;
@@ -442,10 +459,10 @@
           loadingEl.classList.add('hidden');
           contentEl.classList.add('hidden');
           errorEl.innerHTML = `
-            <p class="font-hand text-2xl text-destructive">Access Denied</p>
+            <p class="font-display text-2xl font-medium text-destructive">Access Denied</p>
             <p id="order-access-denied-msg" class="mt-2 text-sm text-muted-foreground"></p>
             <a href="account.html"
-              class="mt-6 inline-block bg-primary px-7 py-3 text-sm uppercase tracking-[0.2em] text-primary-foreground hover:opacity-90 transition">
+              class="mt-6 inline-block bg-primary px-7 py-3 text-xs uppercase tracking-[0.2em] text-primary-foreground hover:opacity-90 transition font-semibold">
               Go to My Account
             </a>
           `;
@@ -470,10 +487,10 @@
           loadingEl.classList.add('hidden');
           contentEl.classList.add('hidden');
           errorEl.innerHTML = `
-            <p class="font-hand text-2xl text-destructive">Payment Not Completed</p>
+            <p class="font-display text-2xl font-medium text-destructive">Payment Not Completed</p>
             <p class="mt-2 text-sm text-muted-foreground">Payment for order <strong>${escapeHtml(order.id)}</strong> (${escapeHtml(order.payment_status || 'pending')}) has not been verified yet.</p>
             <a href="checkout.html"
-              class="mt-6 inline-block bg-primary px-7 py-3 text-sm uppercase tracking-[0.2em] text-primary-foreground hover:opacity-90 transition">
+              class="mt-6 inline-block bg-primary px-7 py-3 text-xs uppercase tracking-[0.2em] text-primary-foreground hover:opacity-90 transition font-semibold">
               Return to Checkout
             </a>
           `;
@@ -610,7 +627,7 @@
       document.getElementById('order-subtotal').textContent = formatPrice(subtotalVal);
       const shipEl = document.getElementById('order-shipping-val');
       if (shipEl) {
-        shipEl.textContent = shippingNum > 0 ? formatPrice(shippingNum) : 'FREE ✿';
+        shipEl.textContent = shippingNum > 0 ? formatPrice(shippingNum) : 'FREE';
       }
       document.getElementById('order-total-amount').textContent = formatPrice(totalVal);
 

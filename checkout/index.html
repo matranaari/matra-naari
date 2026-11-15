@@ -1,21 +1,20 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <base href="/"/>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <link rel="icon" type="image/png" href="favicon.png"/>
+  <link rel="icon" type="image/png" href="../favicon.png"/>
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous"/>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Kalam:wght@300;400;700&family=Karla:wght@400;500;600&display=swap"/>
-  <link rel="stylesheet" href="assets/styles.css"/>
-  <title>Checkout — Naari</title>
-  <meta name="description" content="Secure checkout for your Naari order."/>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=Manrope:wght@400;500;600;700&display=swap"/>
+  <link rel="stylesheet" href="../assets/styles.css?v=20261115.3"/>
+  <!-- Leaflet Interactive Map (OpenStreetMap) -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+  <title>Checkout — Matra Naari</title>
+  <meta name="description" content="Secure checkout for your Matra Naari order."/>
+  <meta name="robots" content="noindex, nofollow"/>
   <style>
-    body {
-      background-image: url('images/paper.jpg'), url('/images/paper.jpg');
-      background-size: 700px;
-    }
     .payment-option-label {
       user-select: none;
       -webkit-user-select: none;
@@ -27,48 +26,65 @@
       outline: 2px solid #6B2D31;
       outline-offset: 2px;
     }
+    #delivery-map {
+      height: 250px;
+      width: 100%;
+      z-index: 10;
+    }
+    @media (min-width: 640px) {
+      #delivery-map {
+        height: 300px;
+      }
+    }
+    .leaflet-container {
+      font-family: 'Manrope', sans-serif;
+    }
   </style>
   <!-- Razorpay Standard Checkout SDK -->
   <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 </head>
-<body>
-  <!-- Header -->
-  <header class="sticky top-0 z-30 border-b border-border/60 bg-background/85 backdrop-blur">
-    <div class="mx-auto flex max-w-6xl items-center justify-between px-5 py-2">
-      <a aria-label="Naari home" href="index.html">
-        <img src="images/naari-logo.png" alt="Naari" class="h-11 w-auto sm:h-14 mix-blend-multiply"/>
+<body class="text-foreground antialiased selection:bg-primary/20 selection:text-primary">
+  <!-- Minimalist Sticky Header -->
+  <header class="mn-site-header">
+    <div class="mn-container h-16 sm:h-20 flex items-center justify-between gap-4">
+      <a aria-label="Matra Naari home" href="../index.html" class="shrink-0">
+        <img src="../images/naari-logo.png" alt="Matra Naari" class="h-10 sm:h-12 w-auto object-contain mix-blend-multiply"/>
       </a>
-      <nav class="flex gap-5 font-hand text-lg sm:gap-8">
-        <a class="hidden text-foreground/80 hover:text-primary sm:inline" href="index.html">Home</a>
-        <a class="hidden text-foreground/80 hover:text-primary sm:inline" href="shop.html">Shop</a>
-        <a class="hidden text-foreground/80 hover:text-primary sm:inline" href="story.html">Our Story</a>
-        <a class="hidden text-foreground/80 hover:text-primary sm:inline" href="contact.html">Contact</a>
-        <a class="text-primary active !inline" href="cart.html">Bag (<span class="bag-count-badge">0</span>)</a>
+      <div class="hidden sm:flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] text-muted-foreground font-sans">
+        <a href="../cart.html" class="hover:text-primary transition">1. Bag</a>
+        <span>—</span>
+        <span class="text-foreground font-semibold">2. Delivery &amp; Payment</span>
+        <span>—</span>
+        <span>3. Confirmation</span>
+      </div>
+      <nav class="flex items-center gap-4 sm:gap-6 font-sans text-xs">
+        <a class="hidden text-muted-foreground hover:text-primary sm:inline mn-nav-link" href="../shop.html">Shop</a>
+        <a class="mn-bag-pill-btn" href="../cart.html">
+          <span>Bag</span>
+          <span>(<span class="bag-count-badge">0</span>)</span>
+        </a>
       </nav>
     </div>
   </header>
 
   <!-- Main Checkout Content -->
   <main>
-    <section class="mx-auto max-w-6xl px-4 py-10 sm:px-5 sm:py-14">
-      <!-- Breadcrumb / Header -->
-      <div class="mb-8 text-center sm:mb-12">
-        <p class="font-hand text-lg text-primary">seamless & secure</p>
-        <h1 class="text-4xl font-semibold sm:text-5xl">Checkout</h1>
-        <div class="mt-3 flex items-center justify-center gap-2 text-xs uppercase tracking-widest text-muted-foreground">
-          <a href="cart.html" class="hover:text-primary">Bag</a>
-          <span>→</span>
-          <span class="text-primary font-medium">Delivery & Payment</span>
-          <span>→</span>
-          <span>Confirmation</span>
+    <section class="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-12">
+      <!-- Header -->
+      <div class="mb-8 border-b border-border/60 pb-6 flex flex-col sm:flex-row sm:items-end justify-between gap-3">
+        <div>
+          <span class="mn-eyebrow block mb-2">Secure Atelier Checkout</span>
+          <h1 class="mn-display-section text-foreground">Delivery &amp; Payment</h1>
         </div>
+        <p class="text-xs text-muted-foreground font-sans">256-Bit SSL Encrypted · Pan-India Dispatch</p>
       </div>
 
       <!-- Empty Cart Guard (hidden if cart has items) -->
-      <div id="checkout-empty-state" class="hidden text-center py-12">
-        <p class="font-hand text-2xl text-muted-foreground">Your bag is currently empty.</p>
-        <a href="shop.html" class="mt-6 inline-block bg-primary px-7 py-3 text-sm uppercase tracking-[0.2em] text-primary-foreground hover:opacity-90 transition">
-          Explore Kurtis
+      <div id="checkout-empty-state" class="hidden text-center py-16 border-y border-border/60">
+        <p class="font-display text-3xl text-foreground">Your shopping bag is currently empty.</p>
+        <a href="../shop.html" class="mt-6 mn-btn-primary">
+          <span>Explore Collection</span>
+          <span aria-hidden="true">→</span>
         </a>
       </div>
 
@@ -77,22 +93,126 @@
         <!-- Left: Form -->
         <div class="space-y-8">
           <!-- Step 1: Customer & Delivery Details -->
-          <div class="bg-card/70 p-5 ring-1 ring-border sm:p-7">
-            <h2 class="font-display text-2xl font-semibold text-foreground flex items-center gap-2">
-              <span class="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground font-sans">1</span>
-              Delivery Address
-            </h2>
+          <div class="bg-card border border-border/80 p-5 sm:p-8">
+            <div class="flex flex-wrap items-center justify-between gap-2 border-b border-border/60 pb-4">
+              <h2 class="font-display text-2xl font-medium text-foreground flex items-center gap-3">
+                <span class="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-[11px] text-primary-foreground font-sans font-medium">1</span>
+                Delivery Address
+              </h2>
+              <span id="address-step-status-pill" class="bg-secondary px-2.5 py-1 text-[10px] uppercase tracking-[0.15em] font-medium text-muted-foreground">
+                Address Details Required
+              </span>
+            </div>
 
             <!-- Saved Addresses Quick-Fill (populated if logged in) -->
-            <div id="saved-addresses-quickfill" class="mt-4 hidden space-y-2 border-b border-border/60 pb-4">
-              <p class="text-[11px] uppercase tracking-wider font-semibold text-primary font-sans">Saved Addresses — Tap to Auto-Fill</p>
+            <div id="saved-addresses-quickfill" class="mt-5 hidden space-y-2 border-b border-border/60 pb-4">
+              <p class="text-[11px] uppercase tracking-[0.18em] font-semibold text-primary font-sans">Saved Addresses — Select to Autofill</p>
               <div id="saved-addresses-chips" class="flex flex-wrap gap-2"></div>
             </div>
 
+            <!-- 1A. Live Address Search Autocomplete -->
+            <div class="mt-5 space-y-2">
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <label for="address-search-input" class="block text-[11px] uppercase tracking-[0.18em] font-semibold text-foreground">
+                  Search Society, Apartment or Landmark
+                </label>
+                <span id="address-provider-badge" class="bg-secondary px-2 py-0.5 text-[10px] uppercase tracking-wider font-medium text-muted-foreground">
+                  India Delivery Search
+                </span>
+              </div>
+              <div class="relative" id="address-autocomplete-container">
+                <div class="flex items-center border border-border bg-background focus-within:border-primary">
+                  <span class="pl-3 pr-2 text-muted-foreground text-xs select-none" aria-hidden="true">⌕</span>
+                  <input
+                    id="address-search-input"
+                    type="text"
+                    autocomplete="off"
+                    placeholder="Search society, apartment, building or landmark..."
+                    class="w-full bg-transparent py-2.5 pr-3 text-sm outline-none"
+                  />
+                  <span id="address-search-spinner" class="hidden pr-3 text-xs text-primary animate-pulse">Searching…</span>
+                  <button
+                    type="button"
+                    id="address-search-clear-btn"
+                    class="hidden pr-3 text-xs text-muted-foreground hover:text-foreground cursor-pointer"
+                    aria-label="Clear address search"
+                  >✕</button>
+                </div>
+                <!-- Suggestions Dropdown -->
+                <div
+                  id="address-autocomplete-dropdown"
+                  role="listbox"
+                  aria-label="Address suggestions"
+                  class="hidden absolute left-0 right-0 top-full z-30 mt-1 max-h-64 overflow-y-auto border border-border bg-background shadow-lg divide-y divide-border/50 text-xs"
+                ></div>
+              </div>
+              <p id="address-search-helper-note" class="text-[11px] text-muted-foreground">
+                Select a suggestion to position the map pin and autofill locality details below.
+              </p>
+            </div>
+
+            <!-- 1B. Interactive Leaflet Map + Use Current Location -->
+            <div class="mt-5 border border-border/80 bg-background p-3.5 space-y-3">
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <p class="text-xs font-medium text-foreground">Pin Delivery Location on Map</p>
+                  <p class="text-[11px] text-muted-foreground">Click the map or drag the pin to refine your doorstep coordinates.</p>
+                </div>
+                <button
+                  type="button"
+                  id="use-current-location-btn"
+                  class="inline-flex items-center gap-1.5 border border-foreground/30 bg-background px-3 py-1.5 text-[11px] uppercase tracking-[0.14em] font-medium text-foreground hover:border-primary hover:text-primary transition cursor-pointer"
+                >
+                  <span aria-hidden="true">📍</span>
+                  <span id="use-current-location-text">Use Current Location</span>
+                </button>
+              </div>
+
+              <!-- Map Canvas -->
+              <div id="delivery-map" class="border border-border/70 bg-secondary/20" aria-label="Interactive delivery location map"></div>
+
+              <!-- Selected Map Pin & Coordinates Readout -->
+              <div class="flex flex-wrap items-start justify-between gap-2 bg-card px-3 py-2 border border-border/50 text-xs">
+                <div class="min-w-0 flex-1">
+                  <p class="text-[10px] uppercase tracking-[0.16em] font-semibold text-primary">Selected Map Area</p>
+                  <p id="map-selected-address-text" class="text-foreground font-medium truncate">
+                    Click the map, drag the pin, or search above to set map coordinates
+                  </p>
+                  <p id="map-geocode-status" class="mt-0.5 text-[11px] text-muted-foreground"></p>
+                </div>
+                <div class="text-right shrink-0">
+                  <span class="text-[10px] uppercase tracking-wider text-muted-foreground block">Coordinates</span>
+                  <span id="map-coords-badge" class="font-mono text-[11px] font-medium text-foreground">Not pinned yet</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- 1C. Complete Delivery Address Form -->
             <form id="checkout-form" class="mt-6 space-y-4">
+              <input type="hidden" id="cust-lat" name="latitude" value=""/>
+              <input type="hidden" id="cust-lng" name="longitude" value=""/>
+              <input type="hidden" id="cust-location-summary" name="location_summary" value=""/>
+              <input type="hidden" id="cust-address-label" name="address_label" value="Home"/>
+
+              <!-- Address Type Pills (Home / Work / Other) -->
+              <div>
+                <span class="block text-[11px] uppercase tracking-[0.16em] text-muted-foreground mb-1.5">Address Label</span>
+                <div class="flex flex-wrap gap-2" id="address-label-pills" role="group" aria-label="Address Label">
+                  <button type="button" data-label="Home" class="addr-label-btn border border-primary bg-primary text-primary-foreground px-3.5 py-1.5 text-xs font-medium cursor-pointer transition">
+                    Home
+                  </button>
+                  <button type="button" data-label="Work" class="addr-label-btn border border-border bg-background text-foreground hover:border-primary px-3.5 py-1.5 text-xs font-medium cursor-pointer transition">
+                    Work
+                  </button>
+                  <button type="button" data-label="Other" class="addr-label-btn border border-border bg-background text-foreground hover:border-primary px-3.5 py-1.5 text-xs font-medium cursor-pointer transition">
+                    Other
+                  </button>
+                </div>
+              </div>
+
               <div class="grid gap-4 sm:grid-cols-2">
                 <div>
-                  <label for="cust-name" class="block text-xs uppercase tracking-wider text-muted-foreground mb-1">Full Name *</label>
+                  <label for="cust-name" class="block text-[11px] uppercase tracking-[0.16em] text-muted-foreground mb-1">Recipient Full Name *</label>
                   <input
                     id="cust-name"
                     name="name"
@@ -103,7 +223,7 @@
                   />
                 </div>
                 <div>
-                  <label for="cust-phone" class="block text-xs uppercase tracking-wider text-muted-foreground mb-1">Mobile Phone (10 digits) *</label>
+                  <label for="cust-phone" class="block text-[11px] uppercase tracking-[0.16em] text-muted-foreground mb-1">Mobile Phone (10 digits) *</label>
                   <input
                     id="cust-phone"
                     name="phone"
@@ -117,7 +237,7 @@
               </div>
 
               <div>
-                <label for="cust-email" class="block text-xs uppercase tracking-wider text-muted-foreground mb-1">Email Address *</label>
+                <label for="cust-email" class="block text-[11px] uppercase tracking-[0.16em] text-muted-foreground mb-1">Email Address *</label>
                 <input
                   id="cust-email"
                   name="email"
@@ -126,7 +246,7 @@
                   placeholder="ananya@example.com"
                   class="w-full border border-border bg-background px-3 py-2.5 text-sm outline-none focus:border-primary"
                 />
-                <p class="mt-1 text-[11px] text-muted-foreground">We will send your order receipt and tracking updates here.</p>
+                <p class="mt-1 text-[11px] text-muted-foreground">Order confirmation and dispatch details will be emailed here.</p>
                 <label class="mt-2.5 flex items-start gap-2.5 text-xs text-foreground/90 cursor-pointer select-none">
                   <input
                     type="checkbox"
@@ -139,43 +259,82 @@
                 </label>
               </div>
 
+              <!-- Split House/Flat & Street/Area Fields -->
+              <div class="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <label for="cust-house-no" class="block text-[11px] uppercase tracking-[0.16em] text-muted-foreground mb-1">House / Flat / Floor No. *</label>
+                  <input
+                    id="cust-house-no"
+                    name="house_no"
+                    type="text"
+                    required
+                    placeholder="e.g. Flat 402, Tower B"
+                    class="w-full border border-border bg-background px-3 py-2.5 text-sm outline-none focus:border-primary"
+                  />
+                </div>
+                <div>
+                  <label for="cust-street-area" class="block text-[11px] uppercase tracking-[0.16em] text-muted-foreground mb-1">Street / Society / Locality *</label>
+                  <input
+                    id="cust-street-area"
+                    name="street_area"
+                    type="text"
+                    required
+                    placeholder="e.g. Lotus Apartments, MI Road"
+                    class="w-full border border-border bg-background px-3 py-2.5 text-sm outline-none focus:border-primary"
+                  />
+                </div>
+              </div>
+
               <div>
-                <label for="cust-address1" class="block text-xs uppercase tracking-wider text-muted-foreground mb-1">Street Address / House No. *</label>
+                <label for="cust-address1" class="block text-[11px] uppercase tracking-[0.16em] text-muted-foreground mb-1">Complete Delivery Street Address *</label>
                 <input
                   id="cust-address1"
                   name="address_line1"
                   type="text"
                   required
-                  placeholder="Flat / House No., Apartment name, Street"
+                  placeholder="Flat / House No., Building, Street &amp; Area"
                   class="w-full border border-border bg-background px-3 py-2.5 text-sm outline-none focus:border-primary"
                 />
               </div>
 
               <div>
-                <label for="cust-address2" class="block text-xs uppercase tracking-wider text-muted-foreground mb-1">Landmark / Locality (Optional)</label>
+                <label for="cust-address2" class="block text-[11px] uppercase tracking-[0.16em] text-muted-foreground mb-1">Landmark (Optional)</label>
                 <input
                   id="cust-address2"
                   name="address_line2"
                   type="text"
-                  placeholder="Near temple, Opposite park, etc."
+                  placeholder="Near landmark, gate number, etc."
                   class="w-full border border-border bg-background px-3 py-2.5 text-sm outline-none focus:border-primary"
                 />
               </div>
 
               <div class="grid gap-4 sm:grid-cols-3">
                 <div>
-                  <label for="cust-city" class="block text-xs uppercase tracking-wider text-muted-foreground mb-1">City *</label>
+                  <label for="cust-pincode" class="block text-[11px] uppercase tracking-[0.16em] text-muted-foreground mb-1">PIN Code (6 digits) *</label>
+                  <input
+                    id="cust-pincode"
+                    name="pincode"
+                    type="text"
+                    inputmode="numeric"
+                    required
+                    maxlength="6"
+                    placeholder="302001"
+                    class="w-full border border-border bg-background px-3 py-2.5 text-sm outline-none focus:border-primary"
+                  />
+                </div>
+                <div>
+                  <label for="cust-city" class="block text-[11px] uppercase tracking-[0.16em] text-muted-foreground mb-1">City / District *</label>
                   <input
                     id="cust-city"
                     name="city"
                     type="text"
                     required
-                    placeholder="Jaipur"
+                    placeholder="City"
                     class="w-full border border-border bg-background px-3 py-2.5 text-sm outline-none focus:border-primary"
                   />
                 </div>
                 <div>
-                  <label for="cust-state" class="block text-xs uppercase tracking-wider text-muted-foreground mb-1">State *</label>
+                  <label for="cust-state" class="block text-[11px] uppercase tracking-[0.16em] text-muted-foreground mb-1">State / UT *</label>
                   <select
                     id="cust-state"
                     name="state"
@@ -184,129 +343,170 @@
                   >
                     <option value="">Select State</option>
                     <option value="Andhra Pradesh">Andhra Pradesh</option>
+                    <option value="Arunachal Pradesh">Arunachal Pradesh</option>
                     <option value="Assam">Assam</option>
                     <option value="Bihar">Bihar</option>
-                    <option value="Delhi">Delhi NCR</option>
+                    <option value="Chandigarh">Chandigarh</option>
+                    <option value="Chhattisgarh">Chhattisgarh</option>
+                    <option value="Delhi">Delhi</option>
+                    <option value="Goa">Goa</option>
                     <option value="Gujarat">Gujarat</option>
                     <option value="Haryana">Haryana</option>
+                    <option value="Himachal Pradesh">Himachal Pradesh</option>
+                    <option value="Jammu and Kashmir">Jammu and Kashmir</option>
+                    <option value="Jharkhand">Jharkhand</option>
                     <option value="Karnataka">Karnataka</option>
                     <option value="Kerala">Kerala</option>
+                    <option value="Ladakh">Ladakh</option>
                     <option value="Madhya Pradesh">Madhya Pradesh</option>
                     <option value="Maharashtra">Maharashtra</option>
+                    <option value="Manipur">Manipur</option>
+                    <option value="Meghalaya">Meghalaya</option>
+                    <option value="Mizoram">Mizoram</option>
+                    <option value="Nagaland">Nagaland</option>
+                    <option value="Odisha">Odisha</option>
+                    <option value="Puducherry">Puducherry</option>
                     <option value="Punjab">Punjab</option>
                     <option value="Rajasthan" selected>Rajasthan</option>
+                    <option value="Sikkim">Sikkim</option>
                     <option value="Tamil Nadu">Tamil Nadu</option>
                     <option value="Telangana">Telangana</option>
+                    <option value="Tripura">Tripura</option>
                     <option value="Uttar Pradesh">Uttar Pradesh</option>
+                    <option value="Uttarakhand">Uttarakhand</option>
                     <option value="West Bengal">West Bengal</option>
-                    <option value="Other">Other States & UTs</option>
                   </select>
                 </div>
-                <div>
-                  <label for="cust-pincode" class="block text-xs uppercase tracking-wider text-muted-foreground mb-1">PIN Code *</label>
-                  <input
-                    id="cust-pincode"
-                    name="pincode"
-                    type="text"
-                    required
-                    maxlength="6"
-                    placeholder="302001"
-                    class="w-full border border-border bg-background px-3 py-2.5 text-sm outline-none focus:border-primary"
-                  />
+              </div>
+
+              <!-- Live PIN Code Verification Status -->
+              <div id="pincode-verify-status" class="hidden border border-border/70 bg-secondary/30 px-3 py-2 text-xs"></div>
+
+              <!-- 1D. Delivery Address Confirmation Preview & Action -->
+              <div id="address-confirmation-card" class="mt-4 border border-border bg-background p-4 space-y-3">
+                <div class="flex flex-wrap items-center justify-between gap-2">
+                  <div class="flex items-center gap-2">
+                    <span class="text-[11px] font-semibold uppercase tracking-[0.16em] text-foreground">Delivery Address Summary</span>
+                    <span id="address-confirmed-badge" class="hidden bg-emerald-800/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-emerald-900">
+                      ✓ Confirmed
+                    </span>
+                  </div>
+                  <span id="confirm-preview-label" class="text-[11px] font-medium text-muted-foreground">Label: Home</span>
+                </div>
+
+                <div class="text-xs space-y-1 text-foreground/90">
+                  <p id="confirm-preview-recipient" class="font-medium text-foreground">Enter recipient name &amp; mobile number above</p>
+                  <p id="confirm-preview-address" class="text-muted-foreground">Complete house/flat number, street/area, city, state, and 6-digit PIN code.</p>
+                  <p id="confirm-preview-coords" class="font-mono text-[11px] text-muted-foreground">Map Pin: Not selected (optional)</p>
+                </div>
+
+                <div id="address-confirm-feedback" class="hidden text-xs p-2.5"></div>
+
+                <div class="flex flex-wrap items-center justify-between gap-3 pt-1">
+                  <button
+                    type="button"
+                    id="confirm-address-btn"
+                    class="border border-foreground bg-foreground px-5 py-2.5 text-[11px] uppercase tracking-[0.16em] text-background hover:bg-foreground/90 transition font-medium cursor-pointer"
+                  >
+                    Confirm Delivery Address
+                  </button>
+                  <span class="text-[11px] text-muted-foreground">Saves to your account for faster checkout</span>
                 </div>
               </div>
             </form>
           </div>
 
           <!-- Step 2: Payment Method -->
-          <div class="bg-card/70 p-5 ring-1 ring-border sm:p-7">
-            <h2 class="font-display text-2xl font-semibold text-foreground flex items-center gap-2">
-              <span class="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground font-sans">2</span>
+          <div class="bg-card border border-border/80 p-5 sm:p-8">
+            <h2 class="font-display text-2xl font-medium text-foreground flex items-center gap-3 border-b border-border/60 pb-4">
+              <span class="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-[11px] text-primary-foreground font-sans font-medium">2</span>
               Payment Method
             </h2>
 
             <div class="mt-6 space-y-4" role="radiogroup" aria-label="Payment Method">
-              <!-- Online Payment via Razorpay -->
-              <label
-                data-method="razorpay"
-                role="radio"
-                aria-checked="true"
-                tabindex="0"
-                class="payment-option-label relative flex cursor-pointer items-start gap-3 border border-primary bg-primary/5 p-4 transition rounded-sm ring-1 ring-primary/40"
-              >
-                <input
-                  type="radio"
-                  id="payment-method-razorpay"
-                  name="payment_method"
-                  value="razorpay"
-                  checked
-                  class="mt-1 h-4 w-4 cursor-pointer accent-[#6B2D31]"
-                />
-                <div class="flex-1">
-                  <div class="flex flex-wrap items-center justify-between gap-2">
-                    <span class="font-semibold text-foreground text-sm">Pay Online (UPI, Cards, NetBanking, Wallets)</span>
-                    <span class="rounded bg-primary/10 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-primary">Recommended</span>
-                  </div>
-                  <p class="mt-1 text-xs text-muted-foreground">
-                    Instant & secure checkout powered by <strong>Razorpay</strong>.
-                  </p>
-                  <!-- Payment Mode Badges -->
-                  <div class="mt-3 flex flex-wrap items-center gap-2 text-[11px] text-foreground/80">
-                    <span class="rounded border border-border bg-background px-2 py-1">UPI (GPay, PhonePe, Paytm)</span>
-                    <span class="rounded border border-border bg-background px-2 py-1">Credit & Debit Cards</span>
-                    <span class="rounded border border-border bg-background px-2 py-1">Net Banking</span>
-                    <span class="rounded border border-border bg-background px-2 py-1">Wallets</span>
-                  </div>
-                </div>
-              </label>
-
               <!-- Cash on Delivery (COD) -->
               <label
                 data-method="cod"
                 role="radio"
-                aria-checked="false"
+                aria-checked="true"
                 tabindex="0"
-                class="payment-option-label relative flex cursor-pointer items-start gap-3 border border-border p-4 transition hover:border-primary/60 rounded-sm"
+                class="payment-option-label relative flex cursor-pointer items-start gap-3 border border-primary bg-primary/5 p-4 transition"
               >
                 <input
                   type="radio"
                   id="payment-method-cod"
                   name="payment_method"
                   value="cod"
+                  checked
                   class="mt-1 h-4 w-4 cursor-pointer accent-[#6B2D31]"
                 />
-                <div class="flex-1">
-                  <div class="flex items-center justify-between">
-                    <span class="font-semibold text-foreground text-sm">Cash on Delivery (COD)</span>
-                    <span class="text-xs text-muted-foreground">Pay at doorstep</span>
+                <div class="flex-1 min-w-0">
+                  <div class="flex flex-wrap items-center justify-between gap-2">
+                    <span class="font-medium text-foreground text-sm">Cash on Delivery (COD)</span>
+                    <span class="bg-primary/10 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-primary">Pay on Delivery</span>
                   </div>
                   <p class="mt-1 text-xs text-muted-foreground">
-                    Pay in cash when your courier arrives. Please keep exact change ready.
+                    Pay conveniently at your doorstep when your order arrives. Zero additional COD charges.
                   </p>
+                </div>
+              </label>
+
+              <!-- Online Payment via Razorpay -->
+              <label
+                data-method="razorpay"
+                role="radio"
+                aria-checked="false"
+                aria-disabled="true"
+                tabindex="-1"
+                class="payment-option-label relative flex cursor-not-allowed items-start gap-3 border border-border bg-secondary/20 p-4 transition opacity-75"
+              >
+                <input
+                  type="radio"
+                  id="payment-method-razorpay"
+                  name="payment_method"
+                  value="razorpay"
+                  disabled
+                  class="mt-1 h-4 w-4 cursor-not-allowed accent-[#6B2D31]"
+                />
+                <div class="flex-1 min-w-0">
+                  <div class="flex flex-wrap items-center justify-between gap-2">
+                    <span class="font-medium text-foreground text-sm">Razorpay Online Payment (UPI, Cards, Net Banking)</span>
+                    <span id="razorpay-status-badge" class="bg-amber-900/10 border border-amber-800/30 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-amber-900">Temporarily Unavailable · Coming Soon</span>
+                  </div>
+                  <p class="mt-1 text-xs text-muted-foreground">
+                    Instant &amp; secure checkout powered by <strong>Razorpay</strong>.
+                  </p>
+                  <p id="razorpay-unavailable-note" class="mt-1.5 text-[11px] font-medium text-amber-900">
+                    Online payments (UPI, Cards, Net Banking) are temporarily unavailable and coming soon. Please place your order using Cash on Delivery (COD).
+                  </p>
+                  <div class="mt-3 flex flex-wrap items-center gap-2 text-[11px] text-foreground/75">
+                    <span class="border border-border bg-background/80 px-2 py-1">UPI (GPay, PhonePe, Paytm)</span>
+                    <span class="border border-border bg-background/80 px-2 py-1">Credit &amp; Debit Cards</span>
+                    <span class="border border-border bg-background/80 px-2 py-1">Net Banking</span>
+                  </div>
                 </div>
               </label>
             </div>
 
             <!-- Error Banner -->
-            <div id="checkout-error-banner" class="mt-4 hidden p-3 bg-[#2A1810] text-[#FFB4AB] border border-[#93000A]/40 text-xs rounded"></div>
+            <div id="checkout-error-banner" class="mt-4 hidden p-3 bg-[#2A1810] text-[#FFB4AB] border border-[#93000A]/40 text-xs"></div>
 
             <!-- Place Order CTA Button -->
             <button
               id="place-order-btn"
               type="button"
-              class="mt-6 w-full bg-primary py-4 text-sm uppercase tracking-[0.2em] text-primary-foreground hover:opacity-90 transition font-medium cursor-pointer shadow flex items-center justify-center gap-2"
+              class="mt-6 mn-btn-primary w-full py-4 text-center"
             >
-              <span id="place-order-text">Pay with Razorpay</span>
+              <span id="place-order-text">Place Cash on Delivery Order</span>
               <span id="place-order-spinner" class="hidden animate-spin">⏳</span>
             </button>
 
             <!-- Customer Support Note -->
             <div class="mt-4 text-center text-xs text-muted-foreground">
-              <p>🔒 256-Bit SSL Encrypted & Cryptographically Verified</p>
-              <p class="mt-1">
-                Have questions before ordering?
+              <p>
+                Need assistance?
                 <a href="https://wa.me/918849366915" target="_blank" rel="noreferrer" class="text-primary underline font-medium">
-                  WhatsApp Support (+91 88493 66915)
+                  WhatsApp (+91 88493 66915)
                 </a>
                 ·
                 <a href="mailto:matranaari@gmail.com" class="text-primary underline font-medium">
@@ -319,10 +519,10 @@
 
         <!-- Right: Order Summary Sidebar -->
         <div>
-          <div class="bg-card/70 p-5 ring-1 ring-border sm:p-6 sticky top-24">
-            <div class="flex items-center justify-between border-b border-border pb-3">
-              <h3 class="font-display text-xl font-semibold">Order Summary</h3>
-              <a href="cart.html" class="text-xs font-hand text-primary underline">Edit Bag</a>
+          <div class="bg-card border border-border/80 p-6 sticky top-24">
+            <div class="flex items-center justify-between border-b border-border/70 pb-3">
+              <h3 class="font-display text-2xl font-medium">Order Summary</h3>
+              <a href="../cart.html" class="text-xs text-primary underline">Edit Bag</a>
             </div>
 
             <!-- Items List -->
@@ -331,19 +531,19 @@
             </ul>
 
             <!-- Promo Coupon Input in Checkout -->
-            <div class="mt-4 pt-3 border-t border-border/60">
-              <label class="block text-xs uppercase tracking-wider font-semibold text-muted-foreground mb-1">Promo Coupon Code</label>
+            <div class="mt-4 pt-4 border-t border-border/60">
+              <label class="block text-[11px] uppercase tracking-[0.18em] font-medium text-muted-foreground mb-1.5">Privilege Code</label>
               <div class="flex gap-2">
                 <input
                   id="checkout-coupon-input"
                   type="text"
-                  placeholder="Code (e.g. NAARI10)"
-                  class="min-w-0 flex-1 border border-border bg-background px-3 py-1.5 text-xs uppercase font-mono outline-none focus:border-primary"
+                  placeholder="Enter code (e.g. NAARI10)"
+                  class="min-w-0 flex-1 border border-border bg-background px-3 py-2 text-xs uppercase font-mono outline-none focus:border-primary"
                 />
                 <button
                   type="button"
                   id="checkout-apply-coupon-btn"
-                  class="bg-primary px-3 py-1.5 text-xs uppercase tracking-wider text-primary-foreground font-semibold hover:opacity-90 transition cursor-pointer"
+                  class="border border-foreground bg-foreground px-4 py-2 text-[11px] uppercase tracking-[0.16em] text-background font-medium hover:bg-foreground/90 transition cursor-pointer"
                 >
                   Apply
                 </button>
@@ -352,29 +552,24 @@
             </div>
 
             <!-- Totals -->
-            <div class="mt-4 space-y-2 border-t border-border pt-4 text-sm">
+            <div class="mt-4 space-y-2.5 border-t border-border/70 pt-4 text-xs sm:text-sm">
               <div class="flex justify-between text-muted-foreground">
                 <span>Subtotal</span>
-                <span id="summary-subtotal" class="font-display text-foreground">₹0</span>
+                <span id="summary-subtotal" class="mn-price text-foreground">₹0</span>
               </div>
               <div id="summary-discount-row" class="hidden justify-between text-emerald-800 font-medium">
-                <span>Coupon Discount (<span id="summary-coupon-code"></span>)</span>
+                <span>Privilege Discount (<span id="summary-coupon-code"></span>)</span>
                 <span id="summary-discount">-₹0</span>
               </div>
               <div class="flex justify-between text-muted-foreground">
-                <span>Delivery across India</span>
-                <span id="summary-shipping" class="text-primary font-medium">FREE ✿</span>
+                <span>Shipping</span>
+                <span id="summary-shipping" class="text-foreground font-medium">Complimentary</span>
               </div>
-              <div class="flex justify-between items-baseline border-t border-border pt-3 text-base">
-                <span class="font-semibold text-foreground">Total Amount</span>
-                <span id="summary-total" class="font-display text-2xl text-primary font-semibold">₹0</span>
+              <div class="flex justify-between items-baseline border-t border-border/70 pt-3.5 text-base">
+                <span class="text-xs uppercase tracking-[0.18em] font-semibold text-foreground">Total</span>
+                <span id="summary-total" class="mn-price text-xl text-foreground">₹0</span>
               </div>
               <p class="text-[11px] text-muted-foreground text-right">Inclusive of 5% GST (<span id="summary-gst-note">₹0</span>)</p>
-            </div>
-
-            <div class="mt-6 rounded border border-dashed border-primary/40 bg-primary/5 p-3 text-xs text-foreground/80">
-              <p class="font-medium text-primary">✿ Naari Craft Promise</p>
-              <p class="mt-0.5">Every kurti is hand-finished with care and packed with eco-conscious materials.</p>
             </div>
           </div>
         </div>
@@ -382,31 +577,37 @@
     </section>
   </main>
 
-  <!-- Footer -->
-  <footer class="mt-24 border-t border-border/60">
-    <div class="mx-auto grid max-w-6xl gap-8 px-5 py-12 sm:grid-cols-3">
-      <div>
-        <img src="images/naari-logo.png" alt="Naari" class="h-16 w-auto mix-blend-multiply"/>
-        <p class="mt-2 font-hand text-muted-foreground">Modern kurtis, woven with heritage.</p>
-      </div>
-      <div class="font-hand text-lg">
-        <a class="block hover:text-primary" href="index.html">Home</a>
-        <a class="block hover:text-primary" href="shop.html">Shop</a>
-        <a class="block hover:text-primary" href="story.html">Our Story</a>
-        <a class="block hover:text-primary" href="contact.html">Contact</a>
-      </div>
-      <div class="text-sm text-muted-foreground">
-        <p><a href="mailto:matranaari@gmail.com" class="hover:text-primary transition">matranaari@gmail.com</a></p>
-        <p><a href="https://wa.me/918849366915" target="_blank" rel="noreferrer" class="hover:text-primary transition">+91 88493 66915</a></p>
-        <p class="mt-4">© 2026 Matra Naari</p>
+  <!-- Boutique Footer -->
+  <footer class="mt-20 border-t border-border/80 bg-card">
+    <div class="mn-container py-12">
+      <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 text-xs text-muted-foreground">
+        <div class="flex items-center gap-4">
+          <img src="../images/naari-logo.png" alt="Matra Naari" class="h-10 w-auto mix-blend-multiply"/>
+          <span>© 2026 Matra Naari · Modern Kurtis Rooted in Craft</span>
+        </div>
+        <div class="flex flex-wrap items-center gap-5">
+          <a href="../shop.html" class="hover:text-primary transition">Shop</a>
+          <a href="../story.html" class="hover:text-primary transition">Our Story</a>
+          <a href="../contact.html" class="hover:text-primary transition">Contact</a>
+          <a href="mailto:matranaari@gmail.com" class="hover:text-primary transition">matranaari@gmail.com</a>
+          <a href="https://wa.me/918849366915" target="_blank" rel="noreferrer" class="hover:text-primary transition">+91 88493 66915</a>
+        </div>
       </div>
     </div>
   </footer>
 
-  <script src="assets/app.js"></script>
+  <script src="../assets/app.js?v=20261116.1"></script>
   <script>
     let serverConfig = null;
-    let selectedPaymentMethod = 'razorpay';
+    let selectedPaymentMethod = 'cod';
+
+    function isRazorpayEnabledInConfig() {
+      return Boolean(
+        serverConfig &&
+        serverConfig.razorpay_enabled === true &&
+        serverConfig.is_razorpay_configured === true
+      );
+    }
 
     function getApiBaseUrl() {
       if (typeof window !== 'undefined') {
@@ -438,11 +639,25 @@
       return 'http://localhost:8000' + cleanPath;
     }
 
+    const CHECKOUT_DRAFT_KEY = 'naari_checkout_draft_v1';
+
+    function buildCustomerFetchOptions(options = {}) {
+      const mergedHeaders = typeof getCustomerAuthHeaders === 'function'
+        ? getCustomerAuthHeaders(options.headers || {})
+        : { ...(options.headers || {}) };
+      return {
+        ...options,
+        headers: mergedHeaders,
+        credentials: options.credentials || 'same-origin'
+      };
+    }
+
     async function safeFetchJson(endpoint, options = {}) {
       const url = getApiUrl(endpoint);
+      const fetchOptions = buildCustomerFetchOptions(options);
       let res;
       try {
-        res = await fetch(url, options);
+        res = await fetch(url, fetchOptions);
       } catch (netErr) {
         throw new Error('Unable to connect to Naari API server. Please check your network connection or verify that the server is online.');
       }
@@ -468,6 +683,99 @@
       return { res, data };
     }
 
+    function saveCheckoutFormDraft() {
+      try {
+        const form = document.getElementById('checkout-form');
+        if (!form) return;
+        const draft = getCustomerFormData();
+        const hasAnyValue = Object.values(draft).some(v => Boolean(v));
+        if (hasAnyValue) {
+          sessionStorage.setItem(CHECKOUT_DRAFT_KEY, JSON.stringify(draft));
+        }
+      } catch (e) {}
+    }
+
+    function restoreCheckoutFormDraft() {
+      try {
+        const raw = sessionStorage.getItem(CHECKOUT_DRAFT_KEY);
+        if (!raw) return;
+        const draft = JSON.parse(raw);
+        if (!draft || typeof draft !== 'object') return;
+        const fieldMap = {
+          name: 'cust-name',
+          phone: 'cust-phone',
+          email: 'cust-email',
+          house_no: 'cust-house-no',
+          street_area: 'cust-street-area',
+          address_line1: 'cust-address1',
+          address_line2: 'cust-address2',
+          city: 'cust-city',
+          state: 'cust-state',
+          pincode: 'cust-pincode',
+          location_summary: 'cust-location-summary'
+        };
+        Object.entries(fieldMap).forEach(([key, id]) => {
+          const el = document.getElementById(id);
+          if (el && draft[key] && !el.value) {
+            el.value = draft[key];
+          }
+        });
+        if (draft.state) {
+          selectMatchingStateOption(draft.state);
+        }
+        if (draft.address_label) {
+          setAddressLabelUI(draft.address_label);
+        }
+        if (draft.house_no || draft.street_area) {
+          syncSplitAddressFields('split');
+        } else if (draft.address_line1) {
+          syncSplitAddressFields('addr1');
+        }
+        const hasLat = draft.latitude !== null && draft.latitude !== undefined && draft.latitude !== '';
+        const hasLng = draft.longitude !== null && draft.longitude !== undefined && draft.longitude !== '';
+        if (hasLat && hasLng && Number.isFinite(Number(draft.latitude)) && Number.isFinite(Number(draft.longitude))) {
+          setMapPinLocation(Number(draft.latitude), Number(draft.longitude), {
+            reverseGeocode: false,
+            pan: true,
+            displaySummary: draft.location_summary || ''
+          });
+        }
+        if (draft.pincode && /^\d{6}$/.test(String(draft.pincode).trim())) {
+          verifyPincodeLive(String(draft.pincode).trim(), false);
+        }
+        updateAddressConfirmationPreview();
+      } catch (e) {}
+    }
+
+    function redirectToLoginForCheckout() {
+      saveCheckoutFormDraft();
+      window.location.replace('account.html?redirect=checkout.html');
+    }
+
+    async function ensureCheckoutAuthenticated() {
+      const localSession = getUserSession();
+      try {
+        const { res, data } = await safeFetchJson('/api/auth/me', {
+          method: 'GET',
+          headers: getCustomerAuthHeaders(),
+          credentials: 'same-origin'
+        });
+        if (res.ok && data && data.ok && data.user) {
+          setUserSession((localSession && localSession.token) || '', data.user);
+          return data.user;
+        }
+        clearUserSession();
+        redirectToLoginForCheckout();
+        return null;
+      } catch (err) {
+        if (localSession && localSession.user && localSession.token) {
+          return localSession.user;
+        }
+        redirectToLoginForCheckout();
+        return null;
+      }
+    }
+
     async function loadServerConfig() {
       try {
         const { res, data } = await safeFetchJson('/api/config');
@@ -480,12 +788,16 @@
     }
 
     function computeCheckoutAmounts() {
+      const cart = getCart();
       const subtotal = getCartTotal();
       const activeCoupon = getActiveCoupon();
       let discountAmount = 0;
+      let couponError = '';
       if (activeCoupon && activeCoupon.code) {
-        if (typeof activeCoupon.discount_amount === 'number' && activeCoupon.subtotal_snapshot === subtotal) {
-          discountAmount = activeCoupon.discount_amount;
+        if (typeof evaluateClientCoupon === 'function') {
+          const couponEval = evaluateClientCoupon(activeCoupon, cart, subtotal);
+          discountAmount = couponEval.valid ? couponEval.discountAmount : 0;
+          couponError = couponEval.valid ? '' : (couponEval.error || '');
         } else if (activeCoupon.discount_type === 'percentage') {
           discountAmount = Math.round(subtotal * (activeCoupon.discount_value / 100));
           if (activeCoupon.max_discount && discountAmount > activeCoupon.max_discount) {
@@ -501,7 +813,7 @@
       const finalTotal = Math.max(0, subtotal - discountAmount + shipping);
       const gstPercentage = Number(serverConfig?.gst_percentage ?? 5);
       const gstAmount = Math.round(finalTotal * gstPercentage / (100 + gstPercentage));
-      return { subtotal, discountAmount, shipping, finalTotal, gstAmount, activeCoupon };
+      return { subtotal, discountAmount, shipping, finalTotal, gstAmount, activeCoupon, couponError };
     }
 
     function renderOrderSummary() {
@@ -526,13 +838,14 @@
       emptyState.classList.add('hidden');
       mainGrid.classList.remove('hidden');
 
-      const { subtotal, discountAmount, shipping, finalTotal, gstAmount, activeCoupon } = computeCheckoutAmounts();
+      const { subtotal, discountAmount, shipping, finalTotal, gstAmount, activeCoupon, couponError } = computeCheckoutAmounts();
       subtotalEl.textContent = formatPrice(subtotal);
       totalEl.textContent = formatPrice(finalTotal);
       if (gstNoteEl) gstNoteEl.textContent = formatPrice(gstAmount);
 
-      if (shippingEl) shippingEl.textContent = shipping === 0 ? 'FREE ✿' : formatPrice(shipping);
+      if (shippingEl) shippingEl.textContent = shipping === 0 ? 'FREE' : formatPrice(shipping);
 
+      const cMsgEl = document.getElementById('checkout-coupon-msg');
       if (discountAmount > 0 && activeCoupon) {
         discRow.classList.remove('hidden');
         discRow.classList.add('flex');
@@ -541,6 +854,9 @@
       } else {
         discRow.classList.add('hidden');
         discRow.classList.remove('flex');
+        if (activeCoupon && activeCoupon.code && couponError && cMsgEl) {
+          cMsgEl.innerHTML = `<span class="text-destructive">${escapeHtml(couponError)}</span> <button type="button" id="checkout-remove-coupon-btn" class="text-muted-foreground hover:text-destructive underline ml-1">Remove</button>`;
+        }
       }
 
       if (itemsList) {
@@ -584,16 +900,34 @@
 
     function setPaymentMethod(method) {
       if (method !== 'razorpay' && method !== 'cod') return;
+      if (method === 'razorpay' && !isRazorpayEnabledInConfig()) {
+        method = 'cod';
+      }
       selectedPaymentMethod = method;
 
       // Update native radio inputs
       document.querySelectorAll('input[name="payment_method"]').forEach(r => {
+        if (r.value === 'razorpay' && !isRazorpayEnabledInConfig()) {
+          r.checked = false;
+          r.disabled = true;
+          return;
+        }
         r.checked = (r.value === method);
       });
 
-      // Update visual styles on card labels
+      // Update visual styles on card labels (keep both options visible)
       document.querySelectorAll('.payment-option-label').forEach(label => {
-        const isMatch = (label.getAttribute('data-method') === method);
+        const labelMethod = label.getAttribute('data-method');
+        label.classList.remove('hidden');
+        if (labelMethod === 'razorpay' && !isRazorpayEnabledInConfig()) {
+          label.classList.remove('border-primary', 'bg-primary/5', 'ring-1', 'ring-primary/40', 'cursor-pointer');
+          label.classList.add('border-border', 'bg-secondary/20', 'cursor-not-allowed', 'opacity-75');
+          label.setAttribute('aria-checked', 'false');
+          label.setAttribute('aria-disabled', 'true');
+          label.setAttribute('tabindex', '-1');
+          return;
+        }
+        const isMatch = (labelMethod === method);
         label.setAttribute('aria-checked', isMatch ? 'true' : 'false');
         if (isMatch) {
           label.classList.add('border-primary', 'bg-primary/5', 'ring-1', 'ring-primary/40');
@@ -608,6 +942,9 @@
     }
 
     function getSelectedPaymentMethod() {
+      if (!isRazorpayEnabledInConfig()) {
+        return 'cod';
+      }
       const radio = document.querySelector('input[name="payment_method"]:checked');
       return radio ? radio.value : selectedPaymentMethod;
     }
@@ -644,37 +981,1556 @@
         });
       });
 
-      // 3. Initial sync
-      setPaymentMethod('razorpay');
+      // 3. Initial sync (COD-only mode unless Razorpay is explicitly enabled and configured)
+      setPaymentMethod('cod');
+    }
+
+    function escapeHtmlText(val) {
+      return String(val ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    const CLIENT_PLACEHOLDER_WORDS = new Set([
+      'abc', 'abcd', 'abcde', 'abcdef', 'abcdefg', 'abcdefgh',
+      'test', 'testing', 'tester', 'tests', 'asdf', 'asdfg', 'asdfgh',
+      'qwerty', 'qwer', 'qwert', 'zxcv', 'zxcvb', 'xyz', 'xyzw',
+      'xxxx', 'xxxxx', 'zzzz', 'none', 'null', 'undefined', 'na', 'n/a',
+      'nil', 'dummy', 'sample', 'fake', 'placeholder', 'address', 'street',
+      'city', 'state', 'house', 'flat', 'demo', '123', '1234', '12345',
+      '123456', '1234567', '12345678', '000', '0000', '00000',
+      '000000', '9999', '99999', '999999'
+    ]);
+
+    const CLIENT_GIBBERISH_WORDS = new Set([
+      'abc', 'abcd', 'abcde', 'abcdef', 'abcdefg', 'abcdefgh',
+      'asdf', 'asdfg', 'asdfgh', 'asdfghj', 'asdfghjk', 'asdfghjkl',
+      'qwerty', 'qwer', 'qwert', 'qwertyu', 'qwertyui', 'qwertyuio', 'qwertyuiop',
+      'zxcv', 'zxcvb', 'zxcvbn', 'zxcvbnm',
+      'xyz', 'xyzw', 'xxxx', 'xxxxx', 'zzzz',
+      'dummy', 'fake', 'placeholder'
+    ]);
+
+    function isClientPlaceholderText(val, minAlnum = 2) {
+      const s = String(val || '').trim().toLowerCase();
+      if (!s) return true;
+      const alnum = s.replace(/[^a-z0-9]/g, '');
+      if (alnum.length < minAlnum) return true;
+      if (alnum.length >= 3 && new Set(alnum.split('')).size === 1) return true;
+      if (CLIENT_PLACEHOLDER_WORDS.has(s) || CLIENT_PLACEHOLDER_WORDS.has(alnum)) return true;
+      const words = s.split(/[\s,./\-_]+/).map(w => w.replace(/[^a-z0-9]/g, '')).filter(Boolean);
+      if (words.length === 0) return true;
+      if (words.some(w => {
+        const alphaStem = w.replace(/[0-9]+/g, '');
+        return CLIENT_GIBBERISH_WORDS.has(w) ||
+          (alphaStem && CLIENT_GIBBERISH_WORDS.has(alphaStem)) ||
+          (/^[a-z]+$/.test(w) && w.length >= 3 && new Set(w.split('')).size === 1);
+      })) {
+        return true;
+      }
+      if (words.every(w => CLIENT_PLACEHOLDER_WORDS.has(w) || (w.length >= 3 && new Set(w.split('')).size === 1))) {
+        return true;
+      }
+      return false;
+    }
+
+    let deliveryMap = null;
+    let deliveryMarker = null;
+    let googleDeliveryMap = null;
+    let googleDeliveryMarker = null;
+    let googleGeocoder = null;
+    let googlePlacesSessionToken = null;
+    let activeMapProvider = 'osm'; // 'google' or 'osm'
+    let googleMapsLoadPromise = null;
+    let googleMapsUnavailable = false;
+    let googleAutocompleteRequestsInSession = 0;
+    const GOOGLE_AUTOCOMPLETE_MAX_REQUESTS = 25;
+    const googlePredictionsCache = new Map();
+    let isAddressConfirmed = false;
+    let lastPincodeLookup = null;
+    let autocompleteTimer = null;
+    let reverseGeocodeTimer = null;
+    let pincodeLookupTimer = null;
+
+    function updateAddressProviderBadge(mode) {
+      const badge = document.getElementById('address-provider-badge');
+      const note = document.getElementById('address-search-helper-note');
+      if (mode === 'google') {
+        if (badge) {
+          badge.textContent = 'Google Maps & Places (India)';
+          badge.className = 'rounded bg-emerald-900/10 border border-emerald-800/30 px-2 py-0.5 text-[10px] font-semibold text-emerald-900';
+        }
+        if (note) {
+          note.textContent = 'Powered by Google Maps & Places (New) with OpenStreetMap fallback. Selecting a society or landmark pins the map and autofills locality details below.';
+        }
+      } else {
+        if (badge) {
+          badge.textContent = 'OpenStreetMap (India)';
+          badge.className = 'rounded bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary';
+        }
+        if (note) {
+          note.textContent = 'Powered by OpenStreetMap Nominatim. Selecting a suggestion moves the delivery pin and autofills locality details below.';
+        }
+      }
+    }
+
+    function loadGoogleMapsSdk(apiKey) {
+      if (!apiKey || googleMapsUnavailable) return Promise.resolve(false);
+      if (window.google && window.google.maps) return Promise.resolve(true);
+      if (googleMapsLoadPromise) return googleMapsLoadPromise;
+
+      googleMapsLoadPromise = new Promise((resolve) => {
+        const timeoutId = setTimeout(() => {
+          googleMapsUnavailable = true;
+          resolve(false);
+        }, 7000);
+
+        window.gm_authFailure = function() {
+          clearTimeout(timeoutId);
+          googleMapsUnavailable = true;
+          activeMapProvider = 'osm';
+          updateAddressProviderBadge('osm');
+          initLeafletFallbackMap();
+          resolve(false);
+        };
+
+        window.__onNaariGoogleMapsLoaded = function() {
+          clearTimeout(timeoutId);
+          resolve(Boolean(window.google && window.google.maps));
+        };
+
+        const script = document.createElement('script');
+        script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(apiKey)}&libraries=places,marker&v=weekly&loading=async&callback=__onNaariGoogleMapsLoaded`;
+        script.async = true;
+        script.defer = true;
+        script.onerror = () => {
+          clearTimeout(timeoutId);
+          googleMapsUnavailable = true;
+          resolve(false);
+        };
+        document.head.appendChild(script);
+      });
+
+      return googleMapsLoadPromise;
+    }
+
+    function parseGoogleAddressComponents(inputObjOrComponents, displayName = '', formattedAddress = '') {
+      let compList = [];
+      let rawDisplay = displayName;
+      let rawFormatted = formattedAddress;
+      let lat = null;
+      let lon = null;
+
+      if (Array.isArray(inputObjOrComponents)) {
+        compList = inputObjOrComponents;
+      } else if (inputObjOrComponents && typeof inputObjOrComponents === 'object') {
+        compList = Array.isArray(inputObjOrComponents.addressComponents)
+          ? inputObjOrComponents.addressComponents
+          : (Array.isArray(inputObjOrComponents.address_components) ? inputObjOrComponents.address_components : []);
+
+        const pDisp = inputObjOrComponents.displayName;
+        if (typeof pDisp === 'string' && pDisp.trim()) {
+          rawDisplay = pDisp.trim();
+        } else if (pDisp && typeof pDisp.text === 'string' && pDisp.text.trim()) {
+          rawDisplay = pDisp.text.trim();
+        }
+
+        const pFmt = inputObjOrComponents.formattedAddress || inputObjOrComponents.formatted_address;
+        if (typeof pFmt === 'string' && pFmt.trim()) {
+          rawFormatted = pFmt.trim();
+        }
+
+        const loc = inputObjOrComponents.location ||
+          (inputObjOrComponents.geometry && inputObjOrComponents.geometry.location);
+        if (loc) {
+          const rawLat = typeof loc.lat === 'function' ? loc.lat() : (loc.lat ?? loc.latitude);
+          const rawLng = typeof loc.lng === 'function' ? loc.lng() : (loc.lng ?? loc.longitude);
+          if (Number.isFinite(Number(rawLat)) && Number.isFinite(Number(rawLng))) {
+            lat = Number(rawLat);
+            lon = Number(rawLng);
+          }
+        }
+      }
+
+      const getByType = (...types) => {
+        for (const t of types) {
+          const found = compList.find(c => Array.isArray(c.types) && c.types.includes(t));
+          if (found) {
+            return String(found.longText || found.long_name || found.shortText || found.short_name || '').trim();
+          }
+        }
+        return '';
+      };
+
+      const subpremise = getByType('subpremise', 'floor', 'room');
+      const streetNumber = getByType('street_number');
+      const premise = getByType('premise', 'point_of_interest', 'establishment');
+      const landmark = getByType('landmark');
+      const subloc1 = getByType('sublocality_level_1', 'sublocality');
+      const subloc2 = getByType('sublocality_level_2', 'neighborhood');
+      const subloc3 = getByType('sublocality_level_3');
+      const route = getByType('route');
+      const city = getByType('locality', 'postal_town', 'administrative_area_level_2', 'administrative_area_level_3');
+      const state = getByType('administrative_area_level_1');
+      const rawPin = getByType('postal_code').replace(/\s+/g, '');
+      const pincode = /^\d{6}$/.test(rawPin) ? rawPin : '';
+
+      const houseParts = [subpremise, streetNumber].filter(Boolean);
+      const house_no = houseParts.join(', ');
+
+      const cleanDisplay = String(rawDisplay || '').trim();
+      const streetParts = [];
+      if (cleanDisplay && cleanDisplay.toLowerCase() !== city.toLowerCase() && cleanDisplay.toLowerCase() !== state.toLowerCase()) {
+        streetParts.push(cleanDisplay);
+      }
+      [premise, route, subloc3, subloc2, subloc1].forEach((part) => {
+        if (part && !streetParts.some(existing => existing.toLowerCase().includes(part.toLowerCase()) || part.toLowerCase().includes(existing.toLowerCase()))) {
+          streetParts.push(part);
+        }
+      });
+
+      let street_area = streetParts.slice(0, 3).join(', ');
+      const fullFormatted = String(rawFormatted || cleanDisplay || '').trim();
+      if (!street_area && fullFormatted) {
+        street_area = fullFormatted.split(',').slice(0, 2).map(s => s.trim()).filter(Boolean).join(', ');
+      }
+
+      return {
+        display_name: fullFormatted || [cleanDisplay, street_area, city, state, pincode].filter(Boolean).join(', '),
+        house_no,
+        street_area,
+        address_line2: landmark || '',
+        city,
+        state,
+        pincode,
+        lat,
+        lon
+      };
+    }
+
+    function applyParsedAddressToCheckoutForm(parsed, options = {}) {
+      if (!parsed || typeof parsed !== 'object') return;
+      markAddressConfirmedState(false);
+      const houseEl = document.getElementById('cust-house-no');
+      const streetEl = document.getElementById('cust-street-area');
+      const addr2El = document.getElementById('cust-address2');
+      const cityEl = document.getElementById('cust-city');
+      const pinEl = document.getElementById('cust-pincode');
+
+      // Keep manual flat/house number entry intact if customer already typed one
+      if (parsed.house_no && houseEl && (!houseEl.value.trim() || options.overwriteHouseNo)) {
+        houseEl.value = parsed.house_no;
+      }
+      if (parsed.street_area && streetEl) {
+        streetEl.value = parsed.street_area;
+      }
+      if (parsed.address_line2 && addr2El && !addr2El.value.trim()) {
+        addr2El.value = parsed.address_line2;
+      }
+      if (parsed.city && cityEl) {
+        cityEl.value = parsed.city;
+      }
+      if (parsed.state) {
+        selectMatchingStateOption(parsed.state);
+      }
+      if (parsed.pincode && pinEl && /^\d{6}$/.test(parsed.pincode)) {
+        pinEl.value = parsed.pincode;
+        verifyPincodeLive(parsed.pincode, false);
+      }
+
+      syncSplitAddressFields('split');
+      updateAddressConfirmationPreview();
+      saveCheckoutFormDraft();
+    }
+
+    function syncSplitAddressFields(source) {
+      const houseEl = document.getElementById('cust-house-no');
+      const streetEl = document.getElementById('cust-street-area');
+      const addr1El = document.getElementById('cust-address1');
+      if (!houseEl || !streetEl || !addr1El) return;
+
+      if (source === 'split') {
+        const h = houseEl.value.trim();
+        const s = streetEl.value.trim();
+        if (h && s) {
+          addr1El.value = `${h}, ${s}`;
+        } else if (h || s) {
+          addr1El.value = h || s;
+        }
+      } else if (source === 'addr1') {
+        const a1 = addr1El.value.trim();
+        if (a1 && (!houseEl.value.trim() || !streetEl.value.trim())) {
+          const commaIdx = a1.indexOf(',');
+          if (commaIdx > 0) {
+            if (!houseEl.value.trim()) houseEl.value = a1.slice(0, commaIdx).trim();
+            if (!streetEl.value.trim()) streetEl.value = a1.slice(commaIdx + 1).trim();
+          } else if (!streetEl.value.trim()) {
+            streetEl.value = a1;
+          }
+        }
+      }
+    }
+
+    function markAddressConfirmedState(confirmed, message = '') {
+      isAddressConfirmed = Boolean(confirmed);
+      const badge = document.getElementById('address-confirmed-badge');
+      const stepPill = document.getElementById('address-step-status-pill');
+      const feedback = document.getElementById('address-confirm-feedback');
+      const confirmBtn = document.getElementById('confirm-address-btn');
+
+      if (badge) {
+        badge.classList.toggle('hidden', !isAddressConfirmed);
+      }
+      if (stepPill) {
+        if (isAddressConfirmed) {
+          stepPill.textContent = '✓ Delivery Address Confirmed';
+          stepPill.className = 'rounded-full bg-emerald-900/10 border border-emerald-800/30 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-900';
+        } else {
+          stepPill.textContent = 'Pin & Address Details Required';
+          stepPill.className = 'rounded-full bg-amber-900/10 border border-amber-800/30 px-2.5 py-0.5 text-[11px] font-medium text-amber-900';
+        }
+      }
+      if (confirmBtn) {
+        confirmBtn.textContent = isAddressConfirmed ? '✓ Address Confirmed (Update)' : 'Confirm Delivery Address';
+      }
+      if (feedback) {
+        if (message) {
+          feedback.textContent = message;
+          feedback.className = isAddressConfirmed
+            ? 'text-xs p-2.5 rounded bg-emerald-950/10 border border-emerald-800/30 text-emerald-900 font-medium'
+            : 'text-xs p-2.5 rounded bg-[#2A1810] border border-[#93000A]/40 text-[#FFB4AB]';
+        } else {
+          feedback.classList.add('hidden');
+        }
+      }
+    }
+
+    function updateAddressConfirmationPreview() {
+      const data = getCustomerFormData();
+      const recEl = document.getElementById('confirm-preview-recipient');
+      const addrEl = document.getElementById('confirm-preview-address');
+      const coordsEl = document.getElementById('confirm-preview-coords');
+      const labelEl = document.getElementById('confirm-preview-label');
+
+      if (labelEl) {
+        labelEl.textContent = `Label: ${data.address_label || 'Home'}`;
+      }
+      if (recEl) {
+        if (data.name || data.phone) {
+          recEl.textContent = `${data.name || 'Recipient'}${data.phone ? ' · +91 ' + data.phone : ''}${data.email ? ' (' + data.email + ')' : ''}`;
+        } else {
+          recEl.textContent = 'Enter recipient name & mobile number above';
+        }
+      }
+      if (addrEl) {
+        const parts = [
+          data.address_line1 || [data.house_no, data.street_area].filter(Boolean).join(', '),
+          data.address_line2 ? `Landmark: ${data.address_line2}` : '',
+          [data.city, data.state].filter(Boolean).join(', '),
+          data.pincode ? `PIN ${data.pincode}` : ''
+        ].filter(Boolean);
+        addrEl.textContent = parts.length > 0
+          ? parts.join(' — ')
+          : 'Fill in your house/flat number, street/area, city, state, and 6-digit PIN code.';
+      }
+      if (coordsEl) {
+        if (data.latitude !== null && data.longitude !== null && data.latitude !== '' && data.longitude !== '') {
+          const latNum = Number(data.latitude);
+          const lngNum = Number(data.longitude);
+          if (Number.isFinite(latNum) && Number.isFinite(lngNum)) {
+            coordsEl.textContent = `Map Pin Coordinates: Lat ${latNum.toFixed(6)}, Lng ${lngNum.toFixed(6)}${data.location_summary ? ' · ' + data.location_summary.slice(0, 75) : ''}`;
+            return;
+          }
+        }
+        coordsEl.textContent = 'Map Pin: Not pinned yet (click map, drag marker, or use current location)';
+      }
+    }
+
+    function selectMatchingStateOption(stateName) {
+      const stateEl = document.getElementById('cust-state');
+      if (!stateEl || !stateName) return;
+      const norm = String(stateName).trim().toLowerCase().replace(/&/g, 'and');
+      for (const opt of stateEl.options) {
+        if (!opt.value) continue;
+        const optNorm = opt.value.trim().toLowerCase().replace(/&/g, 'and');
+        if (optNorm === norm || norm.includes(optNorm) || optNorm.includes(norm)) {
+          stateEl.value = opt.value;
+          return;
+        }
+      }
+    }
+
+    async function verifyPincodeLive(pincode, autoFillStateCity = true) {
+      const cleanPin = String(pincode || '').replace(/\s+/g, '');
+      const statusBox = document.getElementById('pincode-verify-status');
+      if (!statusBox) return null;
+
+      if (!cleanPin) {
+        statusBox.classList.add('hidden');
+        lastPincodeLookup = null;
+        return null;
+      }
+      if (!/^\d{6}$/.test(cleanPin)) {
+        statusBox.classList.remove('hidden');
+        statusBox.className = 'rounded border border-amber-800/30 bg-amber-950/10 px-3 py-2 text-xs text-amber-900';
+        statusBox.textContent = 'Enter a complete 6-digit Indian PIN code.';
+        lastPincodeLookup = null;
+        return null;
+      }
+
+      statusBox.classList.remove('hidden');
+      statusBox.className = 'rounded border border-border/70 bg-secondary/20 px-3 py-2 text-xs text-primary animate-pulse';
+      statusBox.textContent = `Verifying PIN code ${cleanPin} with India Post directory…`;
+
+      try {
+        const { res, data } = await safeFetchJson(`/api/address/pincode/${encodeURIComponent(cleanPin)}`);
+        if (!res.ok || !data || !data.ok) {
+          lastPincodeLookup = { ok: false, pincode: cleanPin, error: data?.error || 'Invalid PIN code.' };
+          statusBox.className = 'rounded border border-[#93000A]/40 bg-[#2A1810] px-3 py-2 text-xs text-[#FFB4AB]';
+          statusBox.textContent = `✕ ${data?.error || 'PIN code not found in India Post records.'}`;
+          return lastPincodeLookup;
+        }
+
+        lastPincodeLookup = data;
+        const cityEl = document.getElementById('cust-city');
+        const stateEl = document.getElementById('cust-state');
+
+        if (autoFillStateCity) {
+          if (data.district && cityEl && (!cityEl.value.trim() || isClientPlaceholderText(cityEl.value, 2))) {
+            cityEl.value = data.district;
+          }
+          if (data.state && stateEl) {
+            selectMatchingStateOption(data.state);
+          }
+        }
+
+        const currentState = stateEl ? stateEl.value.trim() : '';
+        const allowedStates = Array.isArray(data.allowed_states) ? data.allowed_states : (data.state ? [data.state] : []);
+        const stateMismatch = currentState && allowedStates.length > 0 && !allowedStates.some(
+          s => s.toLowerCase().replace(/&/g, 'and') === currentState.toLowerCase().replace(/&/g, 'and')
+        );
+
+        if (stateMismatch) {
+          statusBox.className = 'rounded border border-[#93000A]/40 bg-[#2A1810] px-3 py-2 text-xs text-[#FFB4AB]';
+          statusBox.textContent = `⚠️ PIN ${cleanPin} belongs to ${data.state || allowedStates[0]}${data.district ? ' (' + data.district + ')' : ''}, which does not match selected state "${currentState}".`;
+        } else if (data.provider_unavailable) {
+          statusBox.className = 'rounded border border-amber-800/30 bg-amber-950/10 px-3 py-2 text-xs text-amber-900';
+          statusBox.textContent = `ℹ️ PIN ${cleanPin} postal circle (${data.state}) matched. Live India Post office lookup is temporarily offline; street/residence is not verified by PIN.`;
+        } else {
+          const poSample = Array.isArray(data.post_offices) && data.post_offices.length > 0
+            ? ` · Post Office: ${data.post_offices.slice(0, 2).join(', ')}`
+            : '';
+          statusBox.className = 'rounded border border-emerald-800/30 bg-emerald-950/10 px-3 py-2 text-xs text-emerald-900';
+          statusBox.textContent = `✓ India Post PIN ${cleanPin} verified: ${[data.district, data.state].filter(Boolean).join(', ')}${poSample}. (Verifies postal area only, not individual building/street.)`;
+        }
+        updateAddressConfirmationPreview();
+        return data;
+      } catch (err) {
+        statusBox.className = 'rounded border border-amber-800/30 bg-amber-950/10 px-3 py-2 text-xs text-amber-900';
+        statusBox.textContent = 'Could not reach PIN lookup service right now. Server validation will run at confirmation.';
+        return null;
+      }
+    }
+
+    async function reverseGeocodeViaOsmFallback(latNum, lngNum) {
+      const mapAddrText = document.getElementById('map-selected-address-text');
+      const mapStatus = document.getElementById('map-geocode-status');
+      const { res, data } = await safeFetchJson(
+        `/api/address/reverse?lat=${encodeURIComponent(latNum.toFixed(6))}&lon=${encodeURIComponent(lngNum.toFixed(6))}`
+      );
+      if (!res.ok || !data || !data.ok) {
+        if (mapStatus) {
+          mapStatus.textContent = data?.error || 'Reverse geocoding unavailable. Coordinates saved; please enter street & PIN manually.';
+          mapStatus.className = 'mt-0.5 text-[11px] text-amber-900';
+        }
+        return false;
+      }
+
+      const addr = data.address || {};
+      const summary = data.display_name || [addr.street_area, addr.city, addr.state].filter(Boolean).join(', ');
+      if (mapAddrText && summary) mapAddrText.textContent = summary;
+      const locSumEl = document.getElementById('cust-location-summary');
+      if (locSumEl && summary) locSumEl.value = summary;
+
+      applyParsedAddressToCheckoutForm({
+        display_name: summary,
+        house_no: addr.house_no || '',
+        street_area: addr.street_area || '',
+        city: addr.city || '',
+        state: addr.state || '',
+        pincode: addr.pincode || ''
+      });
+
+      if (mapStatus) {
+        mapStatus.textContent = 'Map locality filled. Please check your exact House/Flat No. and 6-digit PIN code below.';
+        mapStatus.className = 'mt-0.5 text-[11px] text-emerald-900';
+      }
+      return true;
+    }
+
+    async function setMapPinLocation(lat, lng, options = {}) {
+      const latNum = Number(lat);
+      const lngNum = Number(lng);
+      if (!Number.isFinite(latNum) || !Number.isFinite(lngNum)) return;
+
+      const latInput = document.getElementById('cust-lat');
+      const lngInput = document.getElementById('cust-lng');
+      const coordsBadge = document.getElementById('map-coords-badge');
+      const mapAddrText = document.getElementById('map-selected-address-text');
+      const mapStatus = document.getElementById('map-geocode-status');
+
+      if (latInput) latInput.value = latNum.toFixed(6);
+      if (lngInput) lngInput.value = lngNum.toFixed(6);
+      if (coordsBadge) coordsBadge.textContent = `${latNum.toFixed(5)}, ${lngNum.toFixed(5)}`;
+
+      if (activeMapProvider === 'google' && googleDeliveryMap && googleDeliveryMarker) {
+        const gLatLng = { lat: latNum, lng: lngNum };
+        if (typeof googleDeliveryMarker.setPosition === 'function') {
+          googleDeliveryMarker.setPosition(gLatLng);
+        } else {
+          googleDeliveryMarker.position = gLatLng;
+        }
+        if (options.pan !== false) {
+          googleDeliveryMap.panTo(gLatLng);
+          if ((googleDeliveryMap.getZoom() || 13) < 16) {
+            googleDeliveryMap.setZoom(16);
+          }
+        }
+      } else if (deliveryMap && deliveryMarker) {
+        deliveryMarker.setLatLng([latNum, lngNum]);
+        if (options.pan !== false) {
+          deliveryMap.setView([latNum, lngNum], Math.max(deliveryMap.getZoom(), 15));
+        }
+      }
+
+      if (options.displaySummary) {
+        if (mapAddrText) mapAddrText.textContent = options.displaySummary;
+        const locSumEl = document.getElementById('cust-location-summary');
+        if (locSumEl) locSumEl.value = options.displaySummary;
+      }
+
+      updateAddressConfirmationPreview();
+
+      if (options.reverseGeocode) {
+        const providerName = (activeMapProvider === 'google' && window.google && window.google.maps)
+          ? 'Google Maps'
+          : 'OpenStreetMap';
+        if (mapStatus) {
+          mapStatus.textContent = `Reverse-geocoding selected map pin via ${providerName}…`;
+          mapStatus.className = 'mt-0.5 text-[11px] text-primary animate-pulse';
+        }
+        clearTimeout(reverseGeocodeTimer);
+        reverseGeocodeTimer = setTimeout(async () => {
+          try {
+            if (activeMapProvider === 'google' && window.google && window.google.maps) {
+              if (!googleGeocoder && window.google.maps.Geocoder) {
+                googleGeocoder = new window.google.maps.Geocoder();
+              }
+              if (googleGeocoder) {
+                try {
+                  const geoResp = await googleGeocoder.geocode({ location: { lat: latNum, lng: lngNum } });
+                  const firstResult = geoResp && Array.isArray(geoResp.results) ? geoResp.results[0] : null;
+                  if (firstResult) {
+                    const parsed = parseGoogleAddressComponents(
+                      firstResult.address_components || [],
+                      '',
+                      firstResult.formatted_address || ''
+                    );
+                    const summary = parsed.display_name || firstResult.formatted_address || '';
+                    if (mapAddrText && summary) mapAddrText.textContent = summary;
+                    const locSumEl = document.getElementById('cust-location-summary');
+                    if (locSumEl && summary) locSumEl.value = summary;
+                    applyParsedAddressToCheckoutForm(parsed);
+                    if (mapStatus) {
+                      mapStatus.textContent = 'Google Maps pin locality filled. Please verify your exact Flat/House No. and 6-digit PIN code below.';
+                      mapStatus.className = 'mt-0.5 text-[11px] text-emerald-900';
+                    }
+                    return;
+                  }
+                } catch (gErr) {
+                  // Automatically fall back to OpenStreetMap reverse geocoding
+                }
+              }
+            }
+            await reverseGeocodeViaOsmFallback(latNum, lngNum);
+          } catch (err) {
+            if (mapStatus) {
+              mapStatus.textContent = 'Reverse geocoding service is unreachable. Coordinates are saved; please fill address fields manually.';
+              mapStatus.className = 'mt-0.5 text-[11px] text-amber-900';
+            }
+          }
+        }, 350);
+      }
+    }
+
+    let currentCheckoutUser = null;
+    let isAddressControlsBound = false;
+
+    function clearMapPinCoordinates(locationSummary = '') {
+      const latInput = document.getElementById('cust-lat');
+      const lngInput = document.getElementById('cust-lng');
+      const locSumEl = document.getElementById('cust-location-summary');
+      const coordsBadge = document.getElementById('map-coords-badge');
+      const mapAddrText = document.getElementById('map-selected-address-text');
+      const mapStatus = document.getElementById('map-geocode-status');
+
+      if (latInput) latInput.value = '';
+      if (lngInput) lngInput.value = '';
+      if (locSumEl) locSumEl.value = locationSummary || '';
+      if (coordsBadge) coordsBadge.textContent = 'Not pinned yet';
+      if (mapAddrText) {
+        mapAddrText.textContent = locationSummary || 'Click the map, drag the pin, or search above to set map coordinates';
+      }
+      if (mapStatus) {
+        mapStatus.textContent = '';
+        mapStatus.className = 'mt-0.5 text-[11px] text-muted-foreground';
+      }
+    }
+
+    function initLeafletFallbackMap() {
+      const mapEl = document.getElementById('delivery-map');
+      if (!mapEl || typeof L === 'undefined') {
+        const mapStatus = document.getElementById('map-geocode-status');
+        if (mapStatus) {
+          mapStatus.textContent = 'Interactive map library unavailable. Please enter your delivery address and PIN code manually.';
+        }
+        return;
+      }
+
+      activeMapProvider = 'osm';
+      updateAddressProviderBadge('osm');
+
+      if (deliveryMap) {
+        setTimeout(() => {
+          if (deliveryMap) deliveryMap.invalidateSize();
+        }, 100);
+        return;
+      }
+
+      mapEl.innerHTML = '';
+      const defaultLat = 26.9124;
+      const defaultLng = 75.7873;
+      const latInput = document.getElementById('cust-lat');
+      const lngInput = document.getElementById('cust-lng');
+      const locSumEl = document.getElementById('cust-location-summary');
+      const existingLat = latInput && latInput.value !== '' ? Number(latInput.value) : NaN;
+      const existingLng = lngInput && lngInput.value !== '' ? Number(lngInput.value) : NaN;
+      const hasExistingCoords = Number.isFinite(existingLat) && Number.isFinite(existingLng);
+      const startLat = hasExistingCoords ? existingLat : defaultLat;
+      const startLng = hasExistingCoords ? existingLng : defaultLng;
+
+      deliveryMap = L.map('delivery-map', {
+        center: [startLat, startLng],
+        zoom: hasExistingCoords ? 15 : 13,
+        scrollWheelZoom: false
+      });
+
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors'
+      }).addTo(deliveryMap);
+
+      deliveryMarker = L.marker([startLat, startLng], {
+        draggable: true,
+        title: 'Drag to your delivery location'
+      }).addTo(deliveryMap);
+
+      if (hasExistingCoords) {
+        setMapPinLocation(existingLat, existingLng, {
+          reverseGeocode: false,
+          pan: false,
+          displaySummary: locSumEl ? locSumEl.value : ''
+        });
+      }
+
+      deliveryMap.on('click', (e) => {
+        if (e && e.latlng) {
+          markAddressConfirmedState(false);
+          setMapPinLocation(e.latlng.lat, e.latlng.lng, { reverseGeocode: true, pan: true });
+          saveCheckoutFormDraft();
+        }
+      });
+
+      deliveryMarker.on('dragend', () => {
+        const pos = deliveryMarker.getLatLng();
+        if (pos) {
+          markAddressConfirmedState(false);
+          setMapPinLocation(pos.lat, pos.lng, { reverseGeocode: true, pan: false });
+          saveCheckoutFormDraft();
+        }
+      });
+
+      setTimeout(() => {
+        if (deliveryMap) deliveryMap.invalidateSize();
+      }, 250);
+    }
+
+    async function initDeliveryMap() {
+      const mapEl = document.getElementById('delivery-map');
+      if (!mapEl) return;
+
+      const gmapsKey = String(serverConfig?.google_maps_api_key || window.NAARI_GOOGLE_MAPS_API_KEY || '').trim();
+      const gmapsConfigured = Boolean(serverConfig?.is_google_maps_configured && gmapsKey && !googleMapsUnavailable);
+
+      if (gmapsConfigured) {
+        const sdkReady = await loadGoogleMapsSdk(gmapsKey);
+        if (sdkReady && window.google && window.google.maps) {
+          try {
+            activeMapProvider = 'google';
+            updateAddressProviderBadge('google');
+
+            const defaultLat = 26.9124;
+            const defaultLng = 75.7873;
+            const latInput = document.getElementById('cust-lat');
+            const lngInput = document.getElementById('cust-lng');
+            const locSumEl = document.getElementById('cust-location-summary');
+            const existingLat = latInput && latInput.value !== '' ? Number(latInput.value) : NaN;
+            const existingLng = lngInput && lngInput.value !== '' ? Number(lngInput.value) : NaN;
+            const hasExistingCoords = Number.isFinite(existingLat) && Number.isFinite(existingLng);
+            const startCenter = {
+              lat: hasExistingCoords ? existingLat : defaultLat,
+              lng: hasExistingCoords ? existingLng : defaultLng
+            };
+
+            const mapOptions = {
+              center: startCenter,
+              zoom: hasExistingCoords ? 16 : 13,
+              mapTypeControl: false,
+              streetViewControl: false,
+              fullscreenControl: false,
+              gestureHandling: 'cooperative'
+            };
+            if (serverConfig?.google_maps_map_id) {
+              mapOptions.mapId = serverConfig.google_maps_map_id;
+            }
+
+            googleDeliveryMap = new window.google.maps.Map(mapEl, mapOptions);
+            googleDeliveryMarker = new window.google.maps.Marker({
+              map: googleDeliveryMap,
+              position: startCenter,
+              draggable: true,
+              title: 'Drag to your delivery location'
+            });
+
+            if (hasExistingCoords) {
+              setMapPinLocation(existingLat, existingLng, {
+                reverseGeocode: false,
+                pan: false,
+                displaySummary: locSumEl ? locSumEl.value : ''
+              });
+            }
+
+            googleDeliveryMap.addListener('click', (e) => {
+              if (e && e.latLng) {
+                markAddressConfirmedState(false);
+                setMapPinLocation(e.latLng.lat(), e.latLng.lng(), { reverseGeocode: true, pan: true });
+                saveCheckoutFormDraft();
+              }
+            });
+
+            googleDeliveryMarker.addListener('dragend', () => {
+              const pos = googleDeliveryMarker.getPosition();
+              if (pos) {
+                markAddressConfirmedState(false);
+                setMapPinLocation(pos.lat(), pos.lng(), { reverseGeocode: true, pan: false });
+                saveCheckoutFormDraft();
+              }
+            });
+            return;
+          } catch (gMapErr) {
+            googleMapsUnavailable = true;
+          }
+        }
+      }
+
+      initLeafletFallbackMap();
+    }
+
+    function setupGeolocationButton() {
+      const btn = document.getElementById('use-current-location-btn');
+      const btnText = document.getElementById('use-current-location-text');
+      const mapStatus = document.getElementById('map-geocode-status');
+      if (!btn || btn.dataset.bound === 'true') return;
+      btn.dataset.bound = 'true';
+
+      btn.addEventListener('click', () => {
+        if (!navigator.geolocation) {
+          const msg = 'Browser geolocation is not supported on this device. Please search your area or drag the map pin.';
+          if (mapStatus) {
+            mapStatus.textContent = msg;
+            mapStatus.className = 'mt-0.5 text-[11px] text-destructive';
+          }
+          getToast().error(msg);
+          return;
+        }
+
+        btn.disabled = true;
+        if (btnText) btnText.textContent = 'Detecting location…';
+        if (mapStatus) {
+          mapStatus.textContent = 'Requesting browser GPS permission…';
+          mapStatus.className = 'mt-0.5 text-[11px] text-primary animate-pulse';
+        }
+
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            btn.disabled = false;
+            if (btnText) btnText.textContent = 'Use my current location';
+            const { latitude, longitude } = pos.coords;
+            markAddressConfirmedState(false);
+            setMapPinLocation(latitude, longitude, { reverseGeocode: true, pan: true });
+            saveCheckoutFormDraft();
+            getToast().info('Map pin moved to your current location!');
+          },
+          (err) => {
+            btn.disabled = false;
+            if (btnText) btnText.textContent = 'Use my current location';
+            let errMsg = 'Unable to retrieve your location. Please search your address or drag the map pin.';
+            if (err && err.code === 1) {
+              errMsg = 'Location permission was denied. You can search your locality above or drag the map pin manually.';
+            } else if (err && err.code === 3) {
+              errMsg = 'Location request timed out. Please search your locality or move the map pin.';
+            }
+            if (mapStatus) {
+              mapStatus.textContent = errMsg;
+              mapStatus.className = 'mt-0.5 text-[11px] text-amber-900';
+            }
+            getToast().error(errMsg);
+          },
+          { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+        );
+      });
+    }
+
+    async function queryGooglePlacesSuggestions(queryText) {
+      if (
+        activeMapProvider !== 'google' ||
+        !window.google ||
+        !window.google.maps ||
+        !window.google.maps.places
+      ) {
+        return null;
+      }
+
+      const cacheKey = queryText.toLowerCase();
+      if (googlePredictionsCache.has(cacheKey)) {
+        return googlePredictionsCache.get(cacheKey);
+      }
+
+      if (googleAutocompleteRequestsInSession >= GOOGLE_AUTOCOMPLETE_MAX_REQUESTS) {
+        return null;
+      }
+
+      if (!googlePlacesSessionToken && typeof google.maps.places.AutocompleteSessionToken === 'function') {
+        googlePlacesSessionToken = new google.maps.places.AutocompleteSessionToken();
+      }
+
+      // Primary: Google Places Autocomplete (New) — AutocompleteSuggestion.fetchAutocompleteSuggestions
+      if (
+        google.maps.places.AutocompleteSuggestion &&
+        typeof google.maps.places.AutocompleteSuggestion.fetchAutocompleteSuggestions === 'function'
+      ) {
+        const req = {
+          input: queryText,
+          includedRegionCodes: ['in'],
+          language: 'en-IN',
+          region: 'in'
+        };
+        if (googlePlacesSessionToken) {
+          req.sessionToken = googlePlacesSessionToken;
+        }
+        googleAutocompleteRequestsInSession += 1;
+        const response = await google.maps.places.AutocompleteSuggestion.fetchAutocompleteSuggestions(req);
+        const rawSuggestions = (response && Array.isArray(response.suggestions)) ? response.suggestions : [];
+        const normalized = rawSuggestions
+          .map((s) => {
+            const pred = s.placePrediction;
+            if (!pred) return null;
+            const mainText = (pred.mainText && pred.mainText.text) || (pred.text && pred.text.text) || '';
+            const secondaryText = (pred.secondaryText && pred.secondaryText.text) || '';
+            const fullText = (pred.text && pred.text.text) || [mainText, secondaryText].filter(Boolean).join(', ');
+            return {
+              provider: 'google_new',
+              placeId: pred.placeId || '',
+              mainText: mainText || fullText.split(',')[0] || 'Selected Location',
+              secondaryText: secondaryText || fullText,
+              fullText: fullText,
+              placePrediction: pred
+            };
+          })
+          .filter(Boolean)
+          .slice(0, 6);
+
+        googlePredictionsCache.set(cacheKey, normalized);
+        return normalized;
+      }
+
+      // Secondary compatibility path: AutocompleteService (if Places New class isn't exposed on older channel)
+      if (typeof google.maps.places.AutocompleteService === 'function') {
+        googleAutocompleteRequestsInSession += 1;
+        const service = new google.maps.places.AutocompleteService();
+        const predictions = await new Promise((resolve, reject) => {
+          service.getPlacePredictions(
+            {
+              input: queryText,
+              sessionToken: googlePlacesSessionToken || undefined,
+              componentRestrictions: { country: 'in' }
+            },
+            (res, status) => {
+              if (
+                status === google.maps.places.PlacesServiceStatus.OK &&
+                Array.isArray(res)
+              ) {
+                resolve(res);
+              } else if (status === google.maps.places.PlacesServiceStatus.ZERO_RESULTS) {
+                resolve([]);
+              } else {
+                reject(new Error(`Google Places status: ${status}`));
+              }
+            }
+          );
+        });
+        const normalized = predictions.slice(0, 6).map((p) => ({
+          provider: 'google_legacy',
+          placeId: p.place_id || '',
+          mainText: (p.structured_formatting && p.structured_formatting.main_text) || (p.description || '').split(',')[0],
+          secondaryText: (p.structured_formatting && p.structured_formatting.secondary_text) || p.description || '',
+          fullText: p.description || ''
+        }));
+        googlePredictionsCache.set(cacheKey, normalized);
+        return normalized;
+      }
+
+      return null;
+    }
+
+    async function resolveGooglePlaceDetails(item) {
+      try {
+        // 1. Places API (New): placePrediction.toPlace() + place.fetchFields() with strict Basic-tier field mask
+        if (item.placePrediction && typeof item.placePrediction.toPlace === 'function') {
+          const place = item.placePrediction.toPlace();
+          await place.fetchFields({
+            fields: ['id', 'displayName', 'formattedAddress', 'location', 'addressComponents']
+          });
+          // Close the billing session token after Place Details is fetched
+          googlePlacesSessionToken = null;
+          return parseGoogleAddressComponents(place, item.fullText || item.mainText);
+        }
+
+        // 2. Fallback to Google Geocoder by placeId
+        if (item.placeId && googleGeocoder) {
+          const geoRes = await googleGeocoder.geocode({ placeId: item.placeId });
+          googlePlacesSessionToken = null;
+          if (geoRes && Array.isArray(geoRes.results) && geoRes.results.length > 0) {
+            const first = geoRes.results[0];
+            return parseGoogleAddressComponents(
+              {
+                displayName: item.mainText || '',
+                formatted_address: first.formatted_address || item.fullText,
+                address_components: first.address_components || [],
+                geometry: first.geometry
+              },
+              item.fullText
+            );
+          }
+        }
+      } catch (err) {
+        googlePlacesSessionToken = null;
+        throw err;
+      }
+      return null;
+    }
+
+    function setupAddressAutocomplete() {
+      const searchInput = document.getElementById('address-search-input');
+      const dropdown = document.getElementById('address-autocomplete-dropdown');
+      const spinner = document.getElementById('address-search-spinner');
+      const clearBtn = document.getElementById('address-search-clear-btn');
+      if (!searchInput || !dropdown || searchInput.dataset.bound === 'true') return;
+      searchInput.dataset.bound = 'true';
+
+      const closeDropdown = () => {
+        dropdown.classList.add('hidden');
+        dropdown.innerHTML = '';
+      };
+
+      const renderMessageRow = (text, tone = 'muted') => {
+        dropdown.innerHTML = '';
+        const div = document.createElement('div');
+        div.className = tone === 'error'
+          ? 'p-3 text-xs text-destructive bg-destructive/5'
+          : 'p-3 text-xs text-muted-foreground';
+        div.textContent = text;
+        dropdown.appendChild(div);
+        dropdown.classList.remove('hidden');
+      };
+
+      const renderOpenStreetMapAutocomplete = async (q) => {
+        renderMessageRow('Searching Indian addresses & landmarks via OpenStreetMap…');
+        const { res, data } = await safeFetchJson(`/api/address/autocomplete?q=${encodeURIComponent(q)}`);
+        if (spinner) spinner.classList.add('hidden');
+
+        if (!res.ok || !data || !data.ok) {
+          renderMessageRow(
+            data?.error || 'Address autocomplete is temporarily unavailable. Please enter your address details manually below.',
+            'error'
+          );
+          return;
+        }
+
+        const list = Array.isArray(data.suggestions) ? data.suggestions : [];
+        if (list.length === 0) {
+          renderMessageRow(data.message || 'No matching addresses found. Try a nearby landmark or enter your address manually below.');
+          return;
+        }
+
+        dropdown.innerHTML = '';
+        list.forEach((item) => {
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.setAttribute('role', 'option');
+          btn.className = 'w-full text-left px-3.5 py-2.5 hover:bg-primary/5 transition flex items-start gap-2.5 cursor-pointer';
+
+          const iconSpan = document.createElement('span');
+          iconSpan.className = 'text-primary mt-0.5 shrink-0';
+          iconSpan.textContent = '📍';
+
+          const textWrap = document.createElement('div');
+          textWrap.className = 'min-w-0 flex-1';
+
+          const titleP = document.createElement('p');
+          titleP.className = 'font-semibold text-foreground text-xs truncate';
+          titleP.textContent = item.street_area || (item.display_name || '').split(',')[0] || 'Selected Location';
+
+          const subP = document.createElement('p');
+          subP.className = 'text-[11px] text-muted-foreground line-clamp-2';
+          subP.textContent = item.display_name || '';
+
+          textWrap.appendChild(titleP);
+          textWrap.appendChild(subP);
+          btn.appendChild(iconSpan);
+          btn.appendChild(textWrap);
+
+          btn.addEventListener('click', () => {
+            searchInput.value = item.display_name || '';
+            closeDropdown();
+
+            applyParsedAddressToCheckoutForm(item, { preserveExistingHouseNo: true });
+
+            if (item.lat !== null && item.lon !== null) {
+              setMapPinLocation(item.lat, item.lon, {
+                reverseGeocode: false,
+                pan: true,
+                displaySummary: item.display_name || ''
+              });
+            }
+          });
+
+          dropdown.appendChild(btn);
+        });
+
+        const attrFooter = document.createElement('div');
+        attrFooter.className = 'px-3 py-1.5 bg-secondary/30 text-[10px] text-muted-foreground flex items-center justify-between';
+        attrFooter.textContent = data.attribution || '© OpenStreetMap contributors (Fallback)';
+        dropdown.appendChild(attrFooter);
+        dropdown.classList.remove('hidden');
+      };
+
+      searchInput.addEventListener('input', () => {
+        const q = searchInput.value.trim();
+        if (clearBtn) clearBtn.classList.toggle('hidden', q.length === 0);
+        clearTimeout(autocompleteTimer);
+
+        if (q.length < 3) {
+          if (spinner) spinner.classList.add('hidden');
+          closeDropdown();
+          return;
+        }
+
+        const debounceMs = activeMapProvider === 'google' ? 380 : 420;
+        autocompleteTimer = setTimeout(async () => {
+          if (spinner) spinner.classList.remove('hidden');
+
+          // 1. Try Google Places Autocomplete (New) if active and under session safeguard cap
+          if (activeMapProvider === 'google') {
+            renderMessageRow('Searching societies, apartments & landmarks via Google Places…');
+            try {
+              const googleList = await queryGooglePlacesSuggestions(q);
+              if (Array.isArray(googleList)) {
+                if (spinner) spinner.classList.add('hidden');
+                if (googleList.length === 0) {
+                  // Try OpenStreetMap fallback if Google returned 0 results
+                  await renderOpenStreetMapAutocomplete(q);
+                  return;
+                }
+
+                dropdown.innerHTML = '';
+                googleList.forEach((item) => {
+                  const btn = document.createElement('button');
+                  btn.type = 'button';
+                  btn.setAttribute('role', 'option');
+                  btn.className = 'w-full text-left px-3.5 py-2.5 hover:bg-primary/5 transition flex items-start gap-2.5 cursor-pointer';
+
+                  const iconSpan = document.createElement('span');
+                  iconSpan.className = 'text-primary mt-0.5 shrink-0';
+                  iconSpan.textContent = '📍';
+
+                  const textWrap = document.createElement('div');
+                  textWrap.className = 'min-w-0 flex-1';
+
+                  const titleP = document.createElement('p');
+                  titleP.className = 'font-semibold text-foreground text-xs truncate';
+                  titleP.textContent = item.mainText || 'Selected Society / Landmark';
+
+                  const subP = document.createElement('p');
+                  subP.className = 'text-[11px] text-muted-foreground line-clamp-2';
+                  subP.textContent = item.secondaryText || item.fullText || '';
+
+                  textWrap.appendChild(titleP);
+                  textWrap.appendChild(subP);
+                  btn.appendChild(iconSpan);
+                  btn.appendChild(textWrap);
+
+                  btn.addEventListener('click', async () => {
+                    searchInput.value = item.fullText || item.mainText || '';
+                    closeDropdown();
+                    if (spinner) spinner.classList.remove('hidden');
+                    try {
+                      const parsed = await resolveGooglePlaceDetails(item);
+                      if (spinner) spinner.classList.add('hidden');
+                      if (parsed) {
+                        applyParsedAddressToCheckoutForm(parsed, { preserveExistingHouseNo: true });
+                        if (parsed.lat !== null && parsed.lon !== null) {
+                          setMapPinLocation(parsed.lat, parsed.lon, {
+                            reverseGeocode: false,
+                            pan: true,
+                            displaySummary: parsed.display_name || item.fullText || ''
+                          });
+                        }
+                        getToast().info('Society & address details autofilled! Please verify your Flat / House No.');
+                        return;
+                      }
+                    } catch (placeErr) {
+                      if (spinner) spinner.classList.add('hidden');
+                    }
+                    // Fallback: fill street area from suggestion text if Place Details call failed
+                    applyParsedAddressToCheckoutForm(
+                      {
+                        street_area: item.mainText || '',
+                        display_name: item.fullText || item.mainText || ''
+                      },
+                      { preserveExistingHouseNo: true }
+                    );
+                  });
+
+                  dropdown.appendChild(btn);
+                });
+
+                const attrFooter = document.createElement('div');
+                attrFooter.className = 'px-3 py-1.5 bg-secondary/30 text-[10px] text-muted-foreground flex items-center justify-between';
+                attrFooter.innerHTML = '<span>Powered by Google Places (India)</span><span>Select society & enter Flat No. below</span>';
+                dropdown.appendChild(attrFooter);
+                dropdown.classList.remove('hidden');
+                return;
+              }
+            } catch (googleErr) {
+              // Seamless fallback to OpenStreetMap Nominatim on Google quota/network/key failure
+            }
+          }
+
+          // 2. Fallback: OpenStreetMap Nominatim via /api/address/autocomplete
+          try {
+            await renderOpenStreetMapAutocomplete(q);
+          } catch (err) {
+            if (spinner) spinner.classList.add('hidden');
+            renderMessageRow('Live address search is currently unreachable. Please enter your address manually below.', 'error');
+          }
+        }, debounceMs);
+      });
+
+      if (clearBtn) {
+        clearBtn.addEventListener('click', () => {
+          searchInput.value = '';
+          clearBtn.classList.add('hidden');
+          closeDropdown();
+          searchInput.focus();
+        });
+      }
+
+      document.addEventListener('click', (e) => {
+        const container = document.getElementById('address-autocomplete-container');
+        if (container && !container.contains(e.target)) {
+          closeDropdown();
+        }
+      });
+    }
+
+    function setAddressLabelUI(label) {
+      const cleanLabel = ['Home', 'Work', 'Other'].includes(label) ? label : 'Home';
+      const hiddenEl = document.getElementById('cust-address-label');
+      if (hiddenEl) hiddenEl.value = cleanLabel;
+      document.querySelectorAll('.addr-label-btn').forEach((btn) => {
+        const isMatch = btn.getAttribute('data-label') === cleanLabel;
+        if (isMatch) {
+          btn.className = 'addr-label-btn border border-primary bg-primary text-primary-foreground px-3 py-1 text-xs font-medium cursor-pointer transition';
+        } else {
+          btn.className = 'addr-label-btn border border-border bg-background text-foreground hover:border-primary px-3 py-1 text-xs font-medium cursor-pointer transition';
+        }
+      });
+      updateAddressConfirmationPreview();
     }
 
     function getCustomerFormData() {
+      syncSplitAddressFields('addr1');
       const form = document.getElementById('checkout-form');
       const formData = new FormData(form);
+      const houseNo = (formData.get('house_no') || '').trim();
+      const streetArea = (formData.get('street_area') || '').trim();
+      let address1 = (formData.get('address_line1') || '').trim();
+      if (!address1 && (houseNo || streetArea)) {
+        address1 = [houseNo, streetArea].filter(Boolean).join(', ');
+      }
+      const rawLat = (formData.get('latitude') || '').trim();
+      const rawLng = (formData.get('longitude') || '').trim();
       const waOptInEl = document.getElementById('cust-whatsapp-opt-in');
       const whatsappOptIn = waOptInEl ? Boolean(waOptInEl.checked) : false;
       return {
         name: (formData.get('name') || '').trim(),
         phone: (formData.get('phone') || '').trim(),
         email: (formData.get('email') || '').trim(),
-        address_line1: (formData.get('address_line1') || '').trim(),
+        house_no: houseNo,
+        street_area: streetArea,
+        address_line1: address1,
         address_line2: (formData.get('address_line2') || '').trim(),
         city: (formData.get('city') || '').trim(),
         state: (formData.get('state') || '').trim(),
         pincode: (formData.get('pincode') || '').trim(),
+        latitude: rawLat !== '' ? Number(rawLat) : null,
+        longitude: rawLng !== '' ? Number(rawLng) : null,
+        location_summary: (formData.get('location_summary') || '').trim(),
+        address_label: (formData.get('address_label') || 'Home').trim(),
         whatsapp_opt_in: whatsappOptIn
       };
     }
 
-    function validateCustomerForm(data) {
-      if (!data.name || data.name.length < 2) return 'Please enter your full name.';
-      if (!data.phone || !/^\d{10}$/.test(data.phone.replace(/[\s\-\+]/g, '').slice(-10))) return 'Please enter a valid 10-digit mobile number.';
-      if (!data.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) return 'Please enter a valid email address.';
-      if (!data.address_line1 || data.address_line1.length < 5) return 'Please enter your delivery street address.';
-      if (!data.city || data.city.length < 2) return 'Please enter your city.';
-      if (!data.state) return 'Please select your state.';
-      if (!data.pincode || !/^\d{6}$/.test(data.pincode.replace(/\s/g, ''))) return 'Please enter a valid 6-digit PIN code.';
+    function validateCustomerForm(data, options = {}) {
+      if (!data.name || data.name.length < 2 || !/[A-Za-z]{2,}/.test(data.name) || isClientPlaceholderText(data.name, 2)) {
+        return 'Please enter a valid recipient full name.';
+      }
+      const cleanPhone = String(data.phone || '').replace(/[\s\-]/g, '').replace(/^(\+91|91)/, '');
+      if (!/^[6-9]\d{9}$/.test(cleanPhone) || new Set(cleanPhone.split('')).size === 1) {
+        return 'Please enter a valid 10-digit Indian mobile number starting with 6, 7, 8, or 9.';
+      }
+      if (!data.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
+        return 'Please enter a valid email address.';
+      }
+      if (options.requireSplitFields || data.house_no || data.street_area) {
+        if (!data.house_no || isClientPlaceholderText(data.house_no, 1)) {
+          return 'Please enter your House / Flat / Floor number.';
+        }
+        if (!data.street_area || data.street_area.length < 3 || !/[A-Za-z]{2,}/.test(data.street_area) || isClientPlaceholderText(data.street_area, 3)) {
+          return 'Please enter a valid Street / Society / Locality name.';
+        }
+      }
+      const addr1Words = String(data.address_line1 || '')
+        .split(/[\s,./\-_]+/)
+        .map(w => w.replace(/[^a-zA-Z0-9]/g, ''))
+        .filter(Boolean);
+      if (!data.address_line1 || data.address_line1.length < 5 || addr1Words.length < 2 || !/[A-Za-z]{2,}/.test(data.address_line1) || isClientPlaceholderText(data.address_line1, 4)) {
+        return 'Please enter your complete delivery street address (placeholder values like "abcd" are not accepted).';
+      }
+      if (data.address_line2 && isClientPlaceholderText(data.address_line2, 2)) {
+        return 'Please enter a valid landmark or leave the optional field blank.';
+      }
+      if (!data.city || data.city.length < 2 || !/[A-Za-z]{2,}/.test(data.city) || /^\d+$/.test(data.city) || isClientPlaceholderText(data.city, 2)) {
+        return 'Please enter a valid city or district.';
+      }
+      if (!data.state || isClientPlaceholderText(data.state, 2)) {
+        return 'Please select your state.';
+      }
+      const cleanPin = String(data.pincode || '').replace(/\s+/g, '');
+      if (!/^[1-8]\d{5}$/.test(cleanPin) || new Set(cleanPin.split('')).size === 1 || cleanPin === '123456' || cleanPin === '654321') {
+        return 'Please enter a valid 6-digit Indian PIN code.';
+      }
+      if (lastPincodeLookup && lastPincodeLookup.pincode === cleanPin && lastPincodeLookup.ok === false) {
+        return lastPincodeLookup.error || 'Entered PIN code does not exist in India Post records.';
+      }
+      if (data.latitude !== null || data.longitude !== null) {
+        const lat = Number(data.latitude);
+        const lng = Number(data.longitude);
+        if (!Number.isFinite(lat) || !Number.isFinite(lng) || lat < 6.0 || lat > 38.5 || lng < 68.0 || lng > 98.0) {
+          return 'Selected map coordinates are outside India delivery bounds.';
+        }
+      }
       return null;
+    }
+
+    function fillCheckoutAddressFields(addr, fallbackUser = null) {
+      if (!addr || typeof addr !== 'object') return;
+      const userRef = fallbackUser || currentCheckoutUser || {};
+
+      const nameInput = document.getElementById('cust-name');
+      const phoneInput = document.getElementById('cust-phone');
+      const emailInput = document.getElementById('cust-email');
+      const houseEl = document.getElementById('cust-house-no');
+      const streetEl = document.getElementById('cust-street-area');
+      const a1 = document.getElementById('cust-address1');
+      const a2 = document.getElementById('cust-address2');
+      const cityEl = document.getElementById('cust-city');
+      const stateEl = document.getElementById('cust-state');
+      const pinEl = document.getElementById('cust-pincode');
+
+      if (nameInput) {
+        nameInput.value = addr.name || userRef.name || nameInput.value || '';
+      }
+      if (phoneInput && (addr.phone || userRef.phone)) {
+        const rawPhone = String(addr.phone || userRef.phone);
+        const cleanPhone = rawPhone.replace(/[\s\-\+]/g, '').slice(-10);
+        phoneInput.value = /^\d{10}$/.test(cleanPhone) ? cleanPhone : rawPhone;
+      }
+      if (emailInput && !emailInput.value && userRef.email) {
+        emailInput.value = userRef.email;
+      }
+
+      if (houseEl) houseEl.value = addr.house_no || '';
+      if (streetEl) streetEl.value = addr.street_area || '';
+      if (a1) a1.value = addr.address_line1 || '';
+      if (a2) a2.value = addr.address_line2 || '';
+      if (cityEl) cityEl.value = addr.city || '';
+      if (stateEl) {
+        if (addr.state) {
+          selectMatchingStateOption(addr.state);
+          if (!stateEl.value) stateEl.value = addr.state;
+        } else {
+          stateEl.value = '';
+        }
+      }
+      if (pinEl) pinEl.value = addr.pincode || '';
+
+      if (addr.house_no || addr.street_area) {
+        syncSplitAddressFields('split');
+      } else if (addr.address_line1) {
+        syncSplitAddressFields('addr1');
+      }
+
+      setAddressLabelUI(addr.address_label || 'Home');
+
+      const hasLat = addr.latitude !== null && addr.latitude !== undefined && addr.latitude !== '';
+      const hasLng = addr.longitude !== null && addr.longitude !== undefined && addr.longitude !== '';
+      if (hasLat && hasLng && Number.isFinite(Number(addr.latitude)) && Number.isFinite(Number(addr.longitude))) {
+        setMapPinLocation(Number(addr.latitude), Number(addr.longitude), {
+          reverseGeocode: false,
+          pan: true,
+          displaySummary: addr.location_summary || ''
+        });
+      } else {
+        clearMapPinCoordinates(addr.location_summary || '');
+      }
+
+      if (addr.pincode && /^\d{6}$/.test(String(addr.pincode).trim())) {
+        verifyPincodeLive(String(addr.pincode).trim(), false);
+      }
+
+      updateAddressConfirmationPreview();
+      saveCheckoutFormDraft();
+    }
+
+    function renderSavedAddressChips(addresses, fallbackUser = null) {
+      const quickWrap = document.getElementById('saved-addresses-quickfill');
+      const chipsWrap = document.getElementById('saved-addresses-chips');
+      if (!quickWrap || !chipsWrap) return;
+
+      if (!Array.isArray(addresses) || addresses.length === 0) {
+        quickWrap.classList.add('hidden');
+        chipsWrap.innerHTML = '';
+        return;
+      }
+
+      quickWrap.classList.remove('hidden');
+      chipsWrap.innerHTML = addresses.map((addr, idx) => {
+        const safeName = escapeHtmlText(addr.name || 'Saved Address');
+        const safeLabel = addr.address_label ? escapeHtmlText(addr.address_label) : '';
+        const displayAddrLine = addr.address_line1 || [addr.house_no, addr.street_area].filter(Boolean).join(', ');
+        const safeAddrLine = escapeHtmlText(displayAddrLine);
+        const safeCity = escapeHtmlText(addr.city || '');
+        const safePin = escapeHtmlText(addr.pincode || '');
+        return `
+          <button type="button" data-addr-idx="${idx}" class="saved-addr-chip text-left border border-border bg-background hover:border-primary px-3 py-2 rounded-xs text-xs transition cursor-pointer">
+            <span class="font-semibold text-foreground block">
+              ${safeName}
+              ${safeLabel ? `<span class="text-[10px] uppercase tracking-wider text-muted-foreground ml-1">[${safeLabel}]</span>` : ''}
+              ${addr.is_default ? '<span class="text-[10px] text-primary ml-1">(Default)</span>' : ''}
+            </span>
+            <span class="text-muted-foreground text-[11px] block">${safeAddrLine}, ${safeCity} - ${safePin}</span>
+          </button>
+        `;
+      }).join('');
+
+      chipsWrap.querySelectorAll('.saved-addr-chip').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const addr = addresses[Number(btn.dataset.addrIdx)];
+          if (addr) {
+            markAddressConfirmedState(false);
+            fillCheckoutAddressFields(addr, fallbackUser || currentCheckoutUser);
+            getToast().info('Delivery address filled!');
+          }
+        });
+      });
+    }
+
+    function setupAddressFormControls() {
+      if (isAddressControlsBound) return;
+      isAddressControlsBound = true;
+
+      document.querySelectorAll('.addr-label-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const label = btn.getAttribute('data-label') || 'Home';
+          markAddressConfirmedState(false);
+          setAddressLabelUI(label);
+          saveCheckoutFormDraft();
+        });
+      });
+
+      const confirmBtn = document.getElementById('confirm-address-btn');
+      if (confirmBtn) {
+        confirmBtn.addEventListener('click', () => {
+          handleConfirmAddress();
+        });
+      }
+
+      const houseEl = document.getElementById('cust-house-no');
+      const streetEl = document.getElementById('cust-street-area');
+      const addr1El = document.getElementById('cust-address1');
+      const pinEl = document.getElementById('cust-pincode');
+      const stateEl = document.getElementById('cust-state');
+
+      [houseEl, streetEl].forEach((el) => {
+        if (!el) return;
+        el.addEventListener('input', () => {
+          syncSplitAddressFields('split');
+          markAddressConfirmedState(false);
+          updateAddressConfirmationPreview();
+          saveCheckoutFormDraft();
+        });
+      });
+
+      if (addr1El) {
+        addr1El.addEventListener('input', () => {
+          syncSplitAddressFields('addr1');
+          markAddressConfirmedState(false);
+          updateAddressConfirmationPreview();
+          saveCheckoutFormDraft();
+        });
+      }
+
+      if (pinEl) {
+        pinEl.addEventListener('input', () => {
+          markAddressConfirmedState(false);
+          updateAddressConfirmationPreview();
+          saveCheckoutFormDraft();
+          clearTimeout(pincodeLookupTimer);
+          const val = pinEl.value.trim();
+          pincodeLookupTimer = setTimeout(() => {
+            verifyPincodeLive(val, true);
+          }, 280);
+        });
+        pinEl.addEventListener('change', () => {
+          const val = pinEl.value.trim();
+          if (/^\d{6}$/.test(val)) {
+            clearTimeout(pincodeLookupTimer);
+            verifyPincodeLive(val, true);
+          }
+        });
+      }
+
+      if (stateEl) {
+        stateEl.addEventListener('change', () => {
+          markAddressConfirmedState(false);
+          updateAddressConfirmationPreview();
+          saveCheckoutFormDraft();
+          if (pinEl && /^\d{6}$/.test(pinEl.value.trim())) {
+            verifyPincodeLive(pinEl.value.trim(), false);
+          }
+        });
+      }
+
+      ['cust-name', 'cust-phone', 'cust-email', 'cust-city', 'cust-address2'].forEach((id) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.addEventListener('input', () => {
+          markAddressConfirmedState(false);
+          updateAddressConfirmationPreview();
+          saveCheckoutFormDraft();
+        });
+      });
+    }
+
+    async function handleConfirmAddress() {
+      hideError();
+      syncSplitAddressFields('split');
+      const customerData = getCustomerFormData();
+      const validationError = validateCustomerForm(customerData, { requireSplitFields: true });
+      if (validationError) {
+        markAddressConfirmedState(false, validationError);
+        showError(validationError);
+        return false;
+      }
+
+      const confirmBtn = document.getElementById('confirm-address-btn');
+      if (confirmBtn) {
+        confirmBtn.disabled = true;
+        confirmBtn.textContent = 'Validating & Saving…';
+      }
+
+      try {
+        const { res, data } = await safeFetchJson('/api/address/validate', {
+          method: 'POST',
+          headers: getCustomerAuthHeaders({ 'Content-Type': 'application/json' }),
+          credentials: 'same-origin',
+          body: JSON.stringify({
+            address: customerData,
+            require_split_fields: true,
+            save_to_account: true,
+            is_default: true
+          })
+        });
+
+        if (res.status === 401 || data?.auth_required) {
+          clearUserSession();
+          redirectToLoginForCheckout();
+          return false;
+        }
+
+        if (!res.ok || !data || !data.ok) {
+          const errMsg = data?.error || 'Could not validate delivery address.';
+          markAddressConfirmedState(false, errMsg);
+          showError(errMsg);
+          return false;
+        }
+
+        markAddressConfirmedState(
+          true,
+          `✓ Address confirmed & saved to your account (${customerData.city}, ${customerData.state} - ${customerData.pincode}).`
+        );
+        saveCheckoutFormDraft();
+        if (Array.isArray(data.addresses) && data.addresses.length > 0) {
+          renderSavedAddressChips(data.addresses);
+        }
+        getToast().success('Delivery address confirmed & saved!');
+        return true;
+      } catch (err) {
+        const errMsg = err.message || 'Unable to confirm address right now.';
+        markAddressConfirmedState(false, errMsg);
+        showError(errMsg);
+        return false;
+      } finally {
+        if (confirmBtn) {
+          confirmBtn.disabled = false;
+          confirmBtn.textContent = isAddressConfirmed ? '✓ Address Confirmed (Update)' : 'Confirm Delivery Address';
+        }
+      }
     }
 
     function showError(msg) {
@@ -690,7 +2546,11 @@
       banner.classList.add('hidden');
     }
 
+    let isOrderInFlight = false;
+    let pendingOrderId = null;
+
     function setSubmitting(isSubmitting) {
+      isOrderInFlight = isSubmitting;
       const btn = document.getElementById('place-order-btn');
       const spinner = document.getElementById('place-order-spinner');
       btn.disabled = isSubmitting;
@@ -705,33 +2565,53 @@
     }
 
     async function handlePlaceOrder() {
+      if (isOrderInFlight) return;
       hideError();
+
+      const session = getUserSession();
+      if (!session || !session.user) {
+        redirectToLoginForCheckout();
+        return;
+      }
+
       const cart = getCart();
       if (!cart || cart.length === 0) {
         showError('Your bag is empty.');
         return;
       }
 
+      syncSplitAddressFields('split');
       const customerData = getCustomerFormData();
-      const validationError = validateCustomerForm(customerData);
+      const validationError = validateCustomerForm(customerData, { requireSplitFields: true });
       if (validationError) {
         showError(validationError);
         return;
       }
 
+      const { couponError: activeCouponError } = computeCheckoutAmounts();
+      if (activeCouponError) {
+        showError(activeCouponError);
+        return;
+      }
+
       const paymentMethod = getSelectedPaymentMethod();
+      if (paymentMethod !== 'cod' && !isRazorpayEnabledInConfig()) {
+        showError('Online payment via Razorpay is currently disabled. Please place your order using Cash on Delivery (COD).');
+        return;
+      }
       setSubmitting(true);
 
       if (paymentMethod === 'cod') {
         // Cash on Delivery Order Flow
         try {
           let orderId = null;
-          let orderTotal = getCartTotal();
+          const { subtotal: clientSub, shipping: clientShip, discountAmount: clientDisc, finalTotal: clientTotal } = computeCheckoutAmounts();
 
           const activeCoupon = getActiveCoupon();
           const { res, data } = await safeFetchJson('/api/create-cod-order', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: getCustomerAuthHeaders({ 'Content-Type': 'application/json' }),
+            credentials: 'same-origin',
             body: JSON.stringify({
               customer: customerData,
               items: cart,
@@ -739,16 +2619,23 @@
             })
           });
 
+          if (res.status === 401 || data?.auth_required) {
+            clearUserSession();
+            redirectToLoginForCheckout();
+            return;
+          }
+
           if (!res.ok || !data || !data.ok || !data.order_id) {
             throw new Error(data?.error || 'Failed to place COD order on server.');
           }
 
           orderId = data.order_id;
-          orderTotal = data.total_amount || orderTotal;
+          const serverTotal = data.total_amount ?? clientTotal;
 
           // Cache order details for confirmation page
           const confirmedOrder = {
             id: orderId,
+            user_id: session.user.id || null,
             customer_name: customerData.name,
             customer_phone: customerData.phone,
             customer_email: customerData.email,
@@ -759,18 +2646,23 @@
             pincode: customerData.pincode,
             payment_method: 'cod',
             payment_status: 'cod_confirmed',
-            subtotal: orderTotal,
-            shipping: 0,
-            total_amount: orderTotal,
-            items: cart,
+            order_status: data.order_status || 'confirmed',
+            subtotal: data.subtotal ?? clientSub,
+            shipping: data.shipping ?? clientShip,
+            discount_amount: data.discount_amount ?? clientDisc,
+            coupon_code: data.coupon_code ?? (activeCoupon ? activeCoupon.code : ''),
+            total_amount: serverTotal,
+            items: Array.isArray(data.items) && data.items.length > 0 ? data.items : cart,
             created_at: new Date().toISOString()
           };
           try {
             localStorage.setItem('naari_last_order', JSON.stringify(confirmedOrder));
+            sessionStorage.removeItem(CHECKOUT_DRAFT_KEY);
           } catch (e) {}
 
-          // Clear cart on confirmed order
+          // Clear cart and active coupon on confirmed order
           localStorage.removeItem('naari_cart_v1');
+          if (typeof setActiveCoupon === 'function') setActiveCoupon(null);
           updateHeaderBagCount();
           window.location.href = `order-confirmation.html?order_id=${encodeURIComponent(orderId)}`;
         } catch (err) {
@@ -778,82 +2670,59 @@
           setSubmitting(false);
         }
       } else {
-        // Online Payment Flow
+        // Online Payment Flow (Razorpay Standard Checkout)
         try {
           const activeCoupon = getActiveCoupon();
           const { res: createRes, data: createData } = await safeFetchJson('/api/create-order', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: getCustomerAuthHeaders({ 'Content-Type': 'application/json' }),
+            credentials: 'same-origin',
             body: JSON.stringify({
+              order_id: pendingOrderId || '',
               customer: customerData,
               items: cart,
               coupon_code: activeCoupon ? activeCoupon.code : ''
             })
           });
 
+          if (createRes.status === 401 || createData?.auth_required) {
+            clearUserSession();
+            redirectToLoginForCheckout();
+            return;
+          }
+
           if (!createRes.ok || !createData || !createData.ok) {
             throw new Error(createData?.error || 'Could not initiate online payment.');
           }
 
-          // If keys are placeholder, handle simulated test mode smoothly
-          if (createData.is_simulated) {
-            const { res: verifyRes, data: verifyData } = await safeFetchJson('/api/verify-payment', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                order_id: createData.order_id,
-                razorpay_order_id: createData.razorpay_order_id,
-                razorpay_payment_id: 'pay_test_' + Date.now().toString(36),
-                razorpay_signature: 'simulated_test_signature',
-                is_simulated: true
-              })
-            });
+          pendingOrderId = createData.order_id;
+          const serverSubtotal = createData.subtotal ?? getCartTotal();
+          const serverShipping = createData.shipping ?? 0;
+          const serverDiscount = createData.discount_amount ?? 0;
+          const serverTotal = createData.total_amount ?? Math.round((createData.amount || 0) / 100);
 
-            if (!verifyRes.ok || !verifyData || !verifyData.ok) {
-              throw new Error(verifyData?.error || 'Payment verification failed.');
-            }
+          const rzpOrderId = (createData.razorpay_order_id || createData.id || '').trim();
+          if (!rzpOrderId || !rzpOrderId.startsWith('order_') || rzpOrderId.startsWith('order_test_')) {
+            throw new Error('Server did not return a valid Razorpay order ID. Please verify Razorpay API keys on the server or select Cash on Delivery.');
+          }
 
-            const confirmedOrder = {
-              id: createData.order_id,
-              customer_name: customerData.name,
-              customer_phone: customerData.phone,
-              customer_email: customerData.email,
-              address_line1: customerData.address_line1,
-              address_line2: customerData.address_line2,
-              city: customerData.city,
-              state: customerData.state,
-              pincode: customerData.pincode,
-              payment_method: 'razorpay',
-              payment_status: 'paid',
-              razorpay_payment_id: 'pay_test_' + Date.now().toString(36),
-              subtotal: getCartTotal(),
-              shipping: 0,
-              total_amount: getCartTotal(),
-              items: cart,
-              created_at: new Date().toISOString()
-            };
-            try {
-              localStorage.setItem('naari_last_order', JSON.stringify(confirmedOrder));
-            } catch (e) {}
-
-            localStorage.removeItem('naari_cart_v1');
-            updateHeaderBagCount();
-            window.location.href = `order-confirmation.html?order_id=${encodeURIComponent(createData.order_id)}`;
-            return;
+          const publicKeyId = (createData.key_id || serverConfig?.razorpay_key_id || '').trim();
+          if (!publicKeyId || publicKeyId === 'rzp_test_simulation' || publicKeyId.includes('YOUR_KEY')) {
+            throw new Error('Razorpay public Key ID (RAZORPAY_KEY_ID) is not configured on the server. Please select Cash on Delivery or contact support.');
           }
 
           if (typeof Razorpay === 'undefined') {
-            throw new Error('Razorpay payment gateway failed to load. Please check your internet connection or select Cash on Delivery.');
+            throw new Error('Razorpay payment gateway script failed to load. Please check your internet connection or select Cash on Delivery.');
           }
 
           const options = {
-            key: createData.key_id,
+            key: publicKeyId,
             amount: createData.amount,
             currency: createData.currency || 'INR',
-            name: 'Naari',
-            description: 'Modern Kurtis Rooted in Craft',
+            name: serverConfig?.store_name || 'Matra Naari',
+            description: serverConfig?.store_description || 'Modern Kurtis Rooted in Craft',
             image: 'images/naari-logo.png',
-            order_id: createData.razorpay_order_id,
+            order_id: rzpOrderId,
             prefill: {
               name: customerData.name,
               email: customerData.email,
@@ -867,15 +2736,30 @@
             },
             modal: {
               ondismiss: function() {
+                safeFetchJson('/api/payment-failed', {
+                  method: 'POST',
+                  headers: getCustomerAuthHeaders({ 'Content-Type': 'application/json' }),
+                  credentials: 'same-origin',
+                  body: JSON.stringify({
+                    order_id: createData.order_id,
+                    razorpay_order_id: rzpOrderId,
+                    reason: 'Payment cancelled by customer'
+                  })
+                }).catch(() => {});
                 setSubmitting(false);
-                getToast().show('Payment was cancelled. You can retry anytime or select Cash on Delivery.', 'info');
+                showError('Payment window was closed before completing payment. You can try again or choose Cash on Delivery.');
               }
             },
             handler: async function(response) {
               try {
+                if (!response || !response.razorpay_payment_id || !response.razorpay_order_id || !response.razorpay_signature) {
+                  throw new Error('Incomplete payment response received from Razorpay.');
+                }
+
                 const { res: verifyRes, data: verifyData } = await safeFetchJson('/api/verify-payment', {
                   method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
+                  headers: getCustomerAuthHeaders({ 'Content-Type': 'application/json' }),
+                  credentials: 'same-origin',
                   body: JSON.stringify({
                     order_id: createData.order_id,
                     razorpay_order_id: response.razorpay_order_id,
@@ -884,12 +2768,13 @@
                   })
                 });
 
-                if (!verifyRes.ok || !verifyData || !verifyData.ok) {
+                if (!verifyRes.ok || !verifyData || !verifyData.ok || verifyData.status !== 'paid') {
                   throw new Error(verifyData?.error || 'Payment signature verification failed.');
                 }
 
                 const confirmedOrder = {
                   id: createData.order_id,
+                  user_id: session.user.id || null,
                   customer_name: customerData.name,
                   customer_phone: customerData.phone,
                   customer_email: customerData.email,
@@ -900,18 +2785,26 @@
                   pincode: customerData.pincode,
                   payment_method: 'razorpay',
                   payment_status: 'paid',
+                  order_status: verifyData.order_status || 'confirmed',
+                  razorpay_order_id: response.razorpay_order_id,
                   razorpay_payment_id: response.razorpay_payment_id,
-                  subtotal: getCartTotal(),
-                  shipping: 0,
-                  total_amount: getCartTotal(),
-                  items: cart,
+                  subtotal: verifyData.subtotal ?? serverSubtotal,
+                  shipping: verifyData.shipping ?? serverShipping,
+                  discount_amount: verifyData.discount_amount ?? serverDiscount,
+                  coupon_code: verifyData.coupon_code ?? (createData.coupon_code || ''),
+                  total_amount: verifyData.total_amount ?? serverTotal,
+                  items: (Array.isArray(verifyData.items) && verifyData.items.length > 0)
+                    ? verifyData.items
+                    : ((Array.isArray(createData.items) && createData.items.length > 0) ? createData.items : cart),
                   created_at: new Date().toISOString()
                 };
                 try {
                   localStorage.setItem('naari_last_order', JSON.stringify(confirmedOrder));
+                  sessionStorage.removeItem(CHECKOUT_DRAFT_KEY);
                 } catch (e) {}
 
                 localStorage.removeItem('naari_cart_v1');
+                if (typeof setActiveCoupon === 'function') setActiveCoupon(null);
                 updateHeaderBagCount();
                 window.location.href = `order-confirmation.html?order_id=${encodeURIComponent(createData.order_id)}`;
               } catch (verifyErr) {
@@ -923,7 +2816,18 @@
 
           const rzpInstance = new Razorpay(options);
           rzpInstance.on('payment.failed', function(response) {
-            showError(`Payment failed: ${response.error?.description || response.error?.message || 'Payment was declined.'}`);
+            const errDesc = response.error?.description || response.error?.message || 'Payment was declined.';
+            safeFetchJson('/api/payment-failed', {
+              method: 'POST',
+              headers: getCustomerAuthHeaders({ 'Content-Type': 'application/json' }),
+              credentials: 'same-origin',
+              body: JSON.stringify({
+                order_id: createData.order_id,
+                razorpay_order_id: rzpOrderId,
+                reason: errDesc
+              })
+            }).catch(() => {});
+            showError(`Payment failed: ${errDesc}`);
             setSubmitting(false);
           });
           rzpInstance.open();
@@ -934,10 +2838,86 @@
       }
     }
 
+    async function prefillAuthenticatedCustomer(user) {
+      if (!user) return;
+      currentCheckoutUser = user;
+      const nameInput = document.getElementById('cust-name');
+      const emailInput = document.getElementById('cust-email');
+      const phoneInput = document.getElementById('cust-phone');
+
+      if (nameInput && !nameInput.value && user.name) {
+        nameInput.value = user.name;
+      }
+      if (emailInput && !emailInput.value && user.email) {
+        emailInput.value = user.email;
+      }
+      if (phoneInput && !phoneInput.value && user.phone) {
+        const cleanPhone = String(user.phone).replace(/[\s\-\+]/g, '').slice(-10);
+        if (/^\d{10}$/.test(cleanPhone)) {
+          phoneInput.value = cleanPhone;
+        } else {
+          phoneInput.value = user.phone;
+        }
+      }
+
+      restoreCheckoutFormDraft();
+
+      // Load saved addresses for 1-click fill (supports both Bearer token and HttpOnly cookie)
+      try {
+        const { res, data } = await safeFetchJson('/api/customer/addresses', {
+          method: 'GET',
+          headers: getCustomerAuthHeaders(),
+          credentials: 'same-origin'
+        });
+        if (res.ok && data && Array.isArray(data.addresses) && data.addresses.length > 0) {
+          renderSavedAddressChips(data.addresses, user);
+
+          // Auto-fill default address on load if address_line1/house_no/street_area are not already filled
+          const a1El = document.getElementById('cust-address1');
+          const houseEl = document.getElementById('cust-house-no');
+          const streetEl = document.getElementById('cust-street-area');
+          const hasExistingAddress = Boolean(
+            (a1El && a1El.value.trim()) ||
+            (houseEl && houseEl.value.trim()) ||
+            (streetEl && streetEl.value.trim())
+          );
+          const defAddr = data.addresses.find(a => a.is_default) || data.addresses[0];
+          if (defAddr && !hasExistingAddress) {
+            fillCheckoutAddressFields(defAddr, user);
+          }
+        }
+      } catch (e) {}
+
+      updateAddressConfirmationPreview();
+    }
+
     document.addEventListener('DOMContentLoaded', async () => {
+      // Immediately redirect logged-out customers opening checkout.html directly
+      const initialSession = getUserSession();
+      if (!initialSession || !initialSession.user) {
+        const mainGrid = document.getElementById('checkout-main-grid');
+        if (mainGrid) mainGrid.classList.add('hidden');
+      }
+
+      const authUser = await ensureCheckoutAuthenticated();
+      if (!authUser) return;
+      currentCheckoutUser = authUser;
+
+      window.addEventListener('naari:authChanged', (e) => {
+        if (!e.detail || !e.detail.user) {
+          redirectToLoginForCheckout();
+        }
+      });
+
       await loadServerConfig();
       renderOrderSummary();
       setupPaymentMethodRadios();
+      await initDeliveryMap();
+      setupGeolocationButton();
+      setupAddressAutocomplete();
+      setupAddressFormControls();
+      await prefillAuthenticatedCustomer(authUser);
+      updateAddressConfirmationPreview();
 
       const placeBtn = document.getElementById('place-order-btn');
       if (placeBtn) {
@@ -952,74 +2932,55 @@
         });
       }
 
-      // Pre-fill user profile & saved addresses if logged in
-      const session = getUserSession();
-      if (session && session.user) {
-        const u = session.user;
-        const nameInput = document.getElementById('cust-name');
-        const emailInput = document.getElementById('cust-email');
-        const phoneInput = document.getElementById('cust-phone');
-        if (nameInput && !nameInput.value) nameInput.value = u.name || '';
-        if (emailInput && !emailInput.value) emailInput.value = u.email || '';
-        if (phoneInput && !phoneInput.value) phoneInput.value = u.phone || '';
-
-        // Load saved addresses for 1-click fill
-        if (session.token) {
-          try {
-            const { res, data } = await safeFetchJson('/api/customer/addresses', {
-              headers: { 'Authorization': `Bearer ${session.token}` }
-            });
-            if (res.ok && data && Array.isArray(data.addresses) && data.addresses.length > 0) {
-              const quickWrap = document.getElementById('saved-addresses-quickfill');
-              const chipsWrap = document.getElementById('saved-addresses-chips');
-              if (quickWrap && chipsWrap) {
-                quickWrap.classList.remove('hidden');
-                chipsWrap.innerHTML = data.addresses.map((addr, idx) => `
-                  <button type="button" data-addr-idx="${idx}" class="saved-addr-chip text-left border border-border bg-background hover:border-primary px-3 py-2 rounded-xs text-xs transition cursor-pointer">
-                    <span class="font-semibold text-foreground block">${addr.name} ${addr.is_default ? '<span class="text-[10px] text-primary">(Default)</span>' : ''}</span>
-                    <span class="text-muted-foreground text-[11px] block">${addr.address_line1}, ${addr.city} - ${addr.pincode}</span>
-                  </button>
-                `).join('');
-
-                const fillAddress = (addr) => {
-                  if (nameInput) nameInput.value = addr.name || u.name || '';
-                  if (phoneInput) phoneInput.value = addr.phone || u.phone || '';
-                  const a1 = document.getElementById('cust-address1');
-                  const a2 = document.getElementById('cust-address2');
-                  const cityEl = document.getElementById('cust-city');
-                  const stateEl = document.getElementById('cust-state');
-                  const pinEl = document.getElementById('cust-pincode');
-                  if (a1) a1.value = addr.address_line1 || '';
-                  if (a2) a2.value = addr.address_line2 || '';
-                  if (cityEl) cityEl.value = addr.city || '';
-                  if (stateEl && addr.state) stateEl.value = addr.state;
-                  if (pinEl) pinEl.value = addr.pincode || '';
-                };
-
-                // Auto-fill default address on load
-                const defAddr = data.addresses.find(a => a.is_default) || data.addresses[0];
-                if (defAddr) fillAddress(defAddr);
-
-                chipsWrap.querySelectorAll('.saved-addr-chip').forEach(btn => {
-                  btn.addEventListener('click', () => {
-                    const addr = data.addresses[Number(btn.dataset.addrIdx)];
-                    if (addr) {
-                      fillAddress(addr);
-                      getToast().info('Delivery address filled!');
-                    }
-                  });
-                });
-              }
-            }
-          } catch (e) {}
+      // Keep both payment options visible: COD enabled & selected; Razorpay visible & disabled while on hold, and automatically activated when enabled & configured
+      const rzpLabel = document.querySelector('.payment-option-label[data-method="razorpay"]');
+      const rzpRadio = document.getElementById('payment-method-razorpay');
+      const rzpBadge = document.getElementById('razorpay-status-badge');
+      const rzpNote = document.getElementById('razorpay-unavailable-note');
+      if (!isRazorpayEnabledInConfig()) {
+        if (rzpLabel) {
+          rzpLabel.classList.remove('hidden', 'cursor-pointer', 'border-primary', 'bg-primary/5', 'ring-1', 'ring-primary/40');
+          rzpLabel.classList.add('border-border', 'bg-secondary/20', 'cursor-not-allowed', 'opacity-75');
+          rzpLabel.setAttribute('aria-disabled', 'true');
+          rzpLabel.setAttribute('aria-checked', 'false');
+          rzpLabel.setAttribute('tabindex', '-1');
         }
-      }
-
-      // Respect COD availability from serverConfig
-      if (serverConfig && serverConfig.cod_enabled === false) {
-        const codLabel = document.querySelector('.payment-option-label[data-method="cod"]');
-        if (codLabel) codLabel.classList.add('hidden');
-        setPaymentMethod('razorpay');
+        if (rzpRadio) {
+          rzpRadio.checked = false;
+          rzpRadio.disabled = true;
+        }
+        if (rzpBadge) {
+          rzpBadge.textContent = 'Temporarily Unavailable · Coming Soon';
+          rzpBadge.className = 'rounded bg-amber-900/10 border border-amber-800/30 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-amber-900';
+        }
+        if (rzpNote) {
+          rzpNote.classList.remove('hidden');
+        }
+        setPaymentMethod('cod');
+      } else {
+        if (rzpLabel) {
+          rzpLabel.classList.remove('hidden', 'cursor-not-allowed', 'opacity-60', 'opacity-75', 'bg-secondary/20');
+          rzpLabel.classList.add('cursor-pointer', 'hover:border-primary/60');
+          rzpLabel.setAttribute('aria-disabled', 'false');
+          rzpLabel.setAttribute('tabindex', '0');
+        }
+        if (rzpRadio) {
+          rzpRadio.disabled = false;
+          rzpRadio.classList.remove('cursor-not-allowed');
+          rzpRadio.classList.add('cursor-pointer');
+        }
+        if (rzpBadge) {
+          rzpBadge.textContent = 'Instant & Secure';
+          rzpBadge.className = 'rounded bg-primary/10 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-primary';
+        }
+        if (rzpNote) {
+          rzpNote.classList.add('hidden');
+        }
+        if (serverConfig && serverConfig.cod_enabled === false) {
+          const codLabel = document.querySelector('.payment-option-label[data-method="cod"]');
+          if (codLabel) codLabel.classList.add('hidden');
+          setPaymentMethod('razorpay');
+        }
       }
 
       // Checkout coupon button

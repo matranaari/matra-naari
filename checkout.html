@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous"/>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=Manrope:wght@400;500;600;700&display=swap"/>
-  <link rel="stylesheet" href="assets/styles.css"/>
+  <link rel="stylesheet" href="assets/styles.css?v=20261115.3"/>
   <!-- Leaflet Interactive Map (OpenStreetMap) -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
@@ -15,10 +15,6 @@
   <meta name="description" content="Secure checkout for your Matra Naari order."/>
   <meta name="robots" content="noindex, nofollow"/>
   <style>
-    body {
-      background-image: url('images/paper.jpg'), url('/images/paper.jpg');
-      background-size: 700px;
-    }
     .payment-option-label {
       user-select: none;
       -webkit-user-select: none;
@@ -48,43 +44,47 @@
   <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 </head>
 <body class="text-foreground antialiased selection:bg-primary/20 selection:text-primary">
-  <!-- Header -->
-  <header class="mn-site-header sticky top-0 z-30">
-    <div class="mx-auto flex max-w-6xl items-center justify-between px-4 py-2.5 sm:px-5 sm:py-3">
+  <!-- Minimalist Sticky Header -->
+  <header class="mn-site-header">
+    <div class="mn-container h-16 sm:h-20 flex items-center justify-between gap-4">
       <a aria-label="Matra Naari home" href="index.html" class="shrink-0">
-        <img src="images/naari-logo.png" alt="Matra Naari" class="h-10 w-auto sm:h-12 mix-blend-multiply"/>
+        <img src="images/naari-logo.png" alt="Matra Naari" class="h-10 sm:h-12 w-auto object-contain mix-blend-multiply"/>
       </a>
-      <nav class="flex items-center gap-4 sm:gap-7 font-sans text-xs uppercase tracking-wider">
-        <a class="hidden text-foreground/80 hover:text-primary sm:inline mn-nav-link" href="index.html">Home</a>
-        <a class="hidden text-foreground/80 hover:text-primary sm:inline mn-nav-link" href="shop.html">Collections</a>
-        <a class="hidden text-foreground/80 hover:text-primary sm:inline mn-nav-link" href="story.html">Our Story</a>
-        <a class="hidden text-foreground/80 hover:text-primary sm:inline mn-nav-link" href="contact.html">Contact</a>
-        <a class="text-primary font-semibold active !inline" href="cart.html">Bag (<span class="bag-count-badge">0</span>)</a>
+      <div class="hidden sm:flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] text-muted-foreground font-sans">
+        <a href="cart.html" class="hover:text-primary transition">1. Bag</a>
+        <span>—</span>
+        <span class="text-foreground font-semibold">2. Delivery &amp; Payment</span>
+        <span>—</span>
+        <span>3. Confirmation</span>
+      </div>
+      <nav class="flex items-center gap-4 sm:gap-6 font-sans text-xs">
+        <a class="hidden text-muted-foreground hover:text-primary sm:inline mn-nav-link" href="shop.html">Shop</a>
+        <a class="mn-bag-pill-btn" href="cart.html">
+          <span>Bag</span>
+          <span>(<span class="bag-count-badge">0</span>)</span>
+        </a>
       </nav>
     </div>
   </header>
 
   <!-- Main Checkout Content -->
   <main>
-    <section class="mx-auto max-w-6xl px-3.5 py-8 sm:px-5 sm:py-12">
-      <!-- Breadcrumb / Header -->
-      <div class="mb-7 text-center sm:mb-10">
-        <p class="mn-eyebrow mb-1">Seamless &amp; Assured</p>
-        <h1 class="font-display text-4xl font-semibold sm:text-5xl">Checkout</h1>
-        <div class="mt-2.5 flex items-center justify-center gap-2 text-[11px] uppercase tracking-[0.16em] text-muted-foreground font-sans">
-          <a href="cart.html" class="hover:text-primary">Bag</a>
-          <span>→</span>
-          <span class="text-primary font-semibold">Delivery &amp; Payment</span>
-          <span>→</span>
-          <span>Confirmation</span>
+    <section class="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-12">
+      <!-- Header -->
+      <div class="mb-8 border-b border-border/60 pb-6 flex flex-col sm:flex-row sm:items-end justify-between gap-3">
+        <div>
+          <span class="mn-eyebrow block mb-2">Secure Atelier Checkout</span>
+          <h1 class="mn-display-section text-foreground">Delivery &amp; Payment</h1>
         </div>
+        <p class="text-xs text-muted-foreground font-sans">256-Bit SSL Encrypted · Pan-India Dispatch</p>
       </div>
 
       <!-- Empty Cart Guard (hidden if cart has items) -->
-      <div id="checkout-empty-state" class="hidden text-center py-12">
-        <p class="font-hand text-2xl text-muted-foreground">Your bag is currently empty.</p>
-        <a href="shop.html" class="mt-6 inline-block bg-primary px-7 py-3 text-sm uppercase tracking-[0.2em] text-primary-foreground hover:opacity-90 transition">
-          Explore Kurtis
+      <div id="checkout-empty-state" class="hidden text-center py-16 border-y border-border/60">
+        <p class="font-display text-3xl text-foreground">Your shopping bag is currently empty.</p>
+        <a href="shop.html" class="mt-6 mn-btn-primary">
+          <span>Explore Collection</span>
+          <span aria-hidden="true">→</span>
         </a>
       </div>
 
@@ -92,42 +92,42 @@
       <div id="checkout-main-grid" class="grid gap-10 lg:grid-cols-[1fr_400px]">
         <!-- Left: Form -->
         <div class="space-y-8">
-          <!-- Step 1: Customer & Delivery Details (Blinkit-style Address Selection & Pin Flow) -->
-          <div class="bg-card/70 p-5 ring-1 ring-border sm:p-7">
-            <div class="flex flex-wrap items-center justify-between gap-2">
-              <h2 class="font-display text-2xl font-semibold text-foreground flex items-center gap-2">
-                <span class="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground font-sans">1</span>
+          <!-- Step 1: Customer & Delivery Details -->
+          <div class="bg-card border border-border/80 p-5 sm:p-8">
+            <div class="flex flex-wrap items-center justify-between gap-2 border-b border-border/60 pb-4">
+              <h2 class="font-display text-2xl font-medium text-foreground flex items-center gap-3">
+                <span class="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-[11px] text-primary-foreground font-sans font-medium">1</span>
                 Delivery Address
               </h2>
-              <span id="address-step-status-pill" class="rounded-full bg-amber-900/10 border border-amber-800/30 px-2.5 py-0.5 text-[11px] font-medium text-amber-900">
-                Pin &amp; Address Details Required
+              <span id="address-step-status-pill" class="bg-secondary px-2.5 py-1 text-[10px] uppercase tracking-[0.15em] font-medium text-muted-foreground">
+                Address Details Required
               </span>
             </div>
 
             <!-- Saved Addresses Quick-Fill (populated if logged in) -->
-            <div id="saved-addresses-quickfill" class="mt-4 hidden space-y-2 border-b border-border/60 pb-4">
-              <p class="text-[11px] uppercase tracking-wider font-semibold text-primary font-sans">Saved Addresses — Tap to Select</p>
+            <div id="saved-addresses-quickfill" class="mt-5 hidden space-y-2 border-b border-border/60 pb-4">
+              <p class="text-[11px] uppercase tracking-[0.18em] font-semibold text-primary font-sans">Saved Addresses — Select to Autofill</p>
               <div id="saved-addresses-chips" class="flex flex-wrap gap-2"></div>
             </div>
 
-            <!-- 1A. Blinkit-Style Live Address Search Autocomplete (Google Places New + OpenStreetMap Fallback) -->
+            <!-- 1A. Live Address Search Autocomplete -->
             <div class="mt-5 space-y-2">
               <div class="flex flex-wrap items-center justify-between gap-2">
-                <label for="address-search-input" class="block text-xs uppercase tracking-wider font-semibold text-primary">
-                  Search Society / Apartment / Building / Landmark
+                <label for="address-search-input" class="block text-[11px] uppercase tracking-[0.18em] font-semibold text-foreground">
+                  Search Society, Apartment or Landmark
                 </label>
-                <span id="address-provider-badge" class="rounded bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary">
+                <span id="address-provider-badge" class="bg-secondary px-2 py-0.5 text-[10px] uppercase tracking-wider font-medium text-muted-foreground">
                   India Delivery Search
                 </span>
               </div>
               <div class="relative" id="address-autocomplete-container">
                 <div class="flex items-center border border-border bg-background focus-within:border-primary">
-                  <span class="pl-3 pr-2 text-primary text-sm select-none" aria-hidden="true">🔍</span>
+                  <span class="pl-3 pr-2 text-muted-foreground text-xs select-none" aria-hidden="true">⌕</span>
                   <input
                     id="address-search-input"
                     type="text"
                     autocomplete="off"
-                    placeholder="Search society, apartment, building or landmark (e.g. Prestige Shantiniketan, DLF Phase 4, C-Scheme)..."
+                    placeholder="Search society, apartment, building or landmark..."
                     class="w-full bg-transparent py-2.5 pr-3 text-sm outline-none"
                   />
                   <span id="address-search-spinner" class="hidden pr-3 text-xs text-primary animate-pulse">Searching…</span>
@@ -147,34 +147,34 @@
                 ></div>
               </div>
               <p id="address-search-helper-note" class="text-[11px] text-muted-foreground">
-                Search Indian societies, apartments, and landmarks. Selecting a suggestion moves the delivery pin and autofills locality details below (OpenStreetMap fallback always active).
+                Select a suggestion to position the map pin and autofill locality details below.
               </p>
             </div>
 
             <!-- 1B. Interactive Leaflet Map + Use Current Location -->
-            <div class="mt-4 border border-border bg-background/80 p-3 space-y-2.5">
+            <div class="mt-5 border border-border/80 bg-background p-3.5 space-y-3">
               <div class="flex flex-wrap items-center justify-between gap-2">
                 <div>
-                  <p class="text-xs font-semibold text-foreground">Pin Your Delivery Location on Map</p>
-                  <p class="text-[11px] text-muted-foreground">Click on the map or drag the burgundy pin to refine your doorstep coordinates.</p>
+                  <p class="text-xs font-medium text-foreground">Pin Delivery Location on Map</p>
+                  <p class="text-[11px] text-muted-foreground">Click the map or drag the pin to refine your doorstep coordinates.</p>
                 </div>
                 <button
                   type="button"
                   id="use-current-location-btn"
-                  class="inline-flex items-center gap-1.5 border border-primary bg-primary/5 px-3 py-1.5 text-xs font-semibold text-primary hover:bg-primary hover:text-primary-foreground transition cursor-pointer"
+                  class="inline-flex items-center gap-1.5 border border-foreground/30 bg-background px-3 py-1.5 text-[11px] uppercase tracking-[0.14em] font-medium text-foreground hover:border-primary hover:text-primary transition cursor-pointer"
                 >
                   <span aria-hidden="true">📍</span>
-                  <span id="use-current-location-text">Use my current location</span>
+                  <span id="use-current-location-text">Use Current Location</span>
                 </button>
               </div>
 
               <!-- Map Canvas -->
-              <div id="delivery-map" class="border border-border/80 bg-secondary/20" aria-label="Interactive delivery location map"></div>
+              <div id="delivery-map" class="border border-border/70 bg-secondary/20" aria-label="Interactive delivery location map"></div>
 
               <!-- Selected Map Pin & Coordinates Readout -->
-              <div class="flex flex-wrap items-start justify-between gap-2 bg-secondary/25 px-3 py-2 border border-border/50 text-xs">
+              <div class="flex flex-wrap items-start justify-between gap-2 bg-card px-3 py-2 border border-border/50 text-xs">
                 <div class="min-w-0 flex-1">
-                  <p class="text-[10px] uppercase tracking-wider font-semibold text-primary">Selected Map Area</p>
+                  <p class="text-[10px] uppercase tracking-[0.16em] font-semibold text-primary">Selected Map Area</p>
                   <p id="map-selected-address-text" class="text-foreground font-medium truncate">
                     Click the map, drag the pin, or search above to set map coordinates
                   </p>
@@ -196,23 +196,23 @@
 
               <!-- Address Type Pills (Home / Work / Other) -->
               <div>
-                <span class="block text-xs uppercase tracking-wider text-muted-foreground mb-1.5">Save Address As</span>
+                <span class="block text-[11px] uppercase tracking-[0.16em] text-muted-foreground mb-1.5">Address Label</span>
                 <div class="flex flex-wrap gap-2" id="address-label-pills" role="group" aria-label="Address Label">
-                  <button type="button" data-label="Home" class="addr-label-btn border border-primary bg-primary text-primary-foreground px-3 py-1 text-xs font-medium cursor-pointer transition">
-                    🏠 Home
+                  <button type="button" data-label="Home" class="addr-label-btn border border-primary bg-primary text-primary-foreground px-3.5 py-1.5 text-xs font-medium cursor-pointer transition">
+                    Home
                   </button>
-                  <button type="button" data-label="Work" class="addr-label-btn border border-border bg-background text-foreground hover:border-primary px-3 py-1 text-xs font-medium cursor-pointer transition">
-                    💼 Work
+                  <button type="button" data-label="Work" class="addr-label-btn border border-border bg-background text-foreground hover:border-primary px-3.5 py-1.5 text-xs font-medium cursor-pointer transition">
+                    Work
                   </button>
-                  <button type="button" data-label="Other" class="addr-label-btn border border-border bg-background text-foreground hover:border-primary px-3 py-1 text-xs font-medium cursor-pointer transition">
-                    📍 Other
+                  <button type="button" data-label="Other" class="addr-label-btn border border-border bg-background text-foreground hover:border-primary px-3.5 py-1.5 text-xs font-medium cursor-pointer transition">
+                    Other
                   </button>
                 </div>
               </div>
 
               <div class="grid gap-4 sm:grid-cols-2">
                 <div>
-                  <label for="cust-name" class="block text-xs uppercase tracking-wider text-muted-foreground mb-1">Recipient Full Name *</label>
+                  <label for="cust-name" class="block text-[11px] uppercase tracking-[0.16em] text-muted-foreground mb-1">Recipient Full Name *</label>
                   <input
                     id="cust-name"
                     name="name"
@@ -223,7 +223,7 @@
                   />
                 </div>
                 <div>
-                  <label for="cust-phone" class="block text-xs uppercase tracking-wider text-muted-foreground mb-1">Mobile Phone (10 digits) *</label>
+                  <label for="cust-phone" class="block text-[11px] uppercase tracking-[0.16em] text-muted-foreground mb-1">Mobile Phone (10 digits) *</label>
                   <input
                     id="cust-phone"
                     name="phone"
@@ -237,7 +237,7 @@
               </div>
 
               <div>
-                <label for="cust-email" class="block text-xs uppercase tracking-wider text-muted-foreground mb-1">Email Address *</label>
+                <label for="cust-email" class="block text-[11px] uppercase tracking-[0.16em] text-muted-foreground mb-1">Email Address *</label>
                 <input
                   id="cust-email"
                   name="email"
@@ -246,7 +246,7 @@
                   placeholder="ananya@example.com"
                   class="w-full border border-border bg-background px-3 py-2.5 text-sm outline-none focus:border-primary"
                 />
-                <p class="mt-1 text-[11px] text-muted-foreground">We will send your order receipt and tracking updates here.</p>
+                <p class="mt-1 text-[11px] text-muted-foreground">Order confirmation and dispatch details will be emailed here.</p>
                 <label class="mt-2.5 flex items-start gap-2.5 text-xs text-foreground/90 cursor-pointer select-none">
                   <input
                     type="checkbox"
@@ -259,21 +259,21 @@
                 </label>
               </div>
 
-              <!-- Split Blinkit-Style House/Flat & Street/Area Fields -->
+              <!-- Split House/Flat & Street/Area Fields -->
               <div class="grid gap-4 sm:grid-cols-2">
                 <div>
-                  <label for="cust-house-no" class="block text-xs uppercase tracking-wider text-muted-foreground mb-1">House / Flat / Floor No. *</label>
+                  <label for="cust-house-no" class="block text-[11px] uppercase tracking-[0.16em] text-muted-foreground mb-1">House / Flat / Floor No. *</label>
                   <input
                     id="cust-house-no"
                     name="house_no"
                     type="text"
                     required
-                    placeholder="e.g. Flat 402, Tower B / Plot 14"
+                    placeholder="e.g. Flat 402, Tower B"
                     class="w-full border border-border bg-background px-3 py-2.5 text-sm outline-none focus:border-primary"
                   />
                 </div>
                 <div>
-                  <label for="cust-street-area" class="block text-xs uppercase tracking-wider text-muted-foreground mb-1">Street / Society / Locality *</label>
+                  <label for="cust-street-area" class="block text-[11px] uppercase tracking-[0.16em] text-muted-foreground mb-1">Street / Society / Locality *</label>
                   <input
                     id="cust-street-area"
                     name="street_area"
@@ -286,7 +286,7 @@
               </div>
 
               <div>
-                <label for="cust-address1" class="block text-xs uppercase tracking-wider text-muted-foreground mb-1">Complete Delivery Street Address *</label>
+                <label for="cust-address1" class="block text-[11px] uppercase tracking-[0.16em] text-muted-foreground mb-1">Complete Delivery Street Address *</label>
                 <input
                   id="cust-address1"
                   name="address_line1"
@@ -295,23 +295,22 @@
                   placeholder="Flat / House No., Building, Street &amp; Area"
                   class="w-full border border-border bg-background px-3 py-2.5 text-sm outline-none focus:border-primary"
                 />
-                <p class="mt-1 text-[11px] text-muted-foreground">Auto-synced from House/Flat No. and Street/Locality above (you can also edit directly).</p>
               </div>
 
               <div>
-                <label for="cust-address2" class="block text-xs uppercase tracking-wider text-muted-foreground mb-1">Nearby Landmark / Directions (Optional)</label>
+                <label for="cust-address2" class="block text-[11px] uppercase tracking-[0.16em] text-muted-foreground mb-1">Landmark (Optional)</label>
                 <input
                   id="cust-address2"
                   name="address_line2"
                   type="text"
-                  placeholder="Near temple, Opposite park, Gate no., etc."
+                  placeholder="Near landmark, gate number, etc."
                   class="w-full border border-border bg-background px-3 py-2.5 text-sm outline-none focus:border-primary"
                 />
               </div>
 
               <div class="grid gap-4 sm:grid-cols-3">
                 <div>
-                  <label for="cust-pincode" class="block text-xs uppercase tracking-wider text-muted-foreground mb-1">PIN Code (6 digits) *</label>
+                  <label for="cust-pincode" class="block text-[11px] uppercase tracking-[0.16em] text-muted-foreground mb-1">PIN Code (6 digits) *</label>
                   <input
                     id="cust-pincode"
                     name="pincode"
@@ -324,7 +323,7 @@
                   />
                 </div>
                 <div>
-                  <label for="cust-city" class="block text-xs uppercase tracking-wider text-muted-foreground mb-1">City / District *</label>
+                  <label for="cust-city" class="block text-[11px] uppercase tracking-[0.16em] text-muted-foreground mb-1">City / District *</label>
                   <input
                     id="cust-city"
                     name="city"
@@ -335,7 +334,7 @@
                   />
                 </div>
                 <div>
-                  <label for="cust-state" class="block text-xs uppercase tracking-wider text-muted-foreground mb-1">State / UT *</label>
+                  <label for="cust-state" class="block text-[11px] uppercase tracking-[0.16em] text-muted-foreground mb-1">State / UT *</label>
                   <select
                     id="cust-state"
                     name="state"
@@ -381,61 +380,57 @@
               </div>
 
               <!-- Live PIN Code Verification Status -->
-              <div id="pincode-verify-status" class="hidden rounded border border-border/70 bg-secondary/20 px-3 py-2 text-xs"></div>
+              <div id="pincode-verify-status" class="hidden border border-border/70 bg-secondary/30 px-3 py-2 text-xs"></div>
 
               <!-- 1D. Delivery Address Confirmation Preview & Action -->
-              <div id="address-confirmation-card" class="mt-4 border border-primary/30 bg-primary/5 p-4 space-y-3">
+              <div id="address-confirmation-card" class="mt-4 border border-border bg-background p-4 space-y-3">
                 <div class="flex flex-wrap items-center justify-between gap-2">
                   <div class="flex items-center gap-2">
-                    <span class="text-xs font-semibold uppercase tracking-wider text-primary">Delivery Address Preview</span>
-                    <span id="address-confirmed-badge" class="hidden rounded bg-emerald-800/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-emerald-900">
-                      ✓ Confirmed &amp; Saved
+                    <span class="text-[11px] font-semibold uppercase tracking-[0.16em] text-foreground">Delivery Address Summary</span>
+                    <span id="address-confirmed-badge" class="hidden bg-emerald-800/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-emerald-900">
+                      ✓ Confirmed
                     </span>
                   </div>
                   <span id="confirm-preview-label" class="text-[11px] font-medium text-muted-foreground">Label: Home</span>
                 </div>
 
                 <div class="text-xs space-y-1 text-foreground/90">
-                  <p id="confirm-preview-recipient" class="font-semibold text-foreground">Enter recipient name &amp; mobile number above</p>
-                  <p id="confirm-preview-address" class="text-muted-foreground">Fill in your house/flat number, street/area, city, state, and 6-digit PIN code.</p>
-                  <p id="confirm-preview-coords" class="font-mono text-[11px] text-primary/90">Map Pin: Not selected (optional)</p>
+                  <p id="confirm-preview-recipient" class="font-medium text-foreground">Enter recipient name &amp; mobile number above</p>
+                  <p id="confirm-preview-address" class="text-muted-foreground">Complete house/flat number, street/area, city, state, and 6-digit PIN code.</p>
+                  <p id="confirm-preview-coords" class="font-mono text-[11px] text-muted-foreground">Map Pin: Not selected (optional)</p>
                 </div>
 
-                <p class="text-[11px] text-muted-foreground border-t border-border/60 pt-2">
-                  ℹ️ <strong>Note:</strong> PIN code lookup and map coordinates confirm your postal region and map pin only—they do not verify that a specific building or residence exists. Courier delivery relies on the house/flat number and street details you confirm here.
-                </p>
-
-                <div id="address-confirm-feedback" class="hidden text-xs p-2.5 rounded"></div>
+                <div id="address-confirm-feedback" class="hidden text-xs p-2.5"></div>
 
                 <div class="flex flex-wrap items-center justify-between gap-3 pt-1">
                   <button
                     type="button"
                     id="confirm-address-btn"
-                    class="bg-primary px-5 py-2.5 text-xs uppercase tracking-[0.18em] text-primary-foreground hover:opacity-90 transition font-semibold cursor-pointer"
+                    class="border border-foreground bg-foreground px-5 py-2.5 text-[11px] uppercase tracking-[0.16em] text-background hover:bg-foreground/90 transition font-medium cursor-pointer"
                   >
                     Confirm Delivery Address
                   </button>
-                  <span class="text-[11px] text-muted-foreground">Saves to your Matra Naari account for checkout</span>
+                  <span class="text-[11px] text-muted-foreground">Saves to your account for faster checkout</span>
                 </div>
               </div>
             </form>
           </div>
 
           <!-- Step 2: Payment Method -->
-          <div class="bg-card/70 p-5 ring-1 ring-border sm:p-7">
-            <h2 class="font-display text-2xl font-semibold text-foreground flex items-center gap-2">
-              <span class="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground font-sans">2</span>
+          <div class="bg-card border border-border/80 p-5 sm:p-8">
+            <h2 class="font-display text-2xl font-medium text-foreground flex items-center gap-3 border-b border-border/60 pb-4">
+              <span class="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-[11px] text-primary-foreground font-sans font-medium">2</span>
               Payment Method
             </h2>
 
             <div class="mt-6 space-y-4" role="radiogroup" aria-label="Payment Method">
-              <!-- Cash on Delivery (COD) — Enabled & Selectable -->
+              <!-- Cash on Delivery (COD) -->
               <label
                 data-method="cod"
                 role="radio"
                 aria-checked="true"
                 tabindex="0"
-                class="payment-option-label relative flex cursor-pointer items-start gap-3 border border-primary bg-primary/5 ring-1 ring-primary/40 p-4 transition hover:border-primary/60 rounded-sm"
+                class="payment-option-label relative flex cursor-pointer items-start gap-3 border border-primary bg-primary/5 p-4 transition"
               >
                 <input
                   type="radio"
@@ -447,23 +442,23 @@
                 />
                 <div class="flex-1 min-w-0">
                   <div class="flex flex-wrap items-center justify-between gap-2">
-                    <span class="font-semibold text-foreground text-sm">Cash on Delivery (COD)</span>
-                    <span class="rounded bg-primary/10 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-primary">Pay at doorstep</span>
+                    <span class="font-medium text-foreground text-sm">Cash on Delivery (COD)</span>
+                    <span class="bg-primary/10 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-primary">Pay on Delivery</span>
                   </div>
                   <p class="mt-1 text-xs text-muted-foreground">
-                    Pay in cash when your courier arrives. Please keep exact change ready.
+                    Pay conveniently at your doorstep when your order arrives. Zero additional COD charges.
                   </p>
                 </div>
               </label>
 
-              <!-- Online Payment via Razorpay (Visible & Disabled while awaiting production activation) -->
+              <!-- Online Payment via Razorpay -->
               <label
                 data-method="razorpay"
                 role="radio"
                 aria-checked="false"
                 aria-disabled="true"
                 tabindex="-1"
-                class="payment-option-label relative flex cursor-not-allowed items-start gap-3 border border-border bg-secondary/20 p-4 transition rounded-sm opacity-75"
+                class="payment-option-label relative flex cursor-not-allowed items-start gap-3 border border-border bg-secondary/20 p-4 transition opacity-75"
               >
                 <input
                   type="radio"
@@ -475,8 +470,8 @@
                 />
                 <div class="flex-1 min-w-0">
                   <div class="flex flex-wrap items-center justify-between gap-2">
-                    <span class="font-semibold text-foreground text-sm">Razorpay Online Payment (UPI, Cards, Net Banking)</span>
-                    <span id="razorpay-status-badge" class="rounded bg-amber-900/10 border border-amber-800/30 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-amber-900">Temporarily Unavailable · Coming Soon</span>
+                    <span class="font-medium text-foreground text-sm">Razorpay Online Payment (UPI, Cards, Net Banking)</span>
+                    <span id="razorpay-status-badge" class="bg-amber-900/10 border border-amber-800/30 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-amber-900">Temporarily Unavailable · Coming Soon</span>
                   </div>
                   <p class="mt-1 text-xs text-muted-foreground">
                     Instant &amp; secure checkout powered by <strong>Razorpay</strong>.
@@ -484,25 +479,23 @@
                   <p id="razorpay-unavailable-note" class="mt-1.5 text-[11px] font-medium text-amber-900">
                     Online payments (UPI, Cards, Net Banking) are temporarily unavailable and coming soon. Please place your order using Cash on Delivery (COD).
                   </p>
-                  <!-- Payment Mode Badges -->
                   <div class="mt-3 flex flex-wrap items-center gap-2 text-[11px] text-foreground/75">
-                    <span class="rounded border border-border bg-background/80 px-2 py-1">UPI (GPay, PhonePe, Paytm)</span>
-                    <span class="rounded border border-border bg-background/80 px-2 py-1">Credit &amp; Debit Cards</span>
-                    <span class="rounded border border-border bg-background/80 px-2 py-1">Net Banking</span>
-                    <span class="rounded border border-border bg-background/80 px-2 py-1">Wallets</span>
+                    <span class="border border-border bg-background/80 px-2 py-1">UPI (GPay, PhonePe, Paytm)</span>
+                    <span class="border border-border bg-background/80 px-2 py-1">Credit &amp; Debit Cards</span>
+                    <span class="border border-border bg-background/80 px-2 py-1">Net Banking</span>
                   </div>
                 </div>
               </label>
             </div>
 
             <!-- Error Banner -->
-            <div id="checkout-error-banner" class="mt-4 hidden p-3 bg-[#2A1810] text-[#FFB4AB] border border-[#93000A]/40 text-xs rounded"></div>
+            <div id="checkout-error-banner" class="mt-4 hidden p-3 bg-[#2A1810] text-[#FFB4AB] border border-[#93000A]/40 text-xs"></div>
 
             <!-- Place Order CTA Button -->
             <button
               id="place-order-btn"
               type="button"
-              class="mt-6 w-full bg-primary py-4 text-sm uppercase tracking-[0.2em] text-primary-foreground hover:opacity-90 transition font-medium cursor-pointer shadow flex items-center justify-center gap-2"
+              class="mt-6 mn-btn-primary w-full py-4 text-center"
             >
               <span id="place-order-text">Place Cash on Delivery Order</span>
               <span id="place-order-spinner" class="hidden animate-spin">⏳</span>
@@ -510,11 +503,10 @@
 
             <!-- Customer Support Note -->
             <div class="mt-4 text-center text-xs text-muted-foreground">
-              <p>🔒 256-Bit SSL Encrypted & Cryptographically Verified</p>
-              <p class="mt-1">
-                Have questions before ordering?
+              <p>
+                Need assistance?
                 <a href="https://wa.me/918849366915" target="_blank" rel="noreferrer" class="text-primary underline font-medium">
-                  WhatsApp Support (+91 88493 66915)
+                  WhatsApp (+91 88493 66915)
                 </a>
                 ·
                 <a href="mailto:matranaari@gmail.com" class="text-primary underline font-medium">
@@ -527,10 +519,10 @@
 
         <!-- Right: Order Summary Sidebar -->
         <div>
-          <div class="bg-card/70 p-5 ring-1 ring-border sm:p-6 sticky top-24">
-            <div class="flex items-center justify-between border-b border-border pb-3">
-              <h3 class="font-display text-xl font-semibold">Order Summary</h3>
-              <a href="cart.html" class="text-xs font-hand text-primary underline">Edit Bag</a>
+          <div class="bg-card border border-border/80 p-6 sticky top-24">
+            <div class="flex items-center justify-between border-b border-border/70 pb-3">
+              <h3 class="font-display text-2xl font-medium">Order Summary</h3>
+              <a href="cart.html" class="text-xs text-primary underline">Edit Bag</a>
             </div>
 
             <!-- Items List -->
@@ -539,19 +531,19 @@
             </ul>
 
             <!-- Promo Coupon Input in Checkout -->
-            <div class="mt-4 pt-3 border-t border-border/60">
-              <label class="block text-xs uppercase tracking-wider font-semibold text-muted-foreground mb-1">Promo Coupon Code</label>
+            <div class="mt-4 pt-4 border-t border-border/60">
+              <label class="block text-[11px] uppercase tracking-[0.18em] font-medium text-muted-foreground mb-1.5">Privilege Code</label>
               <div class="flex gap-2">
                 <input
                   id="checkout-coupon-input"
                   type="text"
-                  placeholder="Code (e.g. NAARI10)"
-                  class="min-w-0 flex-1 border border-border bg-background px-3 py-1.5 text-xs uppercase font-mono outline-none focus:border-primary"
+                  placeholder="Enter code (e.g. NAARI10)"
+                  class="min-w-0 flex-1 border border-border bg-background px-3 py-2 text-xs uppercase font-mono outline-none focus:border-primary"
                 />
                 <button
                   type="button"
                   id="checkout-apply-coupon-btn"
-                  class="bg-primary px-3 py-1.5 text-xs uppercase tracking-wider text-primary-foreground font-semibold hover:opacity-90 transition cursor-pointer"
+                  class="border border-foreground bg-foreground px-4 py-2 text-[11px] uppercase tracking-[0.16em] text-background font-medium hover:bg-foreground/90 transition cursor-pointer"
                 >
                   Apply
                 </button>
@@ -560,29 +552,24 @@
             </div>
 
             <!-- Totals -->
-            <div class="mt-4 space-y-2 border-t border-border pt-4 text-sm">
+            <div class="mt-4 space-y-2.5 border-t border-border/70 pt-4 text-xs sm:text-sm">
               <div class="flex justify-between text-muted-foreground">
                 <span>Subtotal</span>
-                <span id="summary-subtotal" class="font-display text-foreground">₹0</span>
+                <span id="summary-subtotal" class="mn-price text-foreground">₹0</span>
               </div>
               <div id="summary-discount-row" class="hidden justify-between text-emerald-800 font-medium">
-                <span>Coupon Discount (<span id="summary-coupon-code"></span>)</span>
+                <span>Privilege Discount (<span id="summary-coupon-code"></span>)</span>
                 <span id="summary-discount">-₹0</span>
               </div>
               <div class="flex justify-between text-muted-foreground">
-                <span>Delivery across India</span>
-                <span id="summary-shipping" class="text-primary font-medium">FREE ✿</span>
+                <span>Shipping</span>
+                <span id="summary-shipping" class="text-foreground font-medium">Complimentary</span>
               </div>
-              <div class="flex justify-between items-baseline border-t border-border pt-3 text-base">
-                <span class="font-semibold text-foreground">Total Amount</span>
-                <span id="summary-total" class="font-display text-2xl text-primary font-semibold">₹0</span>
+              <div class="flex justify-between items-baseline border-t border-border/70 pt-3.5 text-base">
+                <span class="text-xs uppercase tracking-[0.18em] font-semibold text-foreground">Total</span>
+                <span id="summary-total" class="mn-price text-xl text-foreground">₹0</span>
               </div>
               <p class="text-[11px] text-muted-foreground text-right">Inclusive of 5% GST (<span id="summary-gst-note">₹0</span>)</p>
-            </div>
-
-            <div class="mt-6 rounded border border-dashed border-primary/40 bg-primary/5 p-3 text-xs text-foreground/80">
-              <p class="font-medium text-primary">✿ Matra Naari Assurance</p>
-              <p class="mt-0.5">Every order is carefully inspected and packed for safe pan-India delivery.</p>
             </div>
           </div>
         </div>
@@ -590,28 +577,26 @@
     </section>
   </main>
 
-  <!-- Footer -->
-  <footer class="mt-24 border-t border-border/60">
-    <div class="mx-auto grid max-w-6xl gap-8 px-5 py-12 sm:grid-cols-3">
-      <div>
-        <img src="images/naari-logo.png" alt="Naari" class="h-16 w-auto mix-blend-multiply"/>
-        <p class="mt-2 font-hand text-muted-foreground">Modern kurtis, woven with heritage.</p>
-      </div>
-      <div class="font-hand text-lg">
-        <a class="block hover:text-primary" href="index.html">Home</a>
-        <a class="block hover:text-primary" href="shop.html">Shop</a>
-        <a class="block hover:text-primary" href="story.html">Our Story</a>
-        <a class="block hover:text-primary" href="contact.html">Contact</a>
-      </div>
-      <div class="text-sm text-muted-foreground">
-        <p><a href="mailto:matranaari@gmail.com" class="hover:text-primary transition">matranaari@gmail.com</a></p>
-        <p><a href="https://wa.me/918849366915" target="_blank" rel="noreferrer" class="hover:text-primary transition">+91 88493 66915</a></p>
-        <p class="mt-4">© 2026 Matra Naari</p>
+  <!-- Boutique Footer -->
+  <footer class="mt-20 border-t border-border/80 bg-card">
+    <div class="mn-container py-12">
+      <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 text-xs text-muted-foreground">
+        <div class="flex items-center gap-4">
+          <img src="images/naari-logo.png" alt="Matra Naari" class="h-10 w-auto mix-blend-multiply"/>
+          <span>© 2026 Matra Naari · Modern Kurtis Rooted in Craft</span>
+        </div>
+        <div class="flex flex-wrap items-center gap-5">
+          <a href="shop.html" class="hover:text-primary transition">Shop</a>
+          <a href="story.html" class="hover:text-primary transition">Our Story</a>
+          <a href="contact.html" class="hover:text-primary transition">Contact</a>
+          <a href="mailto:matranaari@gmail.com" class="hover:text-primary transition">matranaari@gmail.com</a>
+          <a href="https://wa.me/918849366915" target="_blank" rel="noreferrer" class="hover:text-primary transition">+91 88493 66915</a>
+        </div>
       </div>
     </div>
   </footer>
 
-  <script src="assets/app.js"></script>
+  <script src="assets/app.js?v=20261116.1"></script>
   <script>
     let serverConfig = null;
     let selectedPaymentMethod = 'cod';
@@ -858,7 +843,7 @@
       totalEl.textContent = formatPrice(finalTotal);
       if (gstNoteEl) gstNoteEl.textContent = formatPrice(gstAmount);
 
-      if (shippingEl) shippingEl.textContent = shipping === 0 ? 'FREE ✿' : formatPrice(shipping);
+      if (shippingEl) shippingEl.textContent = shipping === 0 ? 'FREE' : formatPrice(shipping);
 
       const cMsgEl = document.getElementById('checkout-coupon-msg');
       if (discountAmount > 0 && activeCoupon) {

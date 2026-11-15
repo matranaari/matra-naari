@@ -201,7 +201,7 @@ class ToastManager {
         : 'bg-[#2E1E1C] text-[#F9EBEA] border border-[#6B2D31]/60'
     } translate-y-4 opacity-0`;
 
-    const icon = type === 'error' ? '⚠ ' : type === 'success' ? '✓ ' : '✿ ';
+    const icon = type === 'error' ? '⚠ ' : type === 'success' ? '✓ ' : '· ';
     const iconSpan = document.createElement('span');
     iconSpan.className = 'shrink-0 text-base font-bold';
     iconSpan.textContent = icon;
@@ -447,11 +447,13 @@ function renderProductCard(rawProduct) {
   const availSizes = allSizes.filter(s => !soldOutList.includes(s));
   const defaultSize = availSizes.includes('M') ? 'M' : (availSizes[0] || 'M');
   const outOfStock = (p.stock !== undefined && p.stock <= 0) || availSizes.length === 0;
-  const subMeta = [p.category, p.style].filter(Boolean).join(' · ');
+  const categoryLabel = p.category || p.style || 'Kurti';
 
   let badgeHtml = '';
   if (outOfStock) {
-    badgeHtml = `<span class="mn-product-badge bg-foreground text-background shadow-xs">Sold Out</span>`;
+    badgeHtml = `<span class="mn-product-badge bg-foreground text-background">Sold Out</span>`;
+  } else if (disc > 0) {
+    badgeHtml = `<span class="mn-product-badge mn-product-badge-subtle">${disc}% Off</span>`;
   }
 
   return `
@@ -460,80 +462,53 @@ function renderProductCard(rawProduct) {
         <a href="product.html?id=${p.id}" class="block h-full w-full">
           <img
             src="${imgSrc}"
-            alt="${p.name}"
+            alt="${escapeHtml(p.name)}"
             loading="lazy"
             decoding="async"
             onerror="this.onerror=null;this.src='assets/hero.jpg';"
           />
         </a>
 
-        <!-- Top Badges (Only shown when justified by actual data) -->
-        <div class="absolute top-2.5 left-2.5 flex flex-col gap-1 pointer-events-none">
-          ${badgeHtml}
-          ${disc > 0 ? `<span class="mn-product-badge bg-card/95 text-primary border border-primary/25 shadow-xs">${disc}% OFF</span>` : ''}
-        </div>
+        ${badgeHtml ? `<div class="absolute top-3 left-3 pointer-events-none">${badgeHtml}</div>` : ''}
 
         <!-- Wishlist Toggle Button -->
         <button
           type="button"
-          class="wishlist-toggle-btn absolute top-2.5 right-2.5 h-9 w-9 rounded-full bg-card/92 backdrop-blur-sm border border-border/70 flex items-center justify-center text-foreground hover:text-primary hover:border-primary/40 shadow-xs transition cursor-pointer ${isSaved ? 'active' : ''}"
+          class="wishlist-toggle-btn mn-wishlist-btn ${isSaved ? 'active' : ''}"
           data-product-id="${p.id}"
-          aria-label="Save ${p.name} to wishlist"
+          aria-label="Save ${escapeHtml(p.name)} to wishlist"
         >
           <svg class="h-4 w-4" fill="${isSaved ? '#6B2D31' : 'none'}" stroke="${isSaved ? '#6B2D31' : 'currentColor'}" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
           </svg>
         </button>
 
-        <!-- Quick Add to Bag Overlay -->
-        <div class="quick-add-bar absolute inset-x-0 bottom-0 p-2 sm:p-2.5 bg-gradient-to-t from-black/75 via-black/35 to-transparent flex flex-col gap-1.5">
+        <!-- Minimal Slide-Up Quick Add -->
+        <div class="mn-quick-add-overlay">
           ${outOfStock ? `
-            <span class="mn-quick-add-btn w-full bg-muted/95 text-muted-foreground py-2 text-center flex items-center justify-center">Out of Stock</span>
+            <span class="mn-quick-add-btn mn-quick-add-disabled">Out of Stock</span>
           ` : `
             <button
               type="button"
-              class="card-quick-add-btn mn-quick-add-btn w-full bg-card/95 hover:bg-primary hover:text-primary-foreground text-foreground py-2 px-2.5 shadow-sm flex items-center justify-center cursor-pointer"
+              class="card-quick-add-btn mn-quick-add-btn cursor-pointer"
               data-id="${p.id}"
               data-selected-size="${defaultSize}"
             >
-              + Quick Add (${defaultSize})
+              + Add to Bag · ${defaultSize}
             </button>
           `}
         </div>
       </div>
 
-      <!-- Product Details (Manrope UI & Commerce Typography) -->
-      <div class="mn-product-card-body p-3 sm:p-3.5 flex-1 flex flex-col justify-between bg-card/45">
-        <div>
-          <p class="mn-product-category truncate">${subMeta}</p>
-          <a href="product.html?id=${p.id}" class="mn-product-title mt-1 block hover:text-primary transition">${p.name}</a>
-          ${p.shortDesc ? `<p class="mn-product-subtitle mt-0.5">${p.shortDesc}</p>` : ''}
-        </div>
-
-        <div class="mt-2.5 pt-2 border-t border-border/60">
-          <div class="flex items-baseline gap-1.5 sm:gap-2 flex-wrap">
-            <span class="mn-price text-sm sm:text-base text-primary">${formatPrice(p.price)}</span>
-            ${p.mrp && p.mrp > p.price ? `<span class="text-[11px] line-through text-muted-foreground tabular-nums">${formatPrice(p.mrp)}</span>` : ''}
-            ${disc > 0 ? `<span class="text-[10px] font-semibold text-emerald-800 tracking-wide uppercase">${disc}% OFF</span>` : ''}
-          </div>
-          <div class="mt-2 flex items-center justify-between gap-1 text-[11px] text-muted-foreground">
-            <div class="flex items-center gap-1 flex-wrap" aria-label="Available sizes">
-              ${availSizes.length > 0 ? availSizes.slice(0, 5).map(sz => `
-                <button
-                  type="button"
-                  class="card-size-pill px-1.5 py-0.5 text-[10px] font-medium rounded-[2px] border transition cursor-pointer ${sz === defaultSize ? 'border-primary bg-primary/10 text-primary font-semibold' : 'border-border/80 bg-background/70 text-foreground/80 hover:border-primary/60'}"
-                  data-product-id="${p.id}"
-                  data-size="${sz}"
-                  title="Select size ${sz}"
-                >${sz}</button>
-              `).join('') : '<span class="text-[10px] text-muted-foreground">Sold Out</span>'}
-            </div>
-            ${(p.colors && p.colors.length > 0) ? `
-              <span class="flex items-center gap-1 shrink-0" title="${p.colors.map(c => c.name).join(', ')}">
-                ${p.colors.slice(0, 3).map(c => `<span class="inline-block h-2.5 w-2.5 rounded-full ring-1 ring-border" style="background:${c.swatch}"></span>`).join('')}
-              </span>
-            ` : ''}
-          </div>
+      <!-- Minimal Editorial Product Meta -->
+      <div class="mn-product-card-body">
+        <p class="mn-product-category truncate">${escapeHtml(categoryLabel)}</p>
+        <h3 class="mn-product-title">
+          <a href="product.html?id=${p.id}" class="hover:text-primary transition">${escapeHtml(p.name)}</a>
+        </h3>
+        <div class="mn-product-price-row">
+          <span class="mn-price">${formatPrice(p.price)}</span>
+          ${p.mrp && p.mrp > p.price ? `<span class="mn-price-mrp">${formatPrice(p.mrp)}</span>` : ''}
         </div>
       </div>
     </article>
@@ -641,7 +616,7 @@ function toggleWishlist(product) {
       sizes: product.sizes || ['XS', 'S', 'M', 'L', 'XL']
     });
     saveWishlist(list);
-    getToast().success(`Saved "${product.name}" to your wishlist! ✿`);
+    getToast().success(`Saved "${product.name}" to your wishlist.`);
   }
 }
 
@@ -884,25 +859,27 @@ function updateHeaderBadges() {
     : 'Account';
 
   // Bag counters
-  document.querySelectorAll('.bag-count-badge, #header-bag-count').forEach(b => {
+  document.querySelectorAll('.bag-count-badge, .cart-badge-count, #header-bag-count').forEach(b => {
     b.textContent = bagCount;
     b.style.display = bagCount > 0 ? 'inline-flex' : 'none';
+    b.classList.toggle('hidden', bagCount <= 0);
   });
 
   // Wishlist counters
-  document.querySelectorAll('.wishlist-count-badge').forEach(b => {
+  document.querySelectorAll('.wishlist-count-badge, .wishlist-badge-count').forEach(b => {
     b.textContent = wishCount;
     b.style.display = wishCount > 0 ? 'inline-flex' : 'none';
+    b.classList.toggle('hidden', wishCount <= 0);
   });
 
-  // User label (visible on desktop & mobile)
-  document.querySelectorAll('.header-user-label').forEach(el => {
-    el.classList.remove('hidden', 'sm:inline');
-    el.classList.add('inline');
+  // User label (visible on desktop >= 1024px; icon-only on mobile for clean header)
+  document.querySelectorAll('.header-user-label, .nav-auth-label').forEach(el => {
+    el.classList.remove('inline', 'sm:inline');
+    el.classList.add('hidden', 'lg:inline');
     if (isLoggedIn) {
-      el.textContent = `Account (${firstName})`;
+      el.textContent = firstName;
     } else {
-      el.textContent = 'Login / Sign Up';
+      el.textContent = 'Sign In';
     }
   });
 
@@ -989,7 +966,7 @@ function ensureMobileMenuTriggerInHeader() {
   const headerContainer = document.querySelector('header > div');
   if (!headerContainer) return;
 
-  if (!headerContainer.querySelector('.open-mobile-menu-btn')) {
+  if (!headerContainer.querySelector('.open-mobile-menu-btn, #mobile-menu-btn, #mobile-menu-toggle')) {
     const firstLink = headerContainer.querySelector('a[href*="index.html"], a[href="/"]');
     if (firstLink) {
       const leftWrap = document.createElement('div');
@@ -1007,7 +984,7 @@ function ensureMobileMenuTriggerInHeader() {
   }
 
   // Ensure every page header has the Login / Sign Up / Account button
-  if (!headerContainer.querySelector('.open-auth-modal-btn')) {
+  if (!headerContainer.querySelector('.open-auth-modal-btn, a[href*="account.html"]')) {
     const targetNav = headerContainer.querySelector('nav') || headerContainer.lastElementChild;
     if (targetNav) {
       const authBtn = document.createElement('button');
@@ -1108,9 +1085,9 @@ function injectGlobalStorefrontShell() {
         </div>
 
         <!-- Free Shipping Progress Bar -->
-        <div id="drawer-shipping-meter" class="border-b border-border/60 bg-primary/5 px-5 py-2.5 text-xs text-center font-hand">
-          <p id="drawer-shipping-text" class="text-foreground">Add ₹999 for Free Express Delivery ✿</p>
-          <div class="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-border">
+        <div id="drawer-shipping-meter" class="border-b border-border/60 bg-secondary/40 px-5 py-2.5 text-xs text-center font-sans">
+          <p id="drawer-shipping-text" class="text-foreground">Add ₹999 for Complimentary Express Delivery</p>
+          <div class="mt-1.5 h-1 w-full overflow-hidden bg-border">
             <div id="drawer-shipping-bar" class="progress-bar-fill h-full bg-primary" style="width: 0%;"></div>
           </div>
         </div>
@@ -1128,7 +1105,7 @@ function injectGlobalStorefrontShell() {
               <input
                 id="drawer-coupon-input"
                 type="text"
-                placeholder="Promo Code (e.g. NAARI10)"
+                placeholder="Privilege Code (e.g. NAARI10)"
                 class="min-w-0 flex-1 border border-border bg-card px-3 py-2 text-xs uppercase tracking-wider outline-none focus:border-primary font-mono"
               />
               <button
@@ -1145,7 +1122,7 @@ function injectGlobalStorefrontShell() {
           <div class="space-y-1.5 text-sm">
             <div class="flex justify-between text-muted-foreground">
               <span>Bag Subtotal</span>
-              <span id="drawer-subtotal" class="font-display text-base text-foreground">₹0</span>
+              <span id="drawer-subtotal" class="mn-price text-foreground">₹0</span>
             </div>
             <div id="drawer-discount-row" class="hidden justify-between items-center text-emerald-800 font-medium">
               <span class="flex items-center gap-1.5">
@@ -1156,11 +1133,11 @@ function injectGlobalStorefrontShell() {
             </div>
             <div class="flex justify-between text-muted-foreground">
               <span>Estimated Shipping</span>
-              <span id="drawer-shipping" class="text-xs uppercase tracking-wider text-primary font-semibold">FREE</span>
+              <span id="drawer-shipping" class="text-xs uppercase tracking-wider text-foreground font-semibold">Complimentary</span>
             </div>
-            <div class="flex items-center justify-between border-t border-border pt-2 text-base font-semibold">
-              <span class="font-hand text-lg">Total</span>
-              <span id="drawer-total" class="font-display text-xl text-primary">₹0</span>
+            <div class="flex items-center justify-between border-t border-border pt-2.5 text-base font-semibold">
+              <span class="text-xs uppercase tracking-[0.18em]">Total</span>
+              <span id="drawer-total" class="mn-price text-lg text-foreground">₹0</span>
             </div>
           </div>
 
@@ -1168,19 +1145,19 @@ function injectGlobalStorefrontShell() {
           <div class="grid grid-cols-2 gap-2 pt-1">
             <a
               href="cart.html"
-              class="border border-primary py-3 text-center text-xs uppercase tracking-[0.15em] text-primary hover:bg-primary/5 transition font-medium"
+              class="border border-foreground/30 py-3 text-center text-xs uppercase tracking-[0.16em] text-foreground hover:border-primary hover:text-primary transition font-medium"
             >
               View Bag
             </a>
             <a
               id="drawer-checkout-btn"
               href="checkout.html"
-              class="bg-primary py-3 text-center text-xs uppercase tracking-[0.15em] text-primary-foreground hover:opacity-90 transition font-medium shadow"
+              class="bg-primary py-3 text-center text-xs uppercase tracking-[0.16em] text-primary-foreground hover:opacity-90 transition font-medium"
             >
               Checkout →
             </a>
           </div>
-          <p class="text-center text-[11px] text-muted-foreground font-hand">✿ 100% Secure Checkout · COD Available Across India</p>
+          <p class="text-center text-[11px] text-muted-foreground font-sans">100% Secure Checkout · Cash on Delivery Available</p>
         </div>
       </div>
     </div>
@@ -1191,8 +1168,8 @@ function injectGlobalStorefrontShell() {
       <div id="wishlist-drawer-panel" class="drawer-panel absolute top-0 right-0 h-full w-full max-w-md bg-card shadow-2xl flex flex-col transform translate-x-full transition-transform duration-300">
         <div class="flex items-center justify-between border-b border-border/80 px-5 py-4 bg-background/90">
           <div class="flex items-center gap-2">
-            <span class="font-display text-2xl font-semibold text-primary">Saved Kurtis</span>
-            <span class="wishlist-count-badge flex h-5 min-w-[20px] items-center justify-center rounded-full bg-primary/20 px-1.5 text-[11px] font-bold text-primary font-sans">0</span>
+            <span class="font-display text-2xl font-medium text-foreground">Saved Kurtis</span>
+            <span class="wishlist-count-badge flex h-5 min-w-[20px] items-center justify-center rounded-full bg-primary/15 px-1.5 text-[11px] font-bold text-primary font-sans">0</span>
           </div>
           <button type="button" id="close-wishlist-drawer-btn" class="p-2 text-muted-foreground hover:text-primary transition cursor-pointer" aria-label="Close Wishlist">
             <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
@@ -1202,7 +1179,7 @@ function injectGlobalStorefrontShell() {
           <!-- Populated by JavaScript -->
         </div>
         <div class="border-t border-border p-4 bg-background/90 text-center">
-          <a href="shop.html" class="inline-block font-hand text-primary underline">Discover more kurtis in our collection →</a>
+          <a href="shop.html" class="inline-block text-xs uppercase tracking-[0.16em] font-medium text-primary underline">Explore Full Collection →</a>
         </div>
       </div>
     </div>
@@ -1210,14 +1187,14 @@ function injectGlobalStorefrontShell() {
     <!-- Live Search Modal -->
     <div id="search-modal-overlay" class="fixed inset-0 z-50 invisible opacity-0 transition-opacity duration-200 flex items-start justify-center pt-16 px-4">
       <div id="search-modal-backdrop" class="drawer-backdrop absolute inset-0"></div>
-      <div class="modal-enter relative w-full max-w-2xl bg-card border border-border shadow-2xl overflow-hidden rounded-sm z-10">
-        <div class="flex items-center border-b border-border px-4 py-3 bg-background">
-          <svg class="h-5 w-5 text-muted-foreground mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+      <div class="modal-enter relative w-full max-w-2xl bg-card border border-border shadow-2xl overflow-hidden z-10">
+        <div class="flex items-center border-b border-border px-4 py-3.5 bg-background">
+          <svg class="h-4 w-4 text-muted-foreground mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
           <input
             id="global-search-input"
             type="text"
-            placeholder="Search kurtis by style, silhouette, fabric, occasion..."
-            class="w-full bg-transparent font-sans text-base outline-none text-foreground placeholder:text-muted-foreground"
+            placeholder="Search kurtis by silhouette, fabric, or occasion..."
+            class="w-full bg-transparent font-sans text-sm sm:text-base outline-none text-foreground placeholder:text-muted-foreground"
             autocomplete="off"
           />
           <button type="button" id="close-search-modal-btn" class="p-1.5 text-muted-foreground hover:text-primary transition cursor-pointer">
@@ -1225,17 +1202,17 @@ function injectGlobalStorefrontShell() {
           </button>
         </div>
         <!-- Quick search categories -->
-        <div class="bg-background/50 px-4 py-2 border-b border-border/50 flex flex-wrap gap-1.5 text-xs">
-          <span class="text-muted-foreground font-hand mr-1">popular:</span>
+        <div class="bg-background/50 px-4 py-2.5 border-b border-border/50 flex flex-wrap items-center gap-2 text-xs">
+          <span class="text-[10px] uppercase tracking-[0.18em] text-muted-foreground mr-1">Popular:</span>
           <a href="shop.html?category=Anarkali" class="hover:text-primary transition underline">Anarkali</a> ·
           <a href="shop.html?category=Straight Cut" class="hover:text-primary transition underline">Straight Cut</a> ·
-          <a href="shop.html?category=Co-ord Set" class="hover:text-primary transition underline">Co-ords</a> ·
+          <a href="shop.html?category=Co-ord Set" class="hover:text-primary transition underline">Co-ord Sets</a> ·
           <a href="shop.html?category=Short Kurti" class="hover:text-primary transition underline">Short Kurtis</a> ·
           <a href="shop.html?category=Angrakha" class="hover:text-primary transition underline">Angrakha</a>
         </div>
         <!-- Live search results container -->
         <div id="global-search-results" class="max-h-[60vh] overflow-y-auto p-4 space-y-2">
-          <p class="text-center text-sm text-muted-foreground py-6 font-hand">Type above to search our kurti collection ✿</p>
+          <p class="text-center text-xs text-muted-foreground py-6 font-sans">Type above to search the Matra Naari collection</p>
         </div>
       </div>
     </div>
@@ -1247,9 +1224,9 @@ function injectGlobalStorefrontShell() {
         <button type="button" id="close-auth-modal-btn" class="absolute top-4 right-4 text-muted-foreground hover:text-primary transition cursor-pointer">✕</button>
         
         <div class="text-center mb-6">
-          <p class="font-hand text-lg text-primary">welcome to</p>
-          <h2 class="font-display text-3xl font-semibold">Matra Naari</h2>
-          <p class="text-xs text-muted-foreground mt-1">Sign in to track orders, save addresses, and view your bag.</p>
+          <span class="mn-eyebrow block mb-1.5">Client Account</span>
+          <h2 class="font-display text-3xl font-medium">Matra Naari</h2>
+          <p class="text-xs text-muted-foreground mt-1">Sign in to track orders, save delivery addresses, and view your bag.</p>
         </div>
 
         <!-- Auth Tabs -->
@@ -1467,12 +1444,12 @@ function renderCartDrawerContent() {
   const stdShippingFee = Number(window.NAARI_STORE_SETTINGS?.shipping_fee ?? 99);
 
   if (subtotal >= freeThreshold && cart.length > 0) {
-    if (meterText) meterText.innerHTML = '🎉 You have unlocked <strong>FREE Express Delivery</strong> across India!';
+    if (meterText) meterText.innerHTML = 'You have unlocked <strong>Complimentary Express Delivery</strong> across India.';
     if (meterBar) meterBar.style.width = '100%';
     if (shippingEl) shippingEl.textContent = 'FREE';
   } else {
     const diff = Math.max(0, freeThreshold - subtotal);
-    if (meterText) meterText.innerHTML = `Add <strong>${formatPrice(diff)}</strong> more to get <strong>FREE Delivery</strong> ✿`;
+    if (meterText) meterText.innerHTML = `Add <strong>${formatPrice(diff)}</strong> more for <strong>Complimentary Delivery</strong>`;
     const pct = freeThreshold > 0 ? Math.min(100, Math.round((subtotal / freeThreshold) * 100)) : 100;
     if (meterBar) meterBar.style.width = `${pct}%`;
     if (shippingEl) shippingEl.textContent = cart.length > 0 ? formatPrice(stdShippingFee) : 'FREE';
@@ -1481,9 +1458,9 @@ function renderCartDrawerContent() {
   if (cart.length === 0) {
     container.innerHTML = `
       <div class="py-16 text-center">
-        <p class="font-hand text-xl text-muted-foreground">Your shopping bag is empty.</p>
-        <p class="text-xs text-muted-foreground mt-1">Explore our kurtis crafted for everyday elegance.</p>
-        <a href="shop.html" class="mt-5 inline-block bg-primary px-6 py-2.5 text-xs uppercase tracking-widest text-primary-foreground hover:opacity-90 transition font-medium">
+        <p class="font-display text-2xl font-medium text-foreground">Your shopping bag is empty</p>
+        <p class="text-xs text-muted-foreground mt-1.5">Explore our kurtis crafted for everyday elegance.</p>
+        <a href="shop.html" class="mt-6 inline-block bg-primary px-6 py-2.5 text-[11px] uppercase tracking-[0.2em] text-primary-foreground hover:opacity-90 transition font-semibold">
           Explore Kurtis
         </a>
       </div>
@@ -1581,9 +1558,9 @@ function renderWishlistDrawerContent() {
   if (list.length === 0) {
     container.innerHTML = `
       <div class="py-16 text-center">
-        <p class="font-hand text-xl text-muted-foreground">Your wishlist is empty.</p>
-        <p class="text-xs text-muted-foreground mt-1">Tap the heart icon on any kurti to save your favourites.</p>
-        <a href="shop.html" class="mt-5 inline-block bg-primary px-6 py-2.5 text-xs uppercase tracking-widest text-primary-foreground hover:opacity-90 transition font-medium">
+        <p class="font-display text-2xl font-medium text-foreground">Your wishlist is empty</p>
+        <p class="text-xs text-muted-foreground mt-1.5">Tap the heart icon on any kurti to save your favourites.</p>
+        <a href="shop.html" class="mt-6 inline-block bg-primary px-6 py-2.5 text-[11px] uppercase tracking-[0.2em] text-primary-foreground hover:opacity-90 transition font-semibold">
           Explore Kurtis
         </a>
       </div>
@@ -1647,7 +1624,7 @@ function renderWishlistDrawerContent() {
 // ================= Global Shell Event Listeners =================
 function attachGlobalShellEvents() {
   // Mobile menu triggers
-  document.querySelectorAll('.open-mobile-menu-btn').forEach(btn => {
+  document.querySelectorAll('.open-mobile-menu-btn, #mobile-menu-btn').forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.preventDefault();
       openMobileNavDrawer();
@@ -1729,12 +1706,12 @@ function attachGlobalShellEvents() {
       clearTimeout(searchDebounce);
       const query = searchInput.value.trim().toLowerCase();
       if (!query) {
-        searchResults.innerHTML = '<p class="text-center text-sm text-muted-foreground py-6 font-hand">Type above to search our kurti collection ✿</p>';
+        searchResults.innerHTML = '<p class="text-center text-xs text-muted-foreground py-6 font-sans">Type above to search our kurti collection</p>';
         return;
       }
 
       searchDebounce = setTimeout(async () => {
-        searchResults.innerHTML = '<p class="text-center text-sm text-primary py-4 animate-pulse">Searching...</p>';
+        searchResults.innerHTML = '<p class="text-center text-xs uppercase tracking-[0.18em] text-primary py-4 animate-pulse">Searching...</p>';
         try {
           const resp = await fetch(`${API_BASE}/api/products?search=${encodeURIComponent(query)}`);
           const data = await resp.json();
@@ -1742,9 +1719,9 @@ function attachGlobalShellEvents() {
 
           if (items.length === 0) {
             searchResults.innerHTML = `
-              <div class="py-6 text-center text-sm text-muted-foreground">
+              <div class="py-6 text-center text-xs text-muted-foreground">
                 <p>No kurtis matching "${escapeHtml(query)}".</p>
-                <a href="shop.html" class="mt-2 inline-block font-hand text-primary underline">View all kurtis →</a>
+                <a href="shop.html" class="mt-2 inline-block text-[11px] uppercase tracking-[0.16em] font-semibold text-primary underline">View all kurtis →</a>
               </div>
             `;
             return;
@@ -1753,18 +1730,18 @@ function attachGlobalShellEvents() {
           searchResults.innerHTML = items.map(rawItem => {
             const p = sanitizeProductRecord(rawItem);
             return `
-            <a href="product.html?id=${p.id}" class="flex items-center gap-3 p-2 hover:bg-primary/5 transition rounded-sm border border-transparent hover:border-border">
-              <img src="${p.relative_image || p.image}" alt="${p.name}" onerror="this.onerror=null;this.src='assets/hero.jpg';" class="h-14 w-12 object-cover rounded-xs shrink-0"/>
+            <a href="product.html?id=${p.id}" class="flex items-center gap-3 p-2.5 hover:bg-primary/5 transition border border-transparent hover:border-border/70">
+              <img src="${p.relative_image || p.image}" alt="${p.name}" onerror="this.onerror=null;this.src='assets/hero.jpg';" class="h-14 w-11 object-cover shrink-0"/>
               <div class="min-w-0 flex-1">
-                <p class="truncate text-sm font-semibold">${p.name}</p>
-                <p class="text-xs text-muted-foreground">${p.category} · ${p.style || 'Indian Kurti'}</p>
+                <p class="truncate font-display text-base font-medium text-foreground">${p.name}</p>
+                <p class="text-[11px] text-muted-foreground">${p.category} · ${p.style || 'Indian Kurti'}</p>
                 <div class="flex items-center gap-2 mt-0.5">
-                  <span class="font-display text-sm font-semibold text-primary">${formatPrice(p.price)}</span>
+                  <span class="font-sans text-xs font-semibold text-foreground">${formatPrice(p.price)}</span>
                   ${p.mrp ? `<span class="text-[11px] line-through text-muted-foreground">${formatPrice(p.mrp)}</span>` : ''}
-                  ${p.discountPercent ? `<span class="text-[10px] bg-primary/10 text-primary px-1 rounded">${p.discountPercent}% OFF</span>` : ''}
+                  ${p.discountPercent ? `<span class="text-[10px] bg-primary/10 text-primary px-1">${p.discountPercent}% OFF</span>` : ''}
                 </div>
               </div>
-              <span class="text-xs text-primary font-hand shrink-0">view →</span>
+              <span class="text-[10px] uppercase tracking-[0.14em] text-primary font-semibold shrink-0">View →</span>
             </a>
           `;
           }).join('');
@@ -1928,7 +1905,7 @@ async function initAnnouncementBar() {
   const bar = document.getElementById('top-announcement-bar');
 
   let messages = [
-    'FREE EXPRESS SHIPPING ON ORDERS ABOVE ₹999 ACROSS INDIA ✿',
+    'COMPLIMENTARY EXPRESS SHIPPING ON ORDERS ABOVE ₹999 ACROSS INDIA',
     'EXTRA 10% OFF ON ORDERS ABOVE ₹999 | CODE: NAARI10',
     'THOUGHTFULLY TAILORED INDIAN KURTIS & CO-ORD SETS',
     'EASY 7-DAY HASSLE-FREE RETURNS & SIZE EXCHANGES'
@@ -2041,6 +2018,31 @@ function initEditorialReveals() {
   } catch (e) {}
 }
 
+function initFooterAccordions() {
+  try {
+    const sync = () => {
+      const isDesktop = (window.innerWidth || document.documentElement.clientWidth || 1024) >= 640;
+      document.querySelectorAll('details.mn-footer-accordion').forEach((el) => {
+        if (isDesktop) {
+          el.setAttribute('open', '');
+        } else if (!el.dataset.userToggled) {
+          el.removeAttribute('open');
+        }
+        if (!el.dataset.boundToggle) {
+          el.dataset.boundToggle = '1';
+          el.addEventListener('toggle', () => {
+            if ((window.innerWidth || 1024) < 640) {
+              el.dataset.userToggled = '1';
+            }
+          });
+        }
+      });
+    };
+    sync();
+    window.addEventListener('resize', sync, { passive: true });
+  } catch (e) {}
+}
+
 // ================= Auto Initialization on Page Load =================
 function initStorefrontApp() {
   if (window.__NAARI_APP_INITIALIZED__) return;
@@ -2052,8 +2054,12 @@ function initStorefrontApp() {
   initAnnouncementBar();
   syncCustomerSessionWithServer();
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initEditorialReveals, { once: true });
+    document.addEventListener('DOMContentLoaded', () => {
+      initFooterAccordions();
+      initEditorialReveals();
+    }, { once: true });
   } else {
+    initFooterAccordions();
     initEditorialReveals();
   }
 }

@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous"/>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Kalam:wght@300;400;700&family=Karla:wght@400;500;600;700&display=swap"/>
-  <link rel="stylesheet" href="assets/styles.css"/>
+  <link rel="stylesheet" href="assets/styles.css?v=20261115.3"/>
   <title>Admin Dashboard — Matra Naari</title>
   <meta name="robots" content="noindex, nofollow"/>
   <style>
@@ -889,6 +889,13 @@
           <div>
             <label class="block text-xs uppercase tracking-wider text-muted-foreground mb-1">Category *</label>
             <select id="p-form-category" class="w-full bg-background border border-border px-3 py-2 text-sm">
+              <option value="Straight Cut">Straight Cut</option>
+              <option value="A-Line">A-Line</option>
+              <option value="Anarkali">Anarkali</option>
+              <option value="Short Kurti">Short Kurti</option>
+              <option value="Angrakha">Angrakha</option>
+              <option value="Kaftan">Kaftan</option>
+              <option value="Co-ord Set">Co-ord Set</option>
               <option value="Anarkali Suits">Anarkali Suits</option>
               <option value="Straight Kurtas">Straight Kurtas</option>
               <option value="Kurta Sets">Kurta Sets</option>
@@ -935,21 +942,56 @@
           <input type="hidden" id="p-form-soldout" value=""/>
         </div>
 
-        <!-- Product Image Upload & Path -->
-        <div class="bg-background/70 border border-border p-4">
-          <label class="block text-xs uppercase tracking-wider font-semibold text-foreground mb-2">Product Image</label>
-          <div class="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-            <img id="p-image-preview" src="assets/hero.jpg" alt="Preview" class="h-20 w-16 object-cover border border-border bg-card shrink-0"/>
+        <!-- Multi-Image Product Gallery Manager (Upload, Reorder, Replace, Remove) -->
+        <div class="bg-background/70 border border-border p-4 space-y-3" id="p-gallery-manager">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <label class="block text-xs uppercase tracking-wider font-semibold text-foreground">
+                Product Image Gallery (Supports 1, 3, 5, 7+ Photos)
+              </label>
+              <p class="text-[11px] text-muted-foreground">
+                Image #1 is the primary cover photo. Drag or use arrows to reorder, replace individual slots, or remove photos.
+              </p>
+            </div>
+            <span id="p-gallery-count-badge" class="bg-primary/10 text-primary border border-primary/25 px-2.5 py-0.5 text-[11px] font-semibold">
+              1 Photo
+            </span>
+          </div>
+
+          <!-- Primary Cover Preview & Upload / Add Controls -->
+          <div class="flex flex-col sm:flex-row items-start sm:items-center gap-4 pt-1">
+            <div class="relative shrink-0">
+              <img id="p-image-preview" src="assets/hero.jpg" alt="Primary Cover Preview" onerror="this.onerror=null;this.src='assets/hero.jpg';" class="h-24 w-20 object-cover border-2 border-primary bg-card"/>
+              <span class="absolute bottom-0 inset-x-0 bg-primary text-primary-foreground text-[9px] font-bold uppercase tracking-wider text-center py-0.5">
+                Cover (#1)
+              </span>
+            </div>
             <div class="flex-1 w-full space-y-2">
               <div class="flex flex-wrap items-center gap-2">
-                <label class="bg-primary/10 text-primary border border-primary/30 px-3 py-1.5 text-xs font-semibold cursor-pointer hover:bg-primary/20 transition">
-                  <span>Upload Image File (.jpg / .png / .webp)</span>
-                  <input type="file" id="p-image-file-input" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" class="hidden"/>
+                <label class="bg-primary text-primary-foreground px-3 py-1.5 text-xs font-semibold cursor-pointer hover:bg-primary/90 transition inline-flex items-center gap-1.5">
+                  <span>+ Upload Photo(s) (.jpg / .png / .webp)</span>
+                  <input type="file" id="p-image-file-input" multiple accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" class="hidden"/>
                 </label>
-                <span id="p-image-upload-status" class="text-xs text-muted-foreground">Max 5 MB</span>
+                <input type="file" id="p-gallery-replace-file-input" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" class="hidden"/>
+                <span id="p-image-upload-status" class="text-xs text-muted-foreground">Max 5 MB per photo · Stored in persistent gallery</span>
               </div>
-              <input type="text" id="p-form-image" required placeholder="assets/hero.jpg or assets/uploads/..." class="w-full bg-card border border-border px-3 py-1.5 text-xs"/>
+
+              <!-- Primary Cover Image Path Input (kept synced with Gallery #1 for backwards compatibility) -->
+              <div class="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-2">
+                <input type="text" id="p-form-image" required placeholder="Primary cover path (e.g. assets/hero.jpg)" class="w-full bg-card border border-border px-3 py-1.5 text-xs font-mono"/>
+                <div class="flex gap-1.5">
+                  <input type="text" id="p-gallery-add-path-input" placeholder="Add another image path/URL..." class="w-48 bg-card border border-border px-2.5 py-1.5 text-xs font-mono"/>
+                  <button type="button" id="p-gallery-add-path-btn" class="bg-primary/10 text-primary border border-primary/30 px-3 py-1.5 text-xs font-semibold hover:bg-primary/20 transition cursor-pointer whitespace-nowrap">
+                    + Add Path
+                  </button>
+                </div>
+              </div>
             </div>
+          </div>
+
+          <!-- Ordered Gallery Thumbnails Grid (Reorder / Replace / Remove) -->
+          <div id="p-gallery-list" class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-3 pt-2 border-t border-border/70">
+            <!-- Populated dynamically by renderModalGalleryList() -->
           </div>
         </div>
 
@@ -1396,7 +1438,12 @@
           return `
             <tr class="hover:bg-primary/5 transition ${p.isArchived ? 'opacity-65' : ''}">
               <td class="py-2.5 px-3">
-                <img src="${escapeHtml(p.image)}" alt="${escapeHtml(p.name)}" class="h-12 w-10 object-cover border border-border"/>
+                <div class="relative inline-block">
+                  <img src="${escapeHtml(p.image)}" alt="${escapeHtml(p.name)}" onerror="this.onerror=null;this.src='assets/hero.jpg';" class="h-12 w-10 object-cover border border-border"/>
+                  <span class="absolute -bottom-1 -right-1 bg-primary text-primary-foreground px-1 text-[9px] font-mono font-bold shadow-xs" title="${(Array.isArray(p.gallery) && p.gallery.length ? p.gallery.length : 1)} gallery photo(s)">
+                    ${(Array.isArray(p.gallery) && p.gallery.length) ? p.gallery.length : 1}p
+                  </span>
+                </div>
               </td>
               <td class="py-2.5 px-3 font-mono text-xs">
                 <div class="font-bold text-foreground">${escapeHtml(p.sku || ('MN-' + p.id))}</div>
@@ -1590,8 +1637,202 @@
       });
       document.getElementById("inventory-search-input")?.addEventListener("input", renderInventoryTable);
 
-      // Product Add/Edit Modal & Image Upload
+      // Product Add/Edit Modal & Multi-Image Gallery Manager
       const productModal = document.getElementById("product-modal");
+      let modalGalleryImages = ["assets/hero.jpg"];
+      let replaceTargetGalleryIdx = null;
+      let draggedGalleryIdx = null;
+
+      function syncModalPrimaryFromGallery() {
+        if (!Array.isArray(modalGalleryImages) || modalGalleryImages.length === 0) {
+          modalGalleryImages = ["assets/hero.jpg"];
+        }
+        const cover = modalGalleryImages[0] || "assets/hero.jpg";
+        const imgInput = document.getElementById("p-form-image");
+        const imgPreview = document.getElementById("p-image-preview");
+        const countBadge = document.getElementById("p-gallery-count-badge");
+        if (imgInput) imgInput.value = cover;
+        if (imgPreview) imgPreview.src = cover;
+        if (countBadge) {
+          countBadge.textContent = `${modalGalleryImages.length} ${modalGalleryImages.length === 1 ? "Photo" : "Photos"} · #1 Cover`;
+        }
+      }
+
+      function renderModalGalleryList() {
+        syncModalPrimaryFromGallery();
+        const listEl = document.getElementById("p-gallery-list");
+        if (!listEl) return;
+
+        listEl.innerHTML = modalGalleryImages.map((imgUrl, idx) => {
+          const isCover = idx === 0;
+          const shortName = String(imgUrl || "").split("/").pop() || imgUrl;
+          return `
+            <div
+              class="p-gallery-item group relative bg-card border ${isCover ? "border-primary ring-1 ring-primary" : "border-border"} p-2 flex flex-col justify-between gap-1.5 transition"
+              draggable="true"
+              data-gal-idx="${idx}"
+            >
+              <div class="relative aspect-[4/5] w-full overflow-hidden bg-background border border-border/60">
+                <img
+                  src="${escapeHtml(imgUrl)}"
+                  alt="Gallery photo ${idx + 1}"
+                  onerror="this.onerror=null;this.src='assets/hero.jpg';"
+                  class="h-full w-full object-cover object-top"
+                />
+                <span class="absolute top-1 left-1 px-1.5 py-0.5 text-[10px] font-mono font-bold ${isCover ? "bg-primary text-primary-foreground" : "bg-card/90 text-foreground border border-border"}">
+                  ${isCover ? "#1 Cover" : `#${idx + 1}`}
+                </span>
+                ${!isCover ? `
+                  <button
+                    type="button"
+                    data-gal-cover="${idx}"
+                    class="absolute bottom-1 inset-x-1 bg-card/95 hover:bg-primary hover:text-primary-foreground text-foreground text-[9px] font-semibold uppercase tracking-wider py-0.5 px-1 border border-border/80 transition cursor-pointer"
+                    title="Make this the primary cover image"
+                  >
+                    Set as Cover
+                  </button>
+                ` : ""}
+              </div>
+
+              <div class="text-[10px] font-mono text-muted-foreground truncate" title="${escapeHtml(imgUrl)}">
+                ${escapeHtml(shortName)}
+              </div>
+
+              <div class="grid grid-cols-4 gap-1 pt-1 border-t border-border/60">
+                <button
+                  type="button"
+                  data-gal-move-left="${idx}"
+                  ${idx === 0 ? "disabled" : ""}
+                  class="border border-border bg-background hover:border-primary text-[11px] py-0.5 flex items-center justify-center ${idx === 0 ? "opacity-35 cursor-not-allowed" : "cursor-pointer"}"
+                  title="Move Left / Earlier"
+                  aria-label="Move photo ${idx + 1} left"
+                >←</button>
+                <button
+                  type="button"
+                  data-gal-move-right="${idx}"
+                  ${idx === modalGalleryImages.length - 1 ? "disabled" : ""}
+                  class="border border-border bg-background hover:border-primary text-[11px] py-0.5 flex items-center justify-center ${idx === modalGalleryImages.length - 1 ? "opacity-35 cursor-not-allowed" : "cursor-pointer"}"
+                  title="Move Right / Later"
+                  aria-label="Move photo ${idx + 1} right"
+                >→</button>
+                <button
+                  type="button"
+                  data-gal-replace="${idx}"
+                  class="border border-border bg-background hover:border-primary text-[10px] font-semibold py-0.5 flex items-center justify-center cursor-pointer"
+                  title="Replace this photo"
+                  aria-label="Replace photo ${idx + 1}"
+                >↻</button>
+                <button
+                  type="button"
+                  data-gal-remove="${idx}"
+                  class="border border-border bg-background hover:border-destructive hover:text-destructive text-[11px] font-bold py-0.5 flex items-center justify-center cursor-pointer"
+                  title="Remove photo from gallery"
+                  aria-label="Remove photo ${idx + 1}"
+                >&times;</button>
+              </div>
+            </div>
+          `;
+        }).join("");
+
+        // Bind Move Left
+        listEl.querySelectorAll("[data-gal-move-left]").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            const idx = parseInt(btn.getAttribute("data-gal-move-left"), 10);
+            if (idx > 0 && idx < modalGalleryImages.length) {
+              const tmp = modalGalleryImages[idx - 1];
+              modalGalleryImages[idx - 1] = modalGalleryImages[idx];
+              modalGalleryImages[idx] = tmp;
+              renderModalGalleryList();
+            }
+          });
+        });
+
+        // Bind Move Right
+        listEl.querySelectorAll("[data-gal-move-right]").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            const idx = parseInt(btn.getAttribute("data-gal-move-right"), 10);
+            if (idx >= 0 && idx < modalGalleryImages.length - 1) {
+              const tmp = modalGalleryImages[idx + 1];
+              modalGalleryImages[idx + 1] = modalGalleryImages[idx];
+              modalGalleryImages[idx] = tmp;
+              renderModalGalleryList();
+            }
+          });
+        });
+
+        // Bind Set as Cover
+        listEl.querySelectorAll("[data-gal-cover]").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            const idx = parseInt(btn.getAttribute("data-gal-cover"), 10);
+            if (idx > 0 && idx < modalGalleryImages.length) {
+              const [chosen] = modalGalleryImages.splice(idx, 1);
+              modalGalleryImages.unshift(chosen);
+              renderModalGalleryList();
+            }
+          });
+        });
+
+        // Bind Replace in-place
+        listEl.querySelectorAll("[data-gal-replace]").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            replaceTargetGalleryIdx = parseInt(btn.getAttribute("data-gal-replace"), 10);
+            const repInput = document.getElementById("p-gallery-replace-file-input");
+            if (repInput) {
+              repInput.value = "";
+              repInput.click();
+            }
+          });
+        });
+
+        // Bind Remove
+        listEl.querySelectorAll("[data-gal-remove]").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            const idx = parseInt(btn.getAttribute("data-gal-remove"), 10);
+            if (modalGalleryImages.length <= 1) {
+              const statusEl = document.getElementById("p-image-upload-status");
+              if (statusEl) statusEl.textContent = "A product must keep at least 1 photo (use ↻ to replace it).";
+              return;
+            }
+            modalGalleryImages.splice(idx, 1);
+            renderModalGalleryList();
+          });
+        });
+
+        // Bind HTML5 Drag-and-Drop Reordering
+        listEl.querySelectorAll(".p-gallery-item").forEach((card) => {
+          card.addEventListener("dragstart", (e) => {
+            draggedGalleryIdx = parseInt(card.getAttribute("data-gal-idx"), 10);
+            card.classList.add("opacity-50");
+            if (e.dataTransfer) e.dataTransfer.effectAllowed = "move";
+          });
+          card.addEventListener("dragend", () => {
+            card.classList.remove("opacity-50");
+            draggedGalleryIdx = null;
+          });
+          card.addEventListener("dragover", (e) => {
+            e.preventDefault();
+            if (e.dataTransfer) e.dataTransfer.dropEffect = "move";
+          });
+          card.addEventListener("drop", (e) => {
+            e.preventDefault();
+            const targetIdx = parseInt(card.getAttribute("data-gal-idx"), 10);
+            if (
+              draggedGalleryIdx !== null &&
+              !isNaN(targetIdx) &&
+              draggedGalleryIdx !== targetIdx &&
+              draggedGalleryIdx >= 0 &&
+              draggedGalleryIdx < modalGalleryImages.length &&
+              targetIdx >= 0 &&
+              targetIdx < modalGalleryImages.length
+            ) {
+              const [moved] = modalGalleryImages.splice(draggedGalleryIdx, 1);
+              modalGalleryImages.splice(targetIdx, 0, moved);
+              draggedGalleryIdx = null;
+              renderModalGalleryList();
+            }
+          });
+        });
+      }
 
       function recalcModalSizeStock() {
         const s = Math.max(0, parseInt(document.getElementById("p-size-s").value || "0", 10) || 0);
@@ -1623,7 +1864,17 @@
         document.getElementById("p-form-id").value = idVal;
         document.getElementById("p-form-sku").value = prod ? (prod.sku || `MN-${prod.id}`) : `MN-${idVal}`;
         document.getElementById("p-form-name").value = prod ? prod.name : "";
-        document.getElementById("p-form-category").value = prod ? prod.category : "Anarkali Suits";
+        const catSelect = document.getElementById("p-form-category");
+        const targetCat = prod && prod.category ? String(prod.category).trim() : "Straight Cut";
+        if (catSelect) {
+          if (targetCat && !Array.from(catSelect.options).some((o) => o.value === targetCat)) {
+            const opt = document.createElement("option");
+            opt.value = targetCat;
+            opt.textContent = targetCat;
+            catSelect.appendChild(opt);
+          }
+          catSelect.value = targetCat;
+        }
         document.getElementById("p-form-price").value = prod ? prod.price : "";
         document.getElementById("p-form-mrp").value = prod ? prod.mrp : "";
 
@@ -1634,14 +1885,25 @@
         document.getElementById("p-size-xl").value = Number(ss.XL ?? 0);
         recalcModalSizeStock();
 
-        const imgPath = prod ? prod.image : "assets/hero.jpg";
-        document.getElementById("p-form-image").value = imgPath;
-        document.getElementById("p-image-preview").src = imgPath;
-        document.getElementById("p-form-fabric").value = prod ? (prod.fabric || "") : "Pure Cotton";
+        const imgPath = prod ? (prod.image || "assets/hero.jpg") : "assets/hero.jpg";
+        if (prod && Array.isArray(prod.gallery) && prod.gallery.length > 0) {
+          modalGalleryImages = prod.gallery.map((x) => String(x || "").trim()).filter(Boolean);
+          if (imgPath && !modalGalleryImages.includes(imgPath)) {
+            modalGalleryImages.unshift(imgPath);
+          }
+        } else {
+          modalGalleryImages = [imgPath];
+        }
+        renderModalGalleryList();
+
+        const statusEl = document.getElementById("p-image-upload-status");
+        if (statusEl) statusEl.textContent = "Max 5 MB per photo · Stored in persistent gallery";
+
+        document.getElementById("p-form-fabric").value = prod ? (prod.fabric || "") : "Soft Breathable Weave";
         document.getElementById("p-form-occasion").value = prod ? (prod.occasion || "") : "Festive";
         document.getElementById("p-form-pattern").value = prod ? (prod.pattern || "") : "Printed";
-        document.getElementById("p-form-sleeve").value = prod ? (prod.sleeve || "Three-Quarter") : "Three-Quarter";
-        document.getElementById("p-form-neck").value = prod ? (prod.neck || "Round Neck") : "Round Neck";
+        document.getElementById("p-form-sleeve").value = prod ? (prod.sleeve_length || prod.sleeve || "Three-Quarter") : "Three-Quarter";
+        document.getElementById("p-form-neck").value = prod ? (prod.neck_design || prod.neck || "Round Neck") : "Round Neck";
         document.getElementById("p-form-desc").value = prod ? (prod.description || "") : "";
         document.getElementById("p-form-bestseller").checked = prod ? Boolean(prod.isBestseller) : false;
         document.getElementById("p-form-archived").checked = prod ? Boolean(prod.isArchived) : false;
@@ -1655,33 +1917,85 @@
 
       document.getElementById("p-form-image")?.addEventListener("input", (e) => {
         const val = e.target.value.trim();
-        if (val) document.getElementById("p-image-preview").src = val;
+        if (val) {
+          document.getElementById("p-image-preview").src = val;
+          modalGalleryImages[0] = val;
+          renderModalGalleryList();
+        }
       });
 
-      // Secure Product Image File Upload
-      document.getElementById("p-image-file-input")?.addEventListener("change", async (e) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
-        const statusEl = document.getElementById("p-image-upload-status");
-        statusEl.textContent = "Uploading image...";
+      document.getElementById("p-gallery-add-path-btn")?.addEventListener("click", () => {
+        const addInp = document.getElementById("p-gallery-add-path-input");
+        const val = (addInp?.value || "").trim();
+        if (!val) return;
+        modalGalleryImages.push(val);
+        if (addInp) addInp.value = "";
+        renderModalGalleryList();
+      });
+
+      async function uploadSingleAdminImageFile(file) {
         const formData = new FormData();
         formData.append("image", file);
+        const res = await fetch("/api/admin/upload-image", {
+          method: "POST",
+          headers: getAdminHeaders(),
+          body: formData,
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || !data.image_path) {
+          throw new Error(data.error || "Upload failed");
+        }
+        return data.image_path;
+      }
+
+      // Multi-File Upload to Gallery
+      document.getElementById("p-image-file-input")?.addEventListener("change", async (e) => {
+        const files = Array.from(e.target.files || []);
+        if (!files.length) return;
+        const statusEl = document.getElementById("p-image-upload-status");
+        statusEl.textContent = files.length > 1 ? `Uploading ${files.length} photos...` : "Uploading image...";
         try {
-          const res = await fetch("/api/admin/upload-image", {
-            method: "POST",
-            headers: getAdminHeaders(),
-            body: formData,
-          });
-          const data = await res.json();
-          if (res.ok && data.image_path) {
-            document.getElementById("p-form-image").value = data.image_path;
-            document.getElementById("p-image-preview").src = data.image_path;
-            statusEl.textContent = "Uploaded ✓";
-          } else {
-            statusEl.textContent = data.error || "Upload failed";
+          const uploadedPaths = [];
+          for (const file of files) {
+            const path = await uploadSingleAdminImageFile(file);
+            uploadedPaths.push(path);
+          }
+          if (uploadedPaths.length > 0) {
+            // If gallery only has default placeholder on a new product, replace #1; otherwise append all uploaded images
+            if (modalGalleryImages.length === 1 && modalGalleryImages[0] === "assets/hero.jpg") {
+              modalGalleryImages = [...uploadedPaths];
+            } else {
+              modalGalleryImages.push(...uploadedPaths);
+            }
+            renderModalGalleryList();
+            statusEl.textContent = uploadedPaths.length > 1
+              ? `Uploaded ${uploadedPaths.length} photos ✓`
+              : "Uploaded ✓";
           }
         } catch (err) {
-          statusEl.textContent = "Upload error";
+          statusEl.textContent = err.message || "Upload error";
+        } finally {
+          e.target.value = "";
+        }
+      });
+
+      // Replace Specific Gallery Slot File Upload
+      document.getElementById("p-gallery-replace-file-input")?.addEventListener("change", async (e) => {
+        const file = e.target.files?.[0];
+        const targetIdx = replaceTargetGalleryIdx;
+        replaceTargetGalleryIdx = null;
+        if (!file || targetIdx === null || targetIdx < 0 || targetIdx >= modalGalleryImages.length) return;
+        const statusEl = document.getElementById("p-image-upload-status");
+        statusEl.textContent = `Replacing photo #${targetIdx + 1}...`;
+        try {
+          const newPath = await uploadSingleAdminImageFile(file);
+          modalGalleryImages[targetIdx] = newPath;
+          renderModalGalleryList();
+          statusEl.textContent = `Replaced photo #${targetIdx + 1} ✓`;
+        } catch (err) {
+          statusEl.textContent = err.message || "Replace upload failed";
+        } finally {
+          e.target.value = "";
         }
       });
 
@@ -1697,6 +2011,13 @@
         const totalStock = sizeStock.S + sizeStock.M + sizeStock.L + sizeStock.XL;
         const soldOut = Object.entries(sizeStock).filter(([, q]) => q <= 0).map(([sz]) => sz);
 
+        const manualPrimary = document.getElementById("p-form-image").value.trim();
+        const cleanGallery = modalGalleryImages.map((x) => String(x || "").trim()).filter(Boolean);
+        if (manualPrimary && cleanGallery[0] !== manualPrimary) {
+          cleanGallery[0] = manualPrimary;
+        }
+        const finalGallery = cleanGallery.length > 0 ? cleanGallery : [manualPrimary || "assets/hero.jpg"];
+
         const payload = {
           id: document.getElementById("p-form-id").value.trim() || undefined,
           sku: document.getElementById("p-form-sku").value.trim().toUpperCase(),
@@ -1707,7 +2028,8 @@
           stock: totalStock,
           size_stock: sizeStock,
           soldOutSizes: soldOut,
-          image: document.getElementById("p-form-image").value.trim(),
+          image: finalGallery[0],
+          gallery: finalGallery,
           fabric: document.getElementById("p-form-fabric").value.trim(),
           occasion: document.getElementById("p-form-occasion").value.trim(),
           pattern: document.getElementById("p-form-pattern").value.trim(),
