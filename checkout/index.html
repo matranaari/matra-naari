@@ -127,6 +127,16 @@
                   class="w-full border border-border bg-background px-3 py-2.5 text-sm outline-none focus:border-primary"
                 />
                 <p class="mt-1 text-[11px] text-muted-foreground">We will send your order receipt and tracking updates here.</p>
+                <label class="mt-2.5 flex items-start gap-2.5 text-xs text-foreground/90 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    id="cust-whatsapp-opt-in"
+                    name="whatsapp_opt_in"
+                    value="1"
+                    class="mt-0.5 h-4 w-4 accent-[#6B2D31] cursor-pointer"
+                  />
+                  <span>Receive order confirmation &amp; delivery updates on WhatsApp (<a href="https://wa.me/918849366915" target="_blank" rel="noreferrer" class="text-primary underline">+91 88493 66915</a>)</span>
+                </label>
               </div>
 
               <div>
@@ -295,8 +305,12 @@
               <p>🔒 256-Bit SSL Encrypted & Cryptographically Verified</p>
               <p class="mt-1">
                 Have questions before ordering?
-                <a href="https://wa.me/918849366915?text=Hi%20Naari!%20I%20have%20a%20question%20before%20placing%20my%20order." target="_blank" class="text-primary underline font-medium">
+                <a href="https://wa.me/918849366915" target="_blank" rel="noreferrer" class="text-primary underline font-medium">
                   WhatsApp Support (+91 88493 66915)
+                </a>
+                ·
+                <a href="mailto:matranaari@gmail.com" class="text-primary underline font-medium">
+                  matranaari@gmail.com
                 </a>
               </p>
             </div>
@@ -382,9 +396,9 @@
         <a class="block hover:text-primary" href="contact.html">Contact</a>
       </div>
       <div class="text-sm text-muted-foreground">
-        <p>hello@naari.in</p>
-        <p><a href="https://wa.me/918849366915?text=Hi%20Naari!%20I'd%20like%20to%20enquire%20about%20your%20kurtis." target="_blank" class="hover:text-primary transition">+91 88493 66915</a></p>
-        <p class="mt-4">© 2026 Naari</p>
+        <p><a href="mailto:matranaari@gmail.com" class="hover:text-primary transition">matranaari@gmail.com</a></p>
+        <p><a href="https://wa.me/918849366915" target="_blank" rel="noreferrer" class="hover:text-primary transition">+91 88493 66915</a></p>
+        <p class="mt-4">© 2026 Matra Naari</p>
       </div>
     </div>
   </footer>
@@ -637,6 +651,8 @@
     function getCustomerFormData() {
       const form = document.getElementById('checkout-form');
       const formData = new FormData(form);
+      const waOptInEl = document.getElementById('cust-whatsapp-opt-in');
+      const whatsappOptIn = waOptInEl ? Boolean(waOptInEl.checked) : false;
       return {
         name: (formData.get('name') || '').trim(),
         phone: (formData.get('phone') || '').trim(),
@@ -645,7 +661,8 @@
         address_line2: (formData.get('address_line2') || '').trim(),
         city: (formData.get('city') || '').trim(),
         state: (formData.get('state') || '').trim(),
-        pincode: (formData.get('pincode') || '').trim()
+        pincode: (formData.get('pincode') || '').trim(),
+        whatsapp_opt_in: whatsappOptIn
       };
     }
 

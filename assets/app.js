@@ -1086,7 +1086,8 @@ function injectGlobalStorefrontShell() {
 
         <div class="border-t border-border p-4 bg-background/90 text-xs text-muted-foreground space-y-1">
           <p class="font-semibold text-foreground">Need Styling or Order Help?</p>
-          <p>Call / WhatsApp: <a href="tel:+918849366915" class="text-primary underline">+91 88493 66915</a></p>
+          <p>WhatsApp: <a href="https://wa.me/918849366915" target="_blank" rel="noreferrer" class="text-primary underline">+91 88493 66915</a></p>
+          <p>Email: <a href="mailto:matranaari@gmail.com" class="text-primary underline">matranaari@gmail.com</a></p>
         </div>
       </nav>
     </div>

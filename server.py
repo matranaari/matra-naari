@@ -31,6 +31,12 @@ from datetime import datetime, timedelta
 from flask import Flask, Response, request, jsonify, send_from_directory, g, has_request_context
 from flask_cors import CORS
 from werkzeug.exceptions import RequestEntityTooLarge
+from notifications import (
+    trigger_order_confirmation_notifications,
+    enqueue_order_confirmation_notifications,
+    recover_pending_and_failed_notifications,
+    get_notification_config,
+)
 
 try:
     import psycopg2
@@ -649,7 +655,7 @@ def load_config(include_db_settings=True):
         "store_name": "Matra Naari",
         "store_description": "Modern Kurtis Rooted in Craft",
         "support_phone": "+91 88493 66915",
-        "support_email": "hello@naari.in",
+        "support_email": "matranaari@gmail.com",
         "free_shipping_threshold": 999,
         "shipping_fee": 99,
         "cod_enabled": True,
@@ -1536,7 +1542,8 @@ def init_db():
                     "latitude": "REAL",
                     "longitude": "REAL",
                     "location_summary": "TEXT DEFAULT ''",
-                    "address_label": "TEXT DEFAULT 'Home'"
+                    "address_label": "TEXT DEFAULT 'Home'",
+                    "whatsapp_opt_in": "INTEGER DEFAULT 0"
                 }
                 for col, definition in migration_cols.items():
                     _add_column_if_missing(c, "orders", col, definition)
@@ -1716,9 +1723,30 @@ def init_db():
                     )
                 """)
 
+                # 11. Order Notifications table (Idempotent multi-channel audit & retry log)
+                c.execute("""
+                    CREATE TABLE IF NOT EXISTS order_notifications (
+                        id TEXT PRIMARY KEY,
+                        order_id TEXT NOT NULL,
+                        channel TEXT NOT NULL,
+                        event_type TEXT NOT NULL,
+                        recipient_masked TEXT NOT NULL,
+                        provider TEXT NOT NULL,
+                        status TEXT NOT NULL,
+                        attempts INTEGER DEFAULT 0,
+                        max_attempts INTEGER DEFAULT 3,
+                        provider_message_id TEXT DEFAULT '',
+                        error_summary TEXT DEFAULT '',
+                        created_at TEXT NOT NULL,
+                        updated_at TEXT NOT NULL,
+                        UNIQUE(order_id, channel, event_type)
+                    )
+                """)
+
                 # Secondary indexes for fast lookups on both SQLite and PostgreSQL
                 c.execute("CREATE INDEX IF NOT EXISTS idx_orders_user_id ON orders (user_id)")
                 c.execute("CREATE INDEX IF NOT EXISTS idx_orders_razorpay_order_id ON orders (razorpay_order_id)")
+                c.execute("CREATE INDEX IF NOT EXISTS idx_order_notifications_order_id ON order_notifications (order_id)")
                 c.execute("CREATE INDEX IF NOT EXISTS idx_user_sessions_user_id ON user_sessions (user_id)")
                 c.execute("CREATE INDEX IF NOT EXISTS idx_user_addresses_user_id ON user_addresses (user_id)")
                 c.execute("CREATE INDEX IF NOT EXISTS idx_return_requests_order_id ON return_requests (order_id)")
@@ -1875,6 +1903,18 @@ def generate_order_id():
     now_str = datetime.now().strftime("%Y%m%d%H%M%S")
     rand_suffix = secrets.token_hex(3).upper()
     return f"NAARI-{now_str}-{rand_suffix}"
+
+
+def _parse_explicit_whatsapp_opt_in(raw_val) -> int:
+    """
+    Returns 1 ONLY when explicit opt-in consent is provided.
+    Defaults to 0 for None, False, 0, empty string, or any non-consent value.
+    """
+    if raw_val is True or raw_val == 1:
+        return 1
+    if isinstance(raw_val, str) and raw_val.strip().lower() in ("1", "true", "yes", "on"):
+        return 1
+    return 0
 
 def format_product_row(row):
     d = dict(row)
@@ -2557,7 +2597,7 @@ _PINCODE_CACHE = {}
 _GEOCODE_CACHE = {}
 _NOMINATIM_LOCK = threading.Lock()
 _LAST_NOMINATIM_REQ_TS = 0.0
-NOMINATIM_USER_AGENT = "MatraNaariStorefront/1.0 (https://matranaari.com; support@naari.in)"
+NOMINATIM_USER_AGENT = "MatraNaariStorefront/1.0 (https://matranaari.com; matranaari@gmail.com)"
 CACHE_TTL_SECONDS = 3600
 
 
@@ -3149,7 +3189,19 @@ def handle_request_entity_too_large(_err):
         "error": "Request payload exceeds the maximum allowed size of 6MB."
     }), 413
 
+def recover_order_notifications_on_startup():
+    """
+    Safely recovers any pending or failed (< max_attempts) notification jobs from
+    `order_notifications` after a Render restart without touching historical orders.
+    """
+    try:
+        return recover_pending_and_failed_notifications(get_db)
+    except Exception:
+        return {"ok": False, "recovered_count": 0}
+
+
 init_db()
+recover_order_notifications_on_startup()
 _startup_cfg = load_config()
 _admin_cfg_status = get_admin_auth_config_status()
 print(
@@ -3225,7 +3277,7 @@ def api_config():
         "store_description": cfg.get("store_description", "Modern Kurtis Rooted in Craft"),
         "currency": cfg.get("currency", "INR"),
         "support_phone": cfg.get("support_phone", "+91 88493 66915"),
-        "support_email": cfg.get("support_email", "hello@naari.in"),
+        "support_email": cfg.get("support_email", "matranaari@gmail.com"),
         "free_shipping_threshold": int(cfg.get("free_shipping_threshold", 999)),
         "shipping_fee": int(cfg.get("shipping_fee", 99)),
         "cod_enabled": bool(cfg.get("cod_enabled", True)),
@@ -3233,7 +3285,14 @@ def api_config():
         "razorpay_enabled": bool(cfg.get("razorpay_enabled", False)),
         "gst_percentage": int(cfg.get("gst_percentage", 5)),
         "return_window_days": int(cfg.get("return_window_days", 7)),
-        "courier_provider": cfg.get("courier_provider", "Indian Postal Circle / Standard Courier")
+        "courier_provider": cfg.get("courier_provider", "Indian Postal Circle / Standard Courier"),
+        "notifications": (lambda nc: {
+            "email_provider": nc["email_provider"],
+            "is_email_configured": nc["email_configured"],
+            "required_email_env_vars_present": nc["required_email_env_vars_present"],
+            "whatsapp_enabled": nc["whatsapp_enabled"],
+            "is_whatsapp_configured": nc["whatsapp_configured"]
+        })(get_notification_config())
     })
 
 @app.route("/api/products", methods=["GET"])
@@ -4624,6 +4683,8 @@ def api_create_order():
         }), 502
 
     now_iso = datetime.now().isoformat()
+    raw_opt_in = cust.get("whatsapp_opt_in") if "whatsapp_opt_in" in cust else data.get("whatsapp_opt_in", 0)
+    whatsapp_opt_in = _parse_explicit_whatsapp_opt_in(raw_opt_in)
     conn = get_db()
     c = conn.cursor()
     c.execute("""
@@ -4633,8 +4694,8 @@ def api_create_order():
             house_no, street_area, latitude, longitude, location_summary, address_label,
             payment_method, payment_status, order_status, razorpay_order_id,
             subtotal, shipping, discount_amount, coupon_code, total_amount, items_json,
-            user_id, created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            user_id, whatsapp_opt_in, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT (id) DO UPDATE SET
             customer_name = excluded.customer_name,
             customer_email = excluded.customer_email,
@@ -4661,6 +4722,7 @@ def api_create_order():
             total_amount = excluded.total_amount,
             items_json = excluded.items_json,
             user_id = excluded.user_id,
+            whatsapp_opt_in = excluded.whatsapp_opt_in,
             updated_at = excluded.updated_at
     """, (
         order_id,
@@ -4689,6 +4751,7 @@ def api_create_order():
         calc["total_amount"],
         items_json_str,
         user_id,
+        whatsapp_opt_in,
         now_iso,
         now_iso
     ))
@@ -4880,12 +4943,14 @@ def api_verify_payment():
             existing_pay_id = ord_row["razorpay_payment_id"] or rzp_payment_id
             c.execute("ROLLBACK")
             conn.close()
+            notif_result = trigger_order_confirmation_notifications(get_db, stored_order_id)
             return jsonify({
                 "ok": True,
                 "order_id": stored_order_id,
                 "payment_id": existing_pay_id,
                 "status": "paid",
-                "already_verified": True
+                "already_verified": True,
+                "notifications": notif_result
             })
 
         # Verification successful -> atomically deduct stock and mark order as paid & confirmed
@@ -4916,6 +4981,14 @@ def api_verify_payment():
 
         if ord_row["coupon_code"]:
             c.execute("UPDATE coupons SET used_count = used_count + 1 WHERE UPPER(code) = UPPER(?)", (ord_row["coupon_code"],))
+
+        confirmed_order_dict = dict(ord_row)
+        confirmed_order_dict["payment_status"] = "paid"
+        confirmed_order_dict["order_status"] = "confirmed"
+        confirmed_order_dict["razorpay_payment_id"] = rzp_payment_id
+        confirmed_order_dict["razorpay_signature"] = rzp_signature
+        confirmed_order_dict["updated_at"] = now_iso
+        enqueue_order_confirmation_notifications(confirmed_order_dict, cursor=c)
 
         c.execute("COMMIT")
     except ValueError as stock_err:
@@ -4954,6 +5027,8 @@ def api_verify_payment():
         flush=True
     )
 
+    notif_result = trigger_order_confirmation_notifications(get_db, stored_order_id)
+
     return jsonify({
         "ok": True,
         "order_id": stored_order_id,
@@ -4965,7 +5040,8 @@ def api_verify_payment():
         "shipping": ord_row.get("shipping"),
         "discount_amount": ord_row.get("discount_amount"),
         "coupon_code": ord_row.get("coupon_code") or "",
-        "total_amount": ord_row.get("total_amount")
+        "total_amount": ord_row.get("total_amount"),
+        "notifications": notif_result
     })
 
 @app.route("/api/payment-failed", methods=["POST"])
@@ -5080,6 +5156,8 @@ def api_create_cod_order():
         order_id = generate_order_id()
         now_iso = datetime.now().isoformat()
         user_id = user["id"]
+        raw_opt_in = cust.get("whatsapp_opt_in") if "whatsapp_opt_in" in cust else data.get("whatsapp_opt_in", 0)
+        whatsapp_opt_in = _parse_explicit_whatsapp_opt_in(raw_opt_in)
 
         c.execute("""
             INSERT INTO orders (
@@ -5088,8 +5166,8 @@ def api_create_cod_order():
                 house_no, street_area, latitude, longitude, location_summary, address_label,
                 payment_method, payment_status, order_status,
                 subtotal, shipping, discount_amount, coupon_code, total_amount, items_json,
-                user_id, created_at, updated_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                user_id, whatsapp_opt_in, created_at, updated_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             order_id,
             cust.get("name").strip(),
@@ -5116,6 +5194,7 @@ def api_create_cod_order():
             calc["total_amount"],
             json.dumps(calc["items"]),
             user_id,
+            whatsapp_opt_in,
             now_iso,
             now_iso
         ))
@@ -5128,6 +5207,20 @@ def api_create_cod_order():
 
         if calc["applied_coupon"]:
             c.execute("UPDATE coupons SET used_count = used_count + 1 WHERE code = ?", (calc["applied_coupon"],))
+
+        cod_order_dict = {
+            "id": order_id,
+            "customer_name": cust.get("name").strip(),
+            "customer_email": cust.get("email").strip(),
+            "customer_phone": cust.get("phone").strip(),
+            "payment_method": "cod",
+            "payment_status": "cod_confirmed",
+            "order_status": "confirmed",
+            "total_amount": calc["total_amount"],
+            "whatsapp_opt_in": whatsapp_opt_in,
+            "created_at": now_iso,
+        }
+        enqueue_order_confirmation_notifications(cod_order_dict, cursor=c)
 
         c.execute("COMMIT")
     except ValueError as stock_err:
@@ -5147,6 +5240,8 @@ def api_create_cod_order():
 
     conn.close()
 
+    notif_result = trigger_order_confirmation_notifications(get_db, order_id)
+
     return jsonify({
         "ok": True,
         "order_id": order_id,
@@ -5157,7 +5252,8 @@ def api_create_cod_order():
         "discount_amount": calc["discount"],
         "coupon_code": calc["applied_coupon"],
         "total_amount": calc["total_amount"],
-        "items": calc["items"]
+        "items": calc["items"],
+        "notifications": notif_result
     })
 
 @app.route("/api/order-details", methods=["GET"])
@@ -5690,7 +5786,7 @@ def api_admin_stats():
             "store_name": cfg.get("store_name", "Matra Naari"),
             "store_description": cfg.get("store_description", "Modern Kurtis Rooted in Craft"),
             "support_phone": cfg.get("support_phone", "+91 88493 66915"),
-            "support_email": cfg.get("support_email", "hello@naari.in"),
+            "support_email": cfg.get("support_email", "matranaari@gmail.com"),
             "free_shipping_threshold": cfg.get("free_shipping_threshold", 999),
             "shipping_fee": cfg.get("shipping_fee", 99),
             "standard_shipping_fee": cfg.get("shipping_fee", 99),
@@ -6564,7 +6660,7 @@ def api_admin_settings():
         "store_name": cfg.get("store_name", "Matra Naari"),
         "store_description": cfg.get("store_description", "Modern Kurtis Rooted in Craft"),
         "support_phone": cfg.get("support_phone", "+91 88493 66915"),
-        "support_email": cfg.get("support_email", "hello@naari.in"),
+        "support_email": cfg.get("support_email", "matranaari@gmail.com"),
         "free_shipping_threshold": cfg.get("free_shipping_threshold", 999),
         "shipping_fee": cfg.get("shipping_fee", 99),
         "standard_shipping_fee": cfg.get("shipping_fee", 99),
@@ -7095,7 +7191,7 @@ def _serve_public_html(page_name: str):
                         "alternateName": ["Matra Naari Kurtis", "matranaari"],
                         "url": "https://matranaari.com/",
                         "logo": "https://matranaari.com/images/logo-icon.png",
-                        "email": "hello@naari.in",
+                        "email": "matranaari@gmail.com",
                         "telephone": "+91-88493-66915",
                     },
                     {
@@ -7351,6 +7447,7 @@ def serve_static_file(filename):
 
 def main():
     init_db()
+    recover_order_notifications_on_startup()
     db_display = f"PostgreSQL ({mask_database_url(get_database_url())})" if is_postgres_mode() else f"SQLite ({DB_PATH})"
     print("=" * 60)
     print(f" Matra Naari E-Commerce Platform Server running on port {PORT}")
