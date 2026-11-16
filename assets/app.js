@@ -578,50 +578,120 @@ function attachProductCardEvents(container, catalogList) {
   });
 }
 
-// ================= Wishlist State =================
+// ================= Wishlist State (Guest LocalStorage + Authenticated Account Sync) =================
+function deduplicateWishlistItems(rawList) {
+  if (!Array.isArray(rawList)) return [];
+  const seen = new Set();
+  const clean = [];
+  for (const item of rawList) {
+    if (!item || !item.id) continue;
+    const pid = String(item.id).trim();
+    if (!pid || seen.has(pid)) continue;
+    seen.add(pid);
+    const fallbackProd = (typeof PRODUCTS !== 'undefined' && Array.isArray(PRODUCTS))
+      ? PRODUCTS.find(p => p.id === pid)
+      : null;
+    clean.push({
+      id: pid,
+      name: item.name || (fallbackProd && fallbackProd.name) || 'Matra Naari Kurti',
+      price: Number(item.price ?? (fallbackProd && fallbackProd.price) ?? 1299),
+      mrp: Number(item.mrp ?? (fallbackProd && fallbackProd.mrp) ?? 0) || undefined,
+      image: item.relative_image || item.image || item.relativeImage || (fallbackProd && fallbackProd.image) || 'assets/hero.jpg',
+      category: item.category || (fallbackProd && fallbackProd.category) || 'Kurti',
+      sizes: Array.isArray(item.sizes) && item.sizes.length > 0
+        ? item.sizes
+        : ((fallbackProd && fallbackProd.sizes) || ['XS', 'S', 'M', 'L', 'XL', 'XXL']),
+      soldOutSizes: Array.isArray(item.soldOutSizes) ? item.soldOutSizes : [],
+      stock: item.stock !== undefined ? Number(item.stock) : 25
+    });
+  }
+  return clean;
+}
+
 function getWishlist() {
   try {
     const raw = localStorage.getItem(WISHLIST_STORAGE_KEY);
-    return raw ? JSON.parse(raw) : [];
+    const parsed = raw ? JSON.parse(raw) : [];
+    return deduplicateWishlistItems(parsed);
   } catch (e) {
     return [];
   }
 }
 
 function saveWishlist(list) {
+  const clean = deduplicateWishlistItems(list);
   try {
-    localStorage.setItem(WISHLIST_STORAGE_KEY, JSON.stringify(list));
+    localStorage.setItem(WISHLIST_STORAGE_KEY, JSON.stringify(clean));
   } catch (e) {}
   updateHeaderBadges();
   updateWishlistHeartButtons();
   renderWishlistDrawerContent();
-  window.dispatchEvent(new CustomEvent('naari:wishlistUpdated', { detail: { wishlist: list } }));
+  window.dispatchEvent(new CustomEvent('naari:wishlistUpdated', { detail: { wishlist: clean } }));
+}
+
+async function syncWishlistWithServer(mode = 'sync', singleProductId = '') {
+  const session = getUserSession();
+  if (!session || !session.user) return null;
+  try {
+    const localList = getWishlist();
+    const payload = mode === 'sync'
+      ? { action: 'sync', product_ids: localList.map(i => i.id) }
+      : { action: mode, product_id: singleProductId };
+    const res = await fetch(`${API_BASE}/api/customer/wishlist`, {
+      method: 'POST',
+      headers: getCustomerAuthHeaders({ 'Content-Type': 'application/json' }),
+      credentials: 'same-origin',
+      body: JSON.stringify(payload)
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (data && data.ok && Array.isArray(data.items)) {
+      const hydrated = data.items.map(raw => sanitizeProductRecord(raw));
+      saveWishlist(hydrated);
+      return hydrated;
+    }
+  } catch (e) {}
+  return null;
 }
 
 function toggleWishlist(product) {
+  if (!product || !product.id) return;
+  const pid = String(product.id).trim();
   let list = getWishlist();
-  const exists = list.some(item => item.id === product.id);
+  const exists = list.some(item => item.id === pid);
+
+  // Trigger gentle heart pop animation on any matching heart button
+  document.querySelectorAll(`.wishlist-toggle-btn[data-product-id="${pid}"], #pdp-wishlist-toggle`).forEach(btn => {
+    btn.classList.remove('mn-heart-pop');
+    void btn.offsetWidth;
+    btn.classList.add('mn-heart-pop');
+  });
+
   if (exists) {
-    list = list.filter(item => item.id !== product.id);
+    list = list.filter(item => item.id !== pid);
     saveWishlist(list);
     getToast().info(`Removed "${product.name}" from your wishlist.`);
+    syncWishlistWithServer('remove', pid);
   } else {
     list.push({
-      id: product.id,
+      id: pid,
       name: product.name,
       price: product.price,
       mrp: product.mrp,
-      image: product.image || product.relativeImage,
-      category: product.category,
-      sizes: product.sizes || ['XS', 'S', 'M', 'L', 'XL']
+      image: product.relative_image || product.image || product.relativeImage || 'assets/hero.jpg',
+      category: product.category || 'Kurti',
+      sizes: product.sizes || ['XS', 'S', 'M', 'L', 'XL', 'XXL'],
+      soldOutSizes: product.soldOutSizes || [],
+      stock: product.stock
     });
     saveWishlist(list);
     getToast().success(`Saved "${product.name}" to your wishlist.`);
+    syncWishlistWithServer('add', pid);
   }
 }
 
 function isInWishlist(pid) {
-  return getWishlist().some(item => item.id === pid);
+  return getWishlist().some(item => item.id === String(pid || '').trim());
 }
 
 function updateWishlistHeartButtons() {
@@ -630,6 +700,7 @@ function updateWishlistHeartButtons() {
     const pid = btn.dataset.productId;
     const isSaved = isInWishlist(pid);
     btn.classList.toggle('active', isSaved);
+    btn.setAttribute('aria-pressed', isSaved ? 'true' : 'false');
     const svg = btn.querySelector('svg');
     if (svg) {
       if (isSaved) {
@@ -666,6 +737,7 @@ function setUserSession(token, user) {
     sessionStorage.removeItem('naari_guest_checked_v1');
   } catch (e) {}
   updateHeaderBadges();
+  syncWishlistWithServer('sync');
   if (userChanged) {
     window.dispatchEvent(new CustomEvent('naari:authChanged', { detail: { user } }));
   }
@@ -1179,7 +1251,7 @@ function injectGlobalStorefrontShell() {
           <!-- Populated by JavaScript -->
         </div>
         <div class="border-t border-border p-4 bg-background/90 text-center">
-          <a href="shop.html" class="inline-block text-xs uppercase tracking-[0.16em] font-medium text-primary underline">Explore Full Collection →</a>
+          <a href="shop.html?view=wishlist" class="inline-block text-xs uppercase tracking-[0.16em] font-medium text-primary underline">Open Full Wishlist Page →</a>
         </div>
       </div>
     </div>
@@ -1279,7 +1351,100 @@ function injectGlobalStorefrontShell() {
   `;
 
   document.body.appendChild(shell);
+  injectFloatingMobileBottomNav();
   attachGlobalShellEvents();
+}
+
+function injectFloatingMobileBottomNav() {
+  if (document.getElementById('mn-floating-bottom-nav')) return;
+  const path = (window.location.pathname || '').toLowerCase();
+  if (path.includes('checkout') || path.includes('admin')) {
+    return;
+  }
+  const isSubdir = /\/(shop|cart|checkout|contact|story|order-confirmation)\//.test(path);
+  const prefix = isSubdir ? '../' : '';
+
+  document.body.classList.add('has-mn-bottom-nav');
+
+  const nav = document.createElement('nav');
+  nav.id = 'mn-floating-bottom-nav';
+  nav.className = 'mn-bottom-nav';
+  nav.setAttribute('aria-label', 'Mobile Bottom Navigation');
+  nav.innerHTML = `
+    <a href="${prefix}index.html" class="mn-bottom-nav-item" data-bnav-tab="home" aria-label="Home">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10.5L12 3l9 7.5v9a1.5 1.5 0 01-1.5 1.5h-15A1.5 1.5 0 013 19.5v-9z"/><path stroke-linecap="round" stroke-linejoin="round" d="M9 21V12h6v9"/></svg>
+      <span>Home</span>
+    </a>
+    <a href="${prefix}shop.html?view=categories" class="mn-bottom-nav-item" data-bnav-tab="categories" aria-label="Categories">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      <span>Categories</span>
+    </a>
+    <a href="${prefix}shop.html?view=trends" class="mn-bottom-nav-item" data-bnav-tab="trends" aria-label="Trends">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3l1.9 5.8L20 10.8l-6.1 1.9L12 18.5l-1.9-5.8L4 10.8l6.1-2L12 3z"/></svg>
+      <span>Trends</span>
+    </a>
+    <a href="${prefix}shop.html?view=wishlist" class="mn-bottom-nav-item" data-bnav-tab="wishlist" aria-label="Saved Wishlist">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0016.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 002 8.5c0 2.3 1.5 4.05 3 5.5l7 7 7-7z"/></svg>
+      <span>Wishlist</span>
+      <span class="wishlist-badge-count mn-bottom-nav-badge hidden">0</span>
+    </a>
+    <a href="${prefix}account.html" class="mn-bottom-nav-item" data-bnav-tab="account" aria-label="My Account">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 21v-2a4 4 0 00-4-4H9a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      <span>Account</span>
+    </a>
+  `;
+
+  document.body.appendChild(nav);
+  updateBottomNavActiveState();
+  updateHeaderBadges();
+
+  // If already on shop.html, intercept Categories/Trends/Wishlist clicks for instant SPA-style view switching
+  nav.querySelectorAll('.mn-bottom-nav-item').forEach(link => {
+    link.addEventListener('click', (e) => {
+      const tab = link.getAttribute('data-bnav-tab');
+      const onShopPage = /(^|\/)shop(\.html|\/?$)/.test(window.location.pathname || '');
+      if (onShopPage && (tab === 'categories' || tab === 'trends' || tab === 'wishlist')) {
+        if (typeof window.switchShopDiscoveryView === 'function') {
+          e.preventDefault();
+          window.switchShopDiscoveryView(tab);
+          updateBottomNavActiveState(tab);
+        }
+      }
+    });
+  });
+}
+
+function updateBottomNavActiveState(forcedTab = '') {
+  const nav = document.getElementById('mn-floating-bottom-nav');
+  if (!nav) return;
+  const path = (window.location.pathname || '').toLowerCase();
+  const params = new URLSearchParams(window.location.search || '');
+  const viewParam = (forcedTab || params.get('view') || '').toLowerCase();
+
+  let activeTab = 'home';
+  if (path.includes('account')) {
+    activeTab = 'account';
+  } else if (viewParam === 'wishlist') {
+    activeTab = 'wishlist';
+  } else if (viewParam === 'trends') {
+    activeTab = 'trends';
+  } else if (path.includes('shop') || viewParam === 'categories') {
+    activeTab = 'categories';
+  } else if (path === '/' || path.endsWith('index.html')) {
+    activeTab = 'home';
+  } else {
+    activeTab = '';
+  }
+
+  nav.querySelectorAll('.mn-bottom-nav-item').forEach(el => {
+    const isMatch = el.getAttribute('data-bnav-tab') === activeTab;
+    el.classList.toggle('active', isMatch);
+    if (isMatch) {
+      el.setAttribute('aria-current', 'page');
+    } else {
+      el.removeAttribute('aria-current');
+    }
+  });
 }
 
 // ================= Drawer & Modal Handlers =================
@@ -1553,57 +1718,96 @@ function renderCartDrawerContent() {
 function renderWishlistDrawerContent() {
   const container = document.getElementById('wishlist-drawer-items');
   if (!container) return;
+  const isSubdir = /\/(shop|cart|checkout|contact|story|order-confirmation)\//.test(window.location.pathname);
+  const prefix = isSubdir ? '../' : '';
   const list = getWishlist();
 
   if (list.length === 0) {
     container.innerHTML = `
-      <div class="py-16 text-center">
-        <p class="font-display text-2xl font-medium text-foreground">Your wishlist is empty</p>
-        <p class="text-xs text-muted-foreground mt-1.5">Tap the heart icon on any kurti to save your favourites.</p>
-        <a href="shop.html" class="mt-6 inline-block bg-primary px-6 py-2.5 text-[11px] uppercase tracking-[0.2em] text-primary-foreground hover:opacity-90 transition font-semibold">
-          Explore Kurtis
+      <div class="py-16 px-4 text-center">
+        <div class="mx-auto mb-3 h-11 w-11 rounded-full bg-primary/10 text-primary flex items-center justify-center">
+          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
+        </div>
+        <p class="font-display text-xl text-foreground">Your Wishlist is Waiting</p>
+        <p class="text-xs text-muted-foreground mt-1.5 max-w-xs mx-auto">Tap the heart on any silhouette to curate your personal wardrobe edit.</p>
+        <a href="${prefix}shop.html" class="mt-5 inline-block bg-primary px-6 py-2.5 text-[11px] uppercase tracking-[0.18em] text-primary-foreground hover:opacity-90 transition font-medium">
+          Explore Kurtis →
         </a>
       </div>
     `;
     return;
   }
 
-  container.innerHTML = list.map(item => `
-    <div class="flex gap-3 bg-card/60 p-3 ring-1 ring-border rounded-sm relative">
-      <img src="${item.image}" alt="${item.name}" onerror="this.onerror=null;this.src='assets/hero.jpg';" class="h-24 w-18 object-cover rounded-xs shrink-0"/>
-      <div class="min-w-0 flex-1 flex flex-col justify-between">
-        <div>
-          <a href="product.html?id=${item.id}" class="truncate font-display text-base font-semibold hover:text-primary transition block">${item.name}</a>
-          <p class="text-xs text-muted-foreground">${item.category}</p>
-          <div class="mt-1 flex items-baseline gap-2">
-            <span class="mn-price text-sm font-semibold text-foreground">${formatPrice(item.price)}</span>
-            ${item.mrp ? `<span class="text-xs line-through text-muted-foreground">${formatPrice(item.mrp)}</span>` : ''}
+  container.innerHTML = list.map(item => {
+    const imgPath = (item.image || 'assets/hero.jpg').startsWith('http') || (item.image || '').startsWith('/')
+      ? item.image
+      : `${prefix}${item.image || 'assets/hero.jpg'}`;
+    const sizes = Array.isArray(item.sizes) && item.sizes.length ? item.sizes : ['XS', 'S', 'M', 'L', 'XL'];
+    const soldOut = Array.isArray(item.soldOutSizes) ? item.soldOutSizes : [];
+    const availSizes = sizes.filter(s => !soldOut.includes(s));
+    const defaultSize = availSizes.includes('M') ? 'M' : (availSizes[0] || sizes[0] || 'M');
+    const sizePillsHtml = sizes.map(sz => {
+      const isSold = soldOut.includes(sz);
+      const isSel = sz === defaultSize;
+      return `<button type="button" class="wishlist-size-chip px-1.5 py-0.5 text-[10px] border ${isSel ? 'bg-primary text-primary-foreground border-primary font-semibold' : 'border-border bg-background text-foreground'} ${isSold ? 'opacity-40 cursor-not-allowed line-through' : 'cursor-pointer'}" data-size="${sz}" ${isSold ? 'disabled' : ''}>${sz}</button>`;
+    }).join('');
+
+    return `
+      <div class="flex gap-3 bg-card p-3 border border-border relative wishlist-drawer-card" data-id="${item.id}" data-selected-size="${defaultSize}">
+        <a href="${prefix}product.html?id=${item.id}" class="shrink-0 block">
+          <img src="${imgPath}" alt="${escapeHtml(item.name)}" onerror="this.onerror=null;this.src='${prefix}assets/hero.jpg';" class="h-24 w-18 object-cover rounded-xs shrink-0"/>
+        </a>
+        <div class="min-w-0 flex-1 flex flex-col justify-between">
+          <div>
+            <p class="text-[10px] uppercase tracking-[0.14em] text-muted-foreground">${escapeHtml(item.category || 'Kurti')}</p>
+            <a href="${prefix}product.html?id=${item.id}" class="truncate font-sans text-sm font-medium text-foreground hover:text-primary transition block">${escapeHtml(item.name)}</a>
+            <div class="mt-0.5 flex items-baseline gap-2">
+              <span class="mn-price text-sm font-semibold text-foreground">${formatPrice(item.price)}</span>
+              ${item.mrp && item.mrp > item.price ? `<span class="text-xs line-through text-muted-foreground">${formatPrice(item.mrp)}</span>` : ''}
+            </div>
+            <div class="mt-1.5 flex flex-wrap gap-1">${sizePillsHtml}</div>
+          </div>
+          <div class="mt-2.5 flex items-center gap-3">
+            <button type="button" class="wishlist-move-to-bag bg-primary px-3 py-1.5 text-[10px] text-primary-foreground hover:opacity-90 uppercase tracking-[0.14em] font-medium transition cursor-pointer" data-id="${item.id}">
+              + Add to Bag
+            </button>
+            <button type="button" class="wishlist-remove-btn text-[11px] text-muted-foreground hover:text-destructive underline cursor-pointer" data-id="${item.id}">
+              Remove
+            </button>
           </div>
         </div>
-        <div class="mt-2 flex gap-2">
-          <button type="button" class="wishlist-move-to-bag bg-primary px-3 py-1.5 text-xs text-primary-foreground hover:opacity-90 uppercase tracking-wider transition cursor-pointer" data-id="${item.id}">
-            Add to Bag
-          </button>
-          <button type="button" class="wishlist-remove-btn text-xs text-muted-foreground hover:text-destructive underline cursor-pointer" data-id="${item.id}">
-            Remove
-          </button>
-        </div>
       </div>
-    </div>
-  `).join('');
+    `;
+  }).join('');
+
+  container.querySelectorAll('.wishlist-size-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      const card = chip.closest('.wishlist-drawer-card');
+      if (!card) return;
+      const sz = chip.dataset.size;
+      card.dataset.selectedSize = sz;
+      card.querySelectorAll('.wishlist-size-chip').forEach(c => {
+        const match = c.dataset.size === sz;
+        c.className = `wishlist-size-chip px-1.5 py-0.5 text-[10px] border cursor-pointer ${match ? 'bg-primary text-primary-foreground border-primary font-semibold' : 'border-border bg-background text-foreground'}`;
+      });
+    });
+  });
 
   container.querySelectorAll('.wishlist-move-to-bag').forEach(btn => {
     btn.addEventListener('click', () => {
       const pid = btn.dataset.id;
+      const card = btn.closest('.wishlist-drawer-card');
+      const chosenSize = (card && card.dataset.selectedSize) || 'M';
       const prod = PRODUCTS.find(p => p.id === pid) || list.find(i => i.id === pid);
       if (prod) {
         addToCart({
           id: prod.id,
           name: prod.name,
-          color: prod.colors ? prod.colors[0]?.name : 'Standard',
-          size: prod.sizes ? prod.sizes[0] : 'Free Size',
+          color: prod.colors && prod.colors[0] ? prod.colors[0].name : 'Standard',
+          size: chosenSize,
           price: prod.price,
-          image: prod.image || prod.relativeImage,
+          mrp: prod.mrp,
+          image: prod.relative_image || prod.image || prod.relativeImage || 'assets/hero.jpg',
           qty: 1
         });
         closeWishlistDrawer();
@@ -1617,6 +1821,7 @@ function renderWishlistDrawerContent() {
       let wlist = getWishlist();
       wlist = wlist.filter(i => i.id !== pid);
       saveWishlist(wlist);
+      syncWishlistWithServer('remove', pid);
     });
   });
 }

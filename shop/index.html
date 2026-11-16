@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous"/>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap"/>
-  <link rel="stylesheet" href="../assets/styles.css?v=quiet-luxury-20261116.2"/>
+  <link rel="stylesheet" href="../assets/styles.css?v=quiet-luxury-20261117.1"/>
   <title>Shop Women's Indian Kurtis &amp; Kurta Sets Online — Straight, A-Line, Anarkali &amp; Co-ords | Matra Naari</title>
   <meta name="description" content="Browse the complete Matra Naari kurti collection online. Shop women's straight cut kurtis, flared A-line kurtis, festive Anarkalis, wrap angrakhas, everyday short kurtis, kaftans &amp; 2-piece kurta sets in sizes XS to XXL."/>
   <meta name="robots" content="index, follow"/>
@@ -111,10 +111,11 @@
             <line x1="3" x2="21" y1="18" y2="18" />
           </svg>
         </button>
-        <nav class="hidden md:flex items-center gap-7" aria-label="Primary Navigation">
+        <nav class="hidden md:flex items-center gap-6" aria-label="Primary Navigation">
           <a class="mn-nav-link active" href="../shop.html" aria-current="page">Shop All</a>
+          <a class="mn-nav-link" href="../shop.html?view=categories">Categories</a>
+          <a class="mn-nav-link" href="../shop.html?view=trends">Trends</a>
           <a class="mn-nav-link" href="../shop.html?category=Anarkali">Festive</a>
-          <a class="mn-nav-link" href="../shop.html?category=Co-ord%20Set">Kurta Sets</a>
           <a class="mn-nav-link" href="../story.html">Our Story</a>
         </nav>
       </div>
@@ -124,8 +125,9 @@
       </a>
 
       <div class="flex items-center justify-end gap-1 sm:gap-2 flex-1 min-w-0">
-        <button type="button" class="open-search-modal-btn mn-icon-btn" aria-label="Search">
-          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+        <button type="button" class="open-search-modal-btn mn-header-search-pill" aria-label="Search">
+          <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+          <span class="mn-header-search-pill-label">Search</span>
         </button>
         <button type="button" class="open-wishlist-drawer-btn mn-icon-btn" aria-label="Wishlist">
           <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
@@ -160,64 +162,73 @@
 
   <!-- Main Shop Layout -->
   <main class="mn-container py-6 sm:py-10">
-    <!-- Refined Collection Header -->
-    <div class="mb-6 flex flex-col md:flex-row md:items-end justify-between border-b border-border/60 pb-6 gap-4">
+    <!-- Refined Collection & Discovery Header -->
+    <div class="mb-4 flex flex-col md:flex-row md:items-end justify-between border-b border-border/60 pb-4 gap-3">
       <div>
-        <div class="flex items-center gap-2 text-[10px] text-muted-foreground uppercase tracking-[0.2em] mb-2 font-sans">
+        <div class="flex items-center gap-2 text-[10px] text-muted-foreground uppercase tracking-[0.2em] mb-1.5 font-sans">
           <a href="../index.html" class="hover:text-primary transition">Home</a>
           <span>/</span>
           <span id="collection-breadcrumb-label" class="text-foreground font-medium">All Kurtis</span>
         </div>
         <h1 id="collection-heading-title" class="mn-display-section text-foreground"><span class="sr-only">Matra Naari — </span>The Kurti Collection</h1>
-        <p id="collection-heading-desc" class="font-sans text-xs sm:text-sm text-muted-foreground mt-1.5 max-w-xl">Seven signature Indian silhouettes tailored across sizes XS to XXL for everyday grace and festive occasions.</p>
+        <p id="collection-heading-desc" class="font-sans text-xs text-muted-foreground mt-1 max-w-lg">Seven signature silhouettes in sizes XS to XXL.</p>
       </div>
-      <div class="flex flex-wrap items-center justify-between md:justify-end gap-3">
+
+      <div class="flex flex-wrap items-center justify-between md:justify-end gap-2.5">
         <span id="collection-count-label" class="text-xs text-muted-foreground font-sans">Showing all kurtis</span>
-        <!-- Sort Dropdown -->
-        <div class="flex items-center gap-2">
+        <div class="flex items-center gap-2" id="shop-sort-wrap">
           <label for="sort-select" class="text-[10px] font-sans text-muted-foreground uppercase tracking-[0.18em] hidden sm:inline">Sort</label>
-          <select id="sort-select" class="border border-border bg-background px-3 py-2 text-xs font-sans outline-none focus:border-primary cursor-pointer">
+          <select id="sort-select" class="border border-border bg-background px-3 py-1.5 text-xs font-sans outline-none focus:border-primary cursor-pointer">
             <option value="recommended">Featured</option>
             <option value="price_asc">Price: Low to High</option>
             <option value="price_desc">Price: High to Low</option>
             <option value="discount">Privilege Offer</option>
           </select>
         </div>
-        <!-- Mobile Filter Toggle Button -->
-        <button type="button" id="mobile-filter-open-btn" class="md:hidden flex items-center gap-1.5 border border-foreground/25 bg-background text-foreground px-3.5 py-2 text-[11px] uppercase tracking-[0.16em] font-medium cursor-pointer">
+        <button type="button" id="mobile-filter-open-btn" class="md:hidden flex items-center gap-1.5 border border-foreground/25 bg-background text-foreground px-3 py-1.5 text-[11px] uppercase tracking-[0.16em] font-medium cursor-pointer">
           <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/></svg>
           Refine <span id="mobile-active-filter-badge" class="hidden ml-0.5 rounded-full bg-primary text-primary-foreground px-1.5 py-0.2 text-[9px]">0</span>
         </button>
       </div>
     </div>
 
-    <!-- Minimal Horizontal Silhouette Selector -->
-    <section class="mb-8 border-b border-border/60 pb-4" aria-label="Filter by Silhouette">
-      <div id="shop-silhouette-track" class="flex items-center gap-2 sm:gap-3 overflow-x-auto pb-1 no-scrollbar">
-        <button type="button" data-sil-category="all" class="shop-silhouette-card active shrink-0 px-4 py-2 text-xs uppercase tracking-[0.16em] font-medium border border-border/80 bg-background hover:border-primary transition cursor-pointer">
-          All Styles
-        </button>
-        <button type="button" data-sil-category="Straight Cut" class="shop-silhouette-card shrink-0 px-4 py-2 text-xs uppercase tracking-[0.16em] font-medium border border-border/80 bg-background hover:border-primary transition cursor-pointer">
-          Straight Kurtis
-        </button>
-        <button type="button" data-sil-category="Anarkali" class="shop-silhouette-card shrink-0 px-4 py-2 text-xs uppercase tracking-[0.16em] font-medium border border-border/80 bg-background hover:border-primary transition cursor-pointer">
-          Anarkali
-        </button>
-        <button type="button" data-sil-category="A-Line" class="shop-silhouette-card shrink-0 px-4 py-2 text-xs uppercase tracking-[0.16em] font-medium border border-border/80 bg-background hover:border-primary transition cursor-pointer">
-          A-Line
-        </button>
-        <button type="button" data-sil-category="Short Kurti" class="shop-silhouette-card shrink-0 px-4 py-2 text-xs uppercase tracking-[0.16em] font-medium border border-border/80 bg-background hover:border-primary transition cursor-pointer">
-          Short Kurtis
-        </button>
-        <button type="button" data-sil-category="Angrakha" class="shop-silhouette-card shrink-0 px-4 py-2 text-xs uppercase tracking-[0.16em] font-medium border border-border/80 bg-background hover:border-primary transition cursor-pointer">
-          Angrakha
-        </button>
-        <button type="button" data-sil-category="Kaftan" class="shop-silhouette-card shrink-0 px-4 py-2 text-xs uppercase tracking-[0.16em] font-medium border border-border/80 bg-background hover:border-primary transition cursor-pointer">
-          Kaftan
-        </button>
-        <button type="button" data-sil-category="Co-ord Set" class="shop-silhouette-card shrink-0 px-4 py-2 text-xs uppercase tracking-[0.16em] font-medium border border-border/80 bg-background hover:border-primary transition cursor-pointer">
-          Co-ord Sets
-        </button>
+    <!-- App-Style Discovery Mode Switcher (All / Categories / Trends / Saved Wishlist) -->
+    <div class="mn-shop-mode-bar mb-4" id="shop-discovery-mode-bar" role="tablist" aria-label="Discovery Views">
+      <button type="button" role="tab" data-shop-mode="all" class="mn-shop-mode-tab active">All Collection</button>
+      <button type="button" role="tab" data-shop-mode="categories" class="mn-shop-mode-tab">Categories</button>
+      <button type="button" role="tab" data-shop-mode="trends" class="mn-shop-mode-tab">Trends &amp; Edits</button>
+      <button type="button" role="tab" data-shop-mode="wishlist" class="mn-shop-mode-tab">
+        <span>Saved Wishlist</span>
+        <span class="wishlist-badge-count hidden rounded-full bg-primary text-primary-foreground px-1.5 py-0.2 text-[9px] font-bold">0</span>
+      </button>
+    </div>
+
+    <!-- Image-Led Visual Category Strip (Real Products + Live Counts) -->
+    <section id="shop-categories-section" class="mb-6 border-b border-border/60 pb-4" aria-label="Browse by Category">
+      <div id="shop-visual-cat-strip" class="mn-visual-cat-strip">
+        <!-- Populated dynamically with real product images and live counts -->
+      </div>
+      <!-- Backwards-compatible silhouette buttons for quick click & automated tests -->
+      <div id="shop-silhouette-track" class="hidden">
+        <button type="button" data-sil-category="all" class="shop-silhouette-card active">All Styles</button>
+        <button type="button" data-sil-category="Straight Cut" class="shop-silhouette-card">Straight Kurtis</button>
+        <button type="button" data-sil-category="Anarkali" class="shop-silhouette-card">Anarkali</button>
+        <button type="button" data-sil-category="A-Line" class="shop-silhouette-card">A-Line</button>
+        <button type="button" data-sil-category="Short Kurti" class="shop-silhouette-card">Short Kurtis</button>
+        <button type="button" data-sil-category="Angrakha" class="shop-silhouette-card">Angrakha</button>
+        <button type="button" data-sil-category="Kaftan" class="shop-silhouette-card">Kaftan</button>
+        <button type="button" data-sil-category="Co-ord Set" class="shop-silhouette-card">Co-ord Sets</button>
+      </div>
+    </section>
+
+    <!-- Curated Trends & Edits Filter Bar (Shown in Trends View) -->
+    <section id="shop-trends-bar" class="hidden mb-6 border-b border-border/60 pb-4" aria-label="Curated Edits">
+      <div class="flex items-center gap-2 overflow-x-auto no-scrollbar">
+        <button type="button" data-trend-edit="all" class="mn-shop-mode-tab active">All Curated Edits</button>
+        <button type="button" data-trend-edit="new" class="mn-shop-mode-tab">New Arrivals</button>
+        <button type="button" data-trend-edit="everyday" class="mn-shop-mode-tab">Everyday Essentials</button>
+        <button type="button" data-trend-edit="festive" class="mn-shop-mode-tab">The Festive Edit</button>
+        <button type="button" data-trend-edit="sets" class="mn-shop-mode-tab">Co-ords &amp; Kaftans</button>
       </div>
     </section>
 
@@ -472,10 +483,12 @@
     </div>
   </footer>
 
-  <script src="../assets/app.js?v=quiet-luxury-20261116.2"></script>
+  <script src="../assets/app.js?v=quiet-luxury-20261117.1"></script>
   <script>
     // Shop Page State
     let allProducts = [];
+    let currentDiscoveryMode = 'all'; // 'all' | 'categories' | 'trends' | 'wishlist'
+    let selectedTrendEdit = 'all';    // 'all' | 'new' | 'everyday' | 'festive' | 'sets'
     let selectedCategory = 'all';
     let selectedPrice = 'all';
     let selectedSize = '';
@@ -489,8 +502,27 @@
     let searchQuery = '';
     let currentSort = 'recommended';
 
+    const VISUAL_CATEGORIES = [
+      { key: 'all', label: 'All Styles', img: 'assets/hero.jpg' },
+      { key: 'Straight Cut', label: 'Straight', img: 'assets/hero.jpg' },
+      { key: 'Anarkali', label: 'Anarkali', img: 'assets/k-anarkali.jpg' },
+      { key: 'A-Line', label: 'A-Line', img: 'assets/k-aline.jpg' },
+      { key: 'Co-ord Set', label: 'Co-ords', img: 'assets/k-coord.jpg' },
+      { key: 'Angrakha', label: 'Angrakha', img: 'assets/k-angrakha.jpg' },
+      { key: 'Short Kurti', label: 'Short Kurti', img: 'assets/k-short.jpg' },
+      { key: 'Kaftan', label: 'Kaftan', img: 'assets/k-kaftan.jpg' }
+    ];
+
     function readUrlFilters() {
       const params = new URLSearchParams(window.location.search);
+      const view = (params.get('view') || '').toLowerCase();
+      if (['all', 'categories', 'trends', 'wishlist'].includes(view)) {
+        currentDiscoveryMode = view;
+      }
+      const edit = (params.get('edit') || '').toLowerCase();
+      if (['all', 'new', 'everyday', 'festive', 'sets'].includes(edit)) {
+        selectedTrendEdit = edit;
+      }
       if (params.get('category')) selectedCategory = params.get('category');
       if (params.get('occasion')) selectedOccasion = params.get('occasion');
       if (params.get('fabric')) selectedFabric = params.get('fabric');
@@ -503,6 +535,56 @@
         currentSort = 'recommended';
       }
     }
+
+    function renderVisualCategoryStrip() {
+      const strip = document.getElementById('shop-visual-cat-strip');
+      if (!strip) return;
+      const isSubdir = /\/shop\//.test(window.location.pathname || '');
+      const prefix = isSubdir ? '../' : '';
+
+      strip.innerHTML = VISUAL_CATEGORIES.map(cat => {
+        const count = cat.key === 'all'
+          ? allProducts.length
+          : allProducts.filter(p => (p.category || '').toLowerCase() === cat.key.toLowerCase()).length;
+        if (cat.key !== 'all' && count === 0) return '';
+        const isActive = (selectedCategory || 'all').toLowerCase() === cat.key.toLowerCase();
+        return `
+          <button type="button" class="mn-visual-cat-tile ${isActive ? 'active' : ''}" data-visual-cat="${cat.key}">
+            <div class="mn-visual-cat-thumb">
+              <img src="${prefix}${cat.img}" alt="${cat.label}" loading="lazy" />
+            </div>
+            <span class="mn-visual-cat-name">${cat.label}</span>
+            <span class="mn-visual-cat-count">${count} ${count === 1 ? 'style' : 'styles'}</span>
+          </button>
+        `;
+      }).join('');
+
+      strip.querySelectorAll('.mn-visual-cat-tile').forEach(tile => {
+        tile.addEventListener('click', () => {
+          selectedCategory = tile.getAttribute('data-visual-cat') || 'all';
+          if (currentDiscoveryMode === 'wishlist') {
+            currentDiscoveryMode = 'categories';
+          }
+          renderFacetControls();
+          applyFiltersAndRender();
+        });
+      });
+    }
+
+    window.switchShopDiscoveryView = function(mode) {
+      currentDiscoveryMode = ['all', 'categories', 'trends', 'wishlist'].includes(mode) ? mode : 'all';
+      if (currentDiscoveryMode === 'trends') {
+        selectedCategory = 'all';
+      }
+      const url = new URL(window.location.href);
+      if (currentDiscoveryMode === 'all') {
+        url.searchParams.delete('view');
+      } else {
+        url.searchParams.set('view', currentDiscoveryMode);
+      }
+      window.history.replaceState({}, '', url.toString());
+      applyFiltersAndRender();
+    };
 
     async function initShop() {
       readUrlFilters();
@@ -746,17 +828,89 @@
     }
 
     function applyFiltersAndRender() {
+      renderVisualCategoryStrip();
+
+      // Sync Discovery Mode Tabs
+      document.querySelectorAll('[data-shop-mode]').forEach(btn => {
+        btn.classList.toggle('active', btn.getAttribute('data-shop-mode') === currentDiscoveryMode);
+      });
+      if (typeof updateBottomNavActiveState === 'function') {
+        updateBottomNavActiveState(currentDiscoveryMode === 'all' ? 'categories' : currentDiscoveryMode);
+      }
+
+      const catSec = document.getElementById('shop-categories-section');
+      const trendsBar = document.getElementById('shop-trends-bar');
+      const sidebar = document.getElementById('shop-filter-sidebar');
+      const titleEl = document.getElementById('collection-heading-title');
+      const descEl = document.getElementById('collection-heading-desc');
+      const breadEl = document.getElementById('collection-breadcrumb-label');
+
+      if (catSec) catSec.classList.toggle('hidden', currentDiscoveryMode === 'trends' || currentDiscoveryMode === 'wishlist');
+      if (trendsBar) trendsBar.classList.toggle('hidden', currentDiscoveryMode !== 'trends');
+      if (sidebar) sidebar.classList.toggle('md:block', currentDiscoveryMode !== 'wishlist');
+
+      // Handle Saved Wishlist View
+      if (currentDiscoveryMode === 'wishlist') {
+        if (titleEl) titleEl.textContent = 'Saved Wishlist';
+        if (descEl) descEl.textContent = 'Your saved Matra Naari silhouettes, ready to move to your bag.';
+        if (breadEl) breadEl.textContent = 'Wishlist';
+
+        const savedList = getWishlist();
+        const savedIds = new Set(savedList.map(i => i.id));
+        const wishItems = allProducts.filter(p => savedIds.has(p.id));
+        const countEl = document.getElementById('collection-count-label');
+        if (countEl) countEl.textContent = `${wishItems.length} saved ${wishItems.length === 1 ? 'kurti' : 'kurtis'}`;
+
+        const grid = document.getElementById('shop-products-grid');
+        const emptyState = document.getElementById('shop-empty-state');
+        if (wishItems.length === 0) {
+          grid.innerHTML = '';
+          emptyState.classList.remove('hidden');
+          emptyState.innerHTML = `
+            <p class="font-display text-2xl text-foreground">Your Wishlist is Waiting</p>
+            <p class="text-xs text-muted-foreground mt-2 max-w-sm mx-auto">Tap the heart icon on any kurti while browsing to save your favourite silhouettes here.</p>
+            <button type="button" onclick="window.switchShopDiscoveryView('all')" class="mt-5 mn-btn-primary">
+              Explore All Kurtis →
+            </button>
+          `;
+        } else {
+          emptyState.classList.add('hidden');
+          grid.innerHTML = wishItems.map(renderShopProductCard).join('');
+          attachProductCardEvents(grid, allProducts);
+          updateWishlistHeartButtons();
+        }
+        return;
+      }
+
       let filtered = [...allProducts];
 
-      // Update Collection Heading dynamically when a specific category is selected
-      const titleEl = document.getElementById('collection-heading-title');
-      const breadEl = document.getElementById('collection-breadcrumb-label');
-      if (selectedCategory && selectedCategory.toLowerCase() !== 'all') {
+      // Handle Curated Trends & Edits View
+      if (currentDiscoveryMode === 'trends') {
+        if (titleEl) titleEl.textContent = 'Curated Trends & Edits';
+        if (descEl) descEl.textContent = 'Explore thoughtfully grouped silhouettes by occasion and proportion.';
+        if (breadEl) breadEl.textContent = 'Trends & Edits';
+
+        document.querySelectorAll('[data-trend-edit]').forEach(b => {
+          b.classList.toggle('active', b.getAttribute('data-trend-edit') === selectedTrendEdit);
+        });
+
+        if (selectedTrendEdit === 'everyday') {
+          filtered = filtered.filter(p => ['Straight Cut', 'A-Line', 'Short Kurti'].includes(p.category));
+        } else if (selectedTrendEdit === 'festive') {
+          filtered = filtered.filter(p => ['Anarkali', 'Angrakha'].includes(p.category));
+        } else if (selectedTrendEdit === 'sets') {
+          filtered = filtered.filter(p => ['Co-ord Set', 'Kaftan'].includes(p.category));
+        } else if (selectedTrendEdit === 'new') {
+          filtered = filtered.slice(0, 5);
+        }
+      } else if (selectedCategory && selectedCategory.toLowerCase() !== 'all') {
         if (titleEl) titleEl.textContent = `${selectedCategory} Collection`;
+        if (descEl) descEl.textContent = `Explore Matra Naari ${selectedCategory} silhouettes in sizes XS to XXL.`;
         if (breadEl) breadEl.textContent = selectedCategory;
       } else {
-        if (titleEl) titleEl.textContent = 'The Kurti Collection';
-        if (breadEl) breadEl.textContent = 'All Kurtis';
+        if (titleEl) titleEl.textContent = currentDiscoveryMode === 'categories' ? 'Browse by Category' : 'The Kurti Collection';
+        if (descEl) descEl.textContent = 'Seven signature silhouettes in sizes XS to XXL.';
+        if (breadEl) breadEl.textContent = currentDiscoveryMode === 'categories' ? 'Categories' : 'All Kurtis';
       }
 
       // Sync active state on horizontal Explore by Silhouette cards
@@ -977,6 +1131,25 @@
         renderFacetControls();
         applyFiltersAndRender();
       });
+    });
+
+    document.querySelectorAll('[data-shop-mode]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        window.switchShopDiscoveryView(btn.getAttribute('data-shop-mode') || 'all');
+      });
+    });
+
+    document.querySelectorAll('[data-trend-edit]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        selectedTrendEdit = btn.getAttribute('data-trend-edit') || 'all';
+        applyFiltersAndRender();
+      });
+    });
+
+    window.addEventListener('naari:wishlistUpdated', () => {
+      if (currentDiscoveryMode === 'wishlist') {
+        applyFiltersAndRender();
+      }
     });
 
     document.addEventListener('DOMContentLoaded', initShop);

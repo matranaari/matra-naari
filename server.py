@@ -4293,6 +4293,193 @@ def api_customer_address_delete(aid):
     conn.close()
     return jsonify({"ok": True, "message": "Address removed."})
 
+
+def _wishlist_setting_key(user_id):
+    return f"user_wishlist:{str(user_id).strip()}"
+
+
+def _normalize_wishlist_product_ids(raw_ids):
+    if not isinstance(raw_ids, list):
+        return []
+    seen = set()
+    clean = []
+    for item in raw_ids:
+        pid = ""
+        if isinstance(item, str):
+            pid = item.strip()
+        elif isinstance(item, dict) and item.get("id"):
+            pid = str(item.get("id")).strip()
+        if pid and len(pid) <= 64 and pid not in seen:
+            seen.add(pid)
+            clean.append(pid)
+        if len(clean) >= 100:
+            break
+    return clean
+
+
+def _get_stored_wishlist_ids(c, user_id):
+    key = _wishlist_setting_key(user_id)
+    c.execute("SELECT value FROM site_settings WHERE key = ?", (key,))
+    row = c.fetchone()
+    if not row:
+        return []
+    try:
+        parsed = json.loads(row["value"] or "[]")
+        return _normalize_wishlist_product_ids(parsed)
+    except Exception:
+        return []
+
+
+def _save_stored_wishlist_ids(c, user_id, product_ids):
+    key = _wishlist_setting_key(user_id)
+    clean_ids = _normalize_wishlist_product_ids(product_ids)
+    c.execute(
+        "INSERT INTO site_settings (key, value) VALUES (?, ?) ON CONFLICT (key) DO UPDATE SET value = excluded.value",
+        (key, json.dumps(clean_ids)),
+    )
+    return clean_ids
+
+
+def _hydrate_wishlist_products(c, product_ids):
+    clean_ids = _normalize_wishlist_product_ids(product_ids)
+    if not clean_ids:
+        return [], [], []
+    c.execute("SELECT * FROM products")
+    rows = c.fetchall()
+    by_id = {str(r["id"]).strip(): r for r in rows}
+
+    active_ids = []
+    unavailable_ids = []
+    items = []
+    for pid in clean_ids:
+        row = by_id.get(pid)
+        if not row:
+            unavailable_ids.append(pid)
+            continue
+        row_dict = dict(row)
+        is_act = row_dict.get("is_active", 1)
+        if int(is_act if is_act is not None else 1) == 0:
+            unavailable_ids.append(pid)
+            continue
+        active_ids.append(pid)
+        items.append(format_product_row(row))
+    return active_ids, items, unavailable_ids
+
+
+@app.route("/api/customer/wishlist", methods=["GET", "POST", "DELETE"])
+def api_customer_wishlist():
+    user = get_current_user()
+    if not user:
+        return jsonify({
+            "ok": False,
+            "error": "Authentication required.",
+            "auth_required": True
+        }), 401
+
+    conn = get_db()
+    c = conn.cursor()
+    user_id = user["id"]
+
+    if request.method == "GET":
+        stored_ids = _get_stored_wishlist_ids(c, user_id)
+        active_ids, items, unavailable_ids = _hydrate_wishlist_products(c, stored_ids)
+        if active_ids != stored_ids:
+            _save_stored_wishlist_ids(c, user_id, active_ids)
+            conn.commit()
+        conn.close()
+        return jsonify({
+            "ok": True,
+            "user_id": user_id,
+            "product_ids": active_ids,
+            "items": items,
+            "unavailable_ids": unavailable_ids
+        })
+
+    if request.method == "DELETE":
+        _save_stored_wishlist_ids(c, user_id, [])
+        conn.commit()
+        conn.close()
+        return jsonify({
+            "ok": True,
+            "user_id": user_id,
+            "product_ids": [],
+            "items": [],
+            "unavailable_ids": []
+        })
+
+    data = request.get_json(silent=True) or {}
+    action = str(data.get("action") or "sync").strip().lower()
+    stored_ids = _get_stored_wishlist_ids(c, user_id)
+    saved_state = None
+
+    if action == "clear":
+        updated_ids = []
+    elif action == "add":
+        pid = str(data.get("product_id") or "").strip()
+        updated_ids = _normalize_wishlist_product_ids(stored_ids + ([pid] if pid else []))
+        saved_state = True
+    elif action == "remove":
+        pid = str(data.get("product_id") or "").strip()
+        updated_ids = [x for x in stored_ids if x != pid]
+        saved_state = False
+    elif action == "toggle":
+        pid = str(data.get("product_id") or "").strip()
+        if pid in stored_ids:
+            updated_ids = [x for x in stored_ids if x != pid]
+            saved_state = False
+        elif pid:
+            updated_ids = _normalize_wishlist_product_ids(stored_ids + [pid])
+            saved_state = True
+        else:
+            updated_ids = stored_ids
+    elif action == "set":
+        incoming = data.get("product_ids") if "product_ids" in data else data.get("items", [])
+        updated_ids = _normalize_wishlist_product_ids(incoming)
+    else:
+        # Default "sync": safely merge guest wishlist IDs with account wishlist IDs without duplicates
+        incoming = data.get("product_ids") if "product_ids" in data else data.get("items", [])
+        incoming_ids = _normalize_wishlist_product_ids(incoming)
+        updated_ids = _normalize_wishlist_product_ids(stored_ids + incoming_ids)
+
+    active_ids, items, unavailable_ids = _hydrate_wishlist_products(c, updated_ids)
+    _save_stored_wishlist_ids(c, user_id, active_ids)
+    conn.commit()
+    conn.close()
+
+    resp_payload = {
+        "ok": True,
+        "user_id": user_id,
+        "product_ids": active_ids,
+        "items": items,
+        "unavailable_ids": unavailable_ids
+    }
+    if saved_state is not None:
+        resp_payload["saved"] = bool(saved_state and (str(data.get("product_id") or "").strip() in active_ids))
+    return jsonify(resp_payload)
+
+
+@app.route("/api/customer/wishlist/<pid>", methods=["DELETE"])
+def api_customer_wishlist_delete_item(pid):
+    user = get_current_user()
+    if not user:
+        return jsonify({"ok": False, "error": "Unauthorized"}), 401
+    clean_pid = str(pid or "").strip()
+    conn = get_db()
+    c = conn.cursor()
+    stored_ids = _get_stored_wishlist_ids(c, user["id"])
+    updated_ids = [x for x in stored_ids if x != clean_pid]
+    active_ids, items, unavailable_ids = _hydrate_wishlist_products(c, updated_ids)
+    _save_stored_wishlist_ids(c, user["id"], active_ids)
+    conn.commit()
+    conn.close()
+    return jsonify({
+        "ok": True,
+        "user_id": user["id"],
+        "product_ids": active_ids,
+        "items": items,
+        "unavailable_ids": unavailable_ids
+    })
+
 @app.route("/api/customer/orders", methods=["GET"])
 def api_customer_orders():
     user = get_current_user()
@@ -5813,7 +6000,7 @@ def api_admin_stats():
             "courier_provider": cfg.get("courier_provider", "Indian Postal Circle / Standard Courier")
         }
         for sk, sv in raw_site_settings.items():
-            if sk not in forbidden_setting_keys:
+            if sk not in forbidden_setting_keys and not str(sk).startswith("user_wishlist:"):
                 settings_obj[sk] = sv
         if "announcements" in settings_obj and isinstance(settings_obj["announcements"], list) and "announcement_text" not in settings_obj:
             settings_obj["announcement_text"] = " | ".join(settings_obj["announcements"])
@@ -6704,7 +6891,7 @@ def api_admin_settings():
         "courier_provider": cfg.get("courier_provider", "Indian Postal Circle / Standard Courier")
     }
     for k, v in parsed_site_settings.items():
-        if k in forbidden_setting_keys:
+        if k in forbidden_setting_keys or str(k).startswith("user_wishlist:"):
             continue
         settings[k] = v
 
