@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
   <link rel="stylesheet"
     href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap" />
-  <link rel="stylesheet" href="assets/styles.css?v=quiet-luxury-20261116" />
+  <link rel="stylesheet" href="assets/styles.css?v=quiet-luxury-20261116.2" />
   <title>Matra Naari — Buy Women's Indian Kurtis, Anarkalis &amp; Kurta Sets Online | Woven with Meaning</title>
   <meta name="description"
     content="Official Matra Naari store (matranaari.com) — Woven with Meaning. Shop women's Indian kurtis online across India: straight cut kurtis, A-line, Anarkali kurtas, angrakhas, short kurtis, kaftans &amp; 2-piece co-ord sets in sizes XS to XXL." />
@@ -134,10 +134,16 @@
 <body class="text-foreground antialiased selection:bg-primary/20 selection:text-primary">
 
   <!-- Slim Announcement Bar -->
-  <div id="top-announcement-bar"
-    class="mn-announcement-bar py-2 px-3 sm:px-4 text-center flex items-center justify-center transition-all duration-300">
-    <div class="flex items-center gap-2 max-w-full overflow-hidden">
-      <span class="announcement-text transition-opacity duration-300 font-normal truncate">Complimentary Express Delivery Above ₹999 · Code NAARI10 for 10% Off</span>
+  <div id="top-announcement-bar" class="mn-announcement-bar" role="region" aria-label="Store Announcements" tabindex="0">
+    <span class="sr-only announcement-sr-text">New Arrivals · Discover Matra Naari · Modern Kurtis, Rooted in Craft · Complimentary Express Shipping on orders above ₹999 · Code NAARI10 for 10% Off on orders above ₹999</span>
+    <div class="mn-ticker-viewport" aria-hidden="true">
+      <div class="mn-ticker-track" id="mn-announcement-ticker-track">
+        <div class="mn-ticker-group" data-ticker-group="1"><a href="shop.html" class="mn-ticker-item" tabindex="-1">NEW ARRIVALS</a><span class="mn-ticker-sep" aria-hidden="true">✦</span><span class="mn-ticker-item">DISCOVER MATRA NAARI</span><span class="mn-ticker-sep" aria-hidden="true">✦</span><a href="story.html" class="mn-ticker-item" tabindex="-1">MODERN KURTIS, ROOTED IN CRAFT</a><span class="mn-ticker-sep" aria-hidden="true">✦</span><a href="shop.html" class="mn-ticker-item" tabindex="-1">EXPLORE THE COLLECTION</a><span class="mn-ticker-sep" aria-hidden="true">✦</span><a href="shop.html" class="mn-ticker-item" tabindex="-1">COMPLIMENTARY SHIPPING ABOVE ₹999</a><span class="mn-ticker-sep" aria-hidden="true">✦</span><a href="shop.html" class="mn-ticker-item" tabindex="-1">CODE NAARI10 · 10% OFF ABOVE ₹999</a><span class="mn-ticker-sep" aria-hidden="true">✦</span><a href="contact.html#returns-policy" class="mn-ticker-item" tabindex="-1">7-DAY SIZE EXCHANGES &amp; COD AVAILABLE</a><span class="mn-ticker-sep" aria-hidden="true">✦</span></div>
+        <div class="mn-ticker-group" data-ticker-group="2"><a href="shop.html" class="mn-ticker-item" tabindex="-1">NEW ARRIVALS</a><span class="mn-ticker-sep" aria-hidden="true">✦</span><span class="mn-ticker-item">DISCOVER MATRA NAARI</span><span class="mn-ticker-sep" aria-hidden="true">✦</span><a href="story.html" class="mn-ticker-item" tabindex="-1">MODERN KURTIS, ROOTED IN CRAFT</a><span class="mn-ticker-sep" aria-hidden="true">✦</span><a href="shop.html" class="mn-ticker-item" tabindex="-1">EXPLORE THE COLLECTION</a><span class="mn-ticker-sep" aria-hidden="true">✦</span><a href="shop.html" class="mn-ticker-item" tabindex="-1">COMPLIMENTARY SHIPPING ABOVE ₹999</a><span class="mn-ticker-sep" aria-hidden="true">✦</span><a href="shop.html" class="mn-ticker-item" tabindex="-1">CODE NAARI10 · 10% OFF ABOVE ₹999</a><span class="mn-ticker-sep" aria-hidden="true">✦</span><a href="contact.html#returns-policy" class="mn-ticker-item" tabindex="-1">7-DAY SIZE EXCHANGES &amp; COD AVAILABLE</a><span class="mn-ticker-sep" aria-hidden="true">✦</span></div>
+      </div>
+    </div>
+    <div class="mn-ticker-reduced-motion announcement-text" aria-hidden="true">
+      Complimentary Express Delivery Above ₹999 ✦ Code NAARI10 for 10% Off ✦ Explore the Collection
     </div>
   </div>
 
@@ -386,6 +392,31 @@
     </section>
 
     <!-- =====================================================================
+         PREMIUM SLIM OFFER RIBBON (Verified Active Offers Only)
+         ===================================================================== -->
+    <aside id="mn-offer-ribbon" class="mn-offer-ribbon naari-configurable-promo-banner" aria-label="Verified Store Privileges">
+      <div class="mn-container mn-offer-ribbon-inner">
+        <span class="mn-offer-ribbon-tag">
+          <span class="mn-offer-ribbon-star" aria-hidden="true">✦</span>
+          <span>Atelier Privileges</span>
+        </span>
+
+        <div class="mn-offer-ribbon-stage" aria-live="polite" aria-atomic="true">
+          <a id="mn-offer-ribbon-link" href="shop.html" class="mn-offer-ribbon-link">
+            <span id="mn-offer-ribbon-code" class="mn-offer-ribbon-code promo-coupon-code">NAARI10</span>
+            <span id="mn-offer-ribbon-text" class="mn-offer-ribbon-text promo-coupon-desc">10% Off on Handcrafted Kurtis &amp; Co-ord Sets Above ₹999</span>
+            <span id="mn-offer-ribbon-cta" class="mn-offer-ribbon-cta">Shop Collection →</span>
+          </a>
+        </div>
+
+        <div class="mn-offer-ribbon-controls" aria-label="Cycle Verified Offers">
+          <button type="button" id="mn-offer-prev-btn" class="mn-offer-ribbon-btn" aria-label="Previous offer" title="Previous offer">‹</button>
+          <button type="button" id="mn-offer-next-btn" class="mn-offer-ribbon-btn" aria-label="Next offer" title="Next offer">›</button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- =====================================================================
          SECTION 3 — BESTSELLERS (Borderless 3:4 Product Grid)
          ===================================================================== -->
     <section class="mn-section border-t border-border/60" data-mn-reveal>
@@ -410,7 +441,7 @@
         </div>
 
         <div id="home-featured-grid" class="mn-product-grid-4">
-          <!-- Populated dynamically via app.js?v=quiet-luxury-20261116 renderProductCard -->
+          <!-- Populated dynamically via renderProductCard -->
         </div>
       </div>
     </section>
@@ -470,7 +501,7 @@
         </div>
 
         <div id="home-collection-grid" class="mn-product-grid-4">
-          <!-- Populated dynamically via app.js?v=quiet-luxury-20261116 renderProductCard -->
+          <!-- Populated dynamically via renderProductCard -->
         </div>
       </div>
     </section>
@@ -592,7 +623,7 @@
     </div>
   </footer>
 
-  <script src="assets/app.js?v=quiet-luxury-20261116"></script>
+  <script src="assets/app.js?v=quiet-luxury-20261116.2"></script>
   <script>
     let _homepageCatalogCache = [];
     let _activeWardrobeFilter = 'all';

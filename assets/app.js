@@ -1901,86 +1901,261 @@ function attachGlobalShellEvents() {
 }
 
 // ================= Initialize Announcement Bar & Store Banners =================
+function buildTickerGroupMarkup(items, prefix) {
+  return items.map(item => {
+    const label = escapeHtml(item.text);
+    const sep = '<span class="mn-ticker-sep" aria-hidden="true">✦</span>';
+    if (item.href) {
+      return `<a href="${prefix}${item.href}" class="mn-ticker-item" tabindex="-1">${label}</a>${sep}`;
+    }
+    return `<span class="mn-ticker-item">${label}</span>${sep}`;
+  }).join('');
+}
+
+function isCouponCurrentlyValid(cp) {
+  if (!cp || !cp.code) return false;
+  if (cp.expiry_date) {
+    const exp = new Date(cp.expiry_date + 'T23:59:59');
+    if (!isNaN(exp.getTime()) && exp.getTime() < Date.now()) {
+      return false;
+    }
+  }
+  if (cp.usage_limit && Number(cp.usage_limit) > 0 && Number(cp.used_count || 0) >= Number(cp.usage_limit)) {
+    return false;
+  }
+  return true;
+}
+
 async function initAnnouncementBar() {
   const bar = document.getElementById('top-announcement-bar');
+  const isSubdir = /\/(shop|cart|checkout|contact|story|order-confirmation)\//.test(window.location.pathname);
+  const prefix = isSubdir ? '../' : '';
 
-  let messages = [
-    'COMPLIMENTARY EXPRESS SHIPPING ON ORDERS ABOVE ₹999 ACROSS INDIA',
-    'EXTRA 10% OFF ON ORDERS ABOVE ₹999 | CODE: NAARI10',
-    'THOUGHTFULLY TAILORED INDIAN KURTIS & CO-ORD SETS',
-    'EASY 7-DAY HASSLE-FREE RETURNS & SIZE EXCHANGES'
-  ];
+  let freeThreshold = 999;
+  let codEnabled = true;
+  let promoEnabled = true;
+  let activePromoCoupon = null;
+  let verifiedCoupons = [];
 
   try {
-    const res = await fetch(`${API_BASE}/api/banners`);
-    const data = await res.json();
-    if (data && data.ok) {
-      window.NAARI_STORE_SETTINGS = {
-        ...window.NAARI_STORE_SETTINGS,
-        free_shipping_threshold: data.free_shipping_threshold ?? 999,
-        shipping_fee: data.shipping_fee ?? 99,
-        cod_enabled: data.cod_enabled ?? true,
-        announcement_enabled: data.announcement_enabled ?? true,
-        promo_banner_enabled: data.promo_banner_enabled ?? true,
-        active_promo_coupon: data.active_promo_coupon || null
-      };
-      try {
-        sessionStorage.setItem(STORE_SETTINGS_SESSION_KEY, JSON.stringify(window.NAARI_STORE_SETTINGS));
-      } catch (e) {}
-      renderCartDrawerContent();
-      window.dispatchEvent(new CustomEvent('naari:settingsLoaded', { detail: window.NAARI_STORE_SETTINGS }));
+    const [bannersRes, couponsRes] = await Promise.allSettled([
+      fetch(`${API_BASE}/api/banners`),
+      fetch(`${API_BASE}/api/coupons`)
+    ]);
 
-      // Handle configurable promo banner visibility across homepage/shop
-      document.querySelectorAll('.naari-configurable-promo-banner').forEach(bannerEl => {
-        if (!data.promo_banner_enabled || !data.active_promo_coupon) {
-          bannerEl.classList.add('hidden');
-        } else {
-          bannerEl.classList.remove('hidden');
-          const cp = data.active_promo_coupon;
-          const codeEl = bannerEl.querySelector('.promo-coupon-code');
-          const descEl = bannerEl.querySelector('.promo-coupon-desc');
-          const copyBtn = bannerEl.querySelector('[data-copy-coupon]');
-          if (codeEl) codeEl.textContent = cp.code;
-          if (descEl && cp.description) {
-            descEl.textContent = cp.code === 'NAARI10'
-              ? 'Extra 10% OFF on kurtis, Anarkalis, and co-ord sets (orders above ₹999)'
-              : cp.description;
-          }
-          if (copyBtn) copyBtn.setAttribute('data-copy-coupon', cp.code);
-        }
-      });
-
-      if (data.announcement_enabled === false || (Array.isArray(data.announcements) && data.announcements.length === 0)) {
-        if (bar) bar.classList.add('hidden');
-        return;
+    if (couponsRes.status === 'fulfilled' && couponsRes.value.ok) {
+      const cData = await couponsRes.value.json();
+      if (cData && Array.isArray(cData.coupons)) {
+        verifiedCoupons = cData.coupons.filter(isCouponCurrentlyValid);
       }
-      if (data.announcements && data.announcements.length > 0) {
-        messages = data.announcements.map(m =>
-          /hand|100%|cotton|artisan|jaipur|sanganer/i.test(String(m || '').trim())
-            ? 'THOUGHTFULLY TAILORED INDIAN KURTIS & CO-ORD SETS'
-            : m
-        );
+    }
+
+    if (bannersRes.status === 'fulfilled' && bannersRes.value.ok) {
+      const data = await bannersRes.value.json();
+      if (data && data.ok) {
+        freeThreshold = Number(data.free_shipping_threshold ?? 999);
+        codEnabled = data.cod_enabled ?? true;
+        promoEnabled = data.promo_banner_enabled ?? true;
+        activePromoCoupon = isCouponCurrentlyValid(data.active_promo_coupon) ? data.active_promo_coupon : null;
+
+        window.NAARI_STORE_SETTINGS = {
+          ...window.NAARI_STORE_SETTINGS,
+          free_shipping_threshold: freeThreshold,
+          shipping_fee: data.shipping_fee ?? 99,
+          cod_enabled: codEnabled,
+          announcement_enabled: data.announcement_enabled ?? true,
+          promo_banner_enabled: promoEnabled,
+          active_promo_coupon: activePromoCoupon
+        };
+        try {
+          sessionStorage.setItem(STORE_SETTINGS_SESSION_KEY, JSON.stringify(window.NAARI_STORE_SETTINGS));
+        } catch (e) {}
+        renderCartDrawerContent();
+        window.dispatchEvent(new CustomEvent('naari:settingsLoaded', { detail: window.NAARI_STORE_SETTINGS }));
+
+        if (data.announcement_enabled === false) {
+          if (bar) bar.classList.add('hidden');
+          initOfferRibbon({ promoEnabled, activePromoCoupon, verifiedCoupons, freeThreshold });
+          return;
+        }
       }
     }
   } catch (e) {}
 
-  if (!bar) return;
-  bar.classList.remove('hidden');
+  // Build verified ticker items matching store rules
+  const tickerItems = [
+    { text: 'NEW ARRIVALS', href: 'shop.html' },
+    { text: 'DISCOVER MATRA NAARI', href: '' },
+    { text: 'MODERN KURTIS, ROOTED IN CRAFT', href: 'story.html' },
+    { text: 'EXPLORE THE COLLECTION', href: 'shop.html' }
+  ];
 
-  let idx = 0;
-  const textEl = bar.querySelector('.announcement-text');
-  if (textEl && messages.length > 0) {
-    textEl.textContent = messages[0];
-    if (messages.length > 1) {
-      setInterval(() => {
-        idx = (idx + 1) % messages.length;
-        textEl.style.opacity = '0';
-        setTimeout(() => {
-          textEl.textContent = messages[idx];
-          textEl.style.opacity = '1';
-        }, 300);
-      }, 4500);
+  if (freeThreshold > 0) {
+    tickerItems.push({
+      text: `COMPLIMENTARY SHIPPING ABOVE ₹${freeThreshold.toLocaleString('en-IN')}`,
+      href: 'shop.html'
+    });
+  }
+
+  const primaryCoupon = activePromoCoupon || verifiedCoupons.find(c => c.code === 'NAARI10') || verifiedCoupons[0];
+  if (promoEnabled && primaryCoupon && isCouponCurrentlyValid(primaryCoupon)) {
+    const minVal = Number(primaryCoupon.min_order_value || 0);
+    const valStr = primaryCoupon.discount_type === 'percentage'
+      ? `${primaryCoupon.discount_value}% OFF`
+      : `₹${primaryCoupon.discount_value} OFF`;
+    tickerItems.push({
+      text: minVal > 0
+        ? `CODE ${primaryCoupon.code} · ${valStr} ABOVE ₹${minVal.toLocaleString('en-IN')}`
+        : `CODE ${primaryCoupon.code} · ${valStr}`,
+      href: 'shop.html'
+    });
+  }
+
+  tickerItems.push({
+    text: codEnabled ? '7-DAY SIZE EXCHANGES & COD AVAILABLE' : '7-DAY HASSLE-FREE SIZE EXCHANGES',
+    href: 'contact.html#returns-policy'
+  });
+
+  if (bar) {
+    bar.classList.remove('hidden');
+    const groups = bar.querySelectorAll('.mn-ticker-group');
+    if (groups.length >= 2) {
+      const html = buildTickerGroupMarkup(tickerItems, prefix);
+      groups.forEach(g => { g.innerHTML = html; });
     }
+    const srEl = bar.querySelector('.announcement-sr-text');
+    if (srEl) {
+      srEl.textContent = tickerItems.map(i => i.text).join(' · ');
+    }
+    const reducedEl = bar.querySelector('.mn-ticker-reduced-motion');
+    if (reducedEl) {
+      reducedEl.textContent = tickerItems.slice(0, 3).map(i => i.text).join(' ✦ ');
+    }
+  }
+
+  initOfferRibbon({ promoEnabled, activePromoCoupon, verifiedCoupons, freeThreshold });
+}
+
+function initOfferRibbon({ promoEnabled = true, activePromoCoupon = null, verifiedCoupons = [], freeThreshold = 999 } = {}) {
+  const ribbon = document.getElementById('mn-offer-ribbon');
+  if (!ribbon) return;
+
+  const linkEl = document.getElementById('mn-offer-ribbon-link');
+  const codeEl = document.getElementById('mn-offer-ribbon-code');
+  const textEl = document.getElementById('mn-offer-ribbon-text');
+  const ctaEl = document.getElementById('mn-offer-ribbon-cta');
+  const prevBtn = document.getElementById('mn-offer-prev-btn');
+  const nextBtn = document.getElementById('mn-offer-next-btn');
+  if (!linkEl || !codeEl || !textEl || !ctaEl) return;
+
+  const offers = [];
+  const seenCodes = new Set();
+
+  const candidateCoupons = [];
+  if (activePromoCoupon && isCouponCurrentlyValid(activePromoCoupon)) {
+    candidateCoupons.push(activePromoCoupon);
+  }
+  if (Array.isArray(verifiedCoupons)) {
+    verifiedCoupons.forEach(c => {
+      if (isCouponCurrentlyValid(c)) candidateCoupons.push(c);
+    });
+  }
+
+  if (promoEnabled) {
+    candidateCoupons.forEach(cp => {
+      const code = String(cp.code || '').toUpperCase();
+      if (!code || seenCodes.has(code)) return;
+      seenCodes.add(code);
+      const minOrd = Number(cp.min_order_value || 0);
+      const isFestive = /FESTIVE|ANARKALI/i.test(code) || /festive/i.test(cp.description || '');
+      const valText = cp.discount_type === 'percentage'
+        ? `${cp.discount_value}% Off`
+        : `Flat ₹${Number(cp.discount_value).toLocaleString('en-IN')} Off`;
+      const minText = minOrd > 0 ? ` on Orders Above ₹${minOrd.toLocaleString('en-IN')}` : '';
+
+      offers.push({
+        code: `CODE: ${code}`,
+        text: isFestive
+          ? `${valText} on Festive Styles${minText}`
+          : `${valText} on Handcrafted Kurtis & Co-ord Sets${minText}`,
+        href: isFestive ? 'shop.html?category=Anarkali' : 'shop.html',
+        cta: isFestive ? 'Shop Festive Edit →' : 'Shop Collection →'
+      });
+    });
+
+    if (freeThreshold > 0) {
+      offers.push({
+        code: 'EXPRESS DELIVERY',
+        text: `Complimentary Pan-India Delivery on Orders Above ₹${freeThreshold.toLocaleString('en-IN')}`,
+        href: 'shop.html',
+        cta: 'Explore Kurtis →'
+      });
+    }
+  }
+
+  // Fallback non-promotional collection message if no active offer is verified
+  if (offers.length === 0) {
+    offers.push({
+      code: 'MATRA NAARI',
+      text: 'Modern Kurtis, Rooted in Craft — Seven Signature Silhouettes in Sizes XS to XXL',
+      href: 'shop.html',
+      cta: 'Explore Collection →'
+    });
+  }
+
+  ribbon.classList.remove('hidden');
+  let currentIdx = 0;
+  let isPaused = false;
+
+  function renderOffer(idx, animate = true) {
+    const item = offers[idx] || offers[0];
+    if (!animate || (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches)) {
+      codeEl.textContent = item.code;
+      textEl.textContent = item.text;
+      ctaEl.textContent = item.cta;
+      linkEl.setAttribute('href', item.href);
+      return;
+    }
+    linkEl.classList.add('mn-offer-fading');
+    setTimeout(() => {
+      codeEl.textContent = item.code;
+      textEl.textContent = item.text;
+      ctaEl.textContent = item.cta;
+      linkEl.setAttribute('href', item.href);
+      linkEl.classList.remove('mn-offer-fading');
+    }, 220);
+  }
+
+  renderOffer(0, false);
+
+  if (prevBtn && !prevBtn.dataset.bound) {
+    prevBtn.dataset.bound = '1';
+    prevBtn.addEventListener('click', () => {
+      currentIdx = (currentIdx - 1 + offers.length) % offers.length;
+      renderOffer(currentIdx, true);
+    });
+  }
+  if (nextBtn && !nextBtn.dataset.bound) {
+    nextBtn.dataset.bound = '1';
+    nextBtn.addEventListener('click', () => {
+      currentIdx = (currentIdx + 1) % offers.length;
+      renderOffer(currentIdx, true);
+    });
+  }
+
+  ribbon.addEventListener('mouseenter', () => { isPaused = true; });
+  ribbon.addEventListener('mouseleave', () => { isPaused = false; });
+  ribbon.addEventListener('focusin', () => { isPaused = true; });
+  ribbon.addEventListener('focusout', () => { isPaused = false; });
+
+  if (offers.length > 1 && !(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches)) {
+    if (window.__NAARI_OFFER_RIBBON_TIMER__) clearInterval(window.__NAARI_OFFER_RIBBON_TIMER__);
+    window.__NAARI_OFFER_RIBBON_TIMER__ = setInterval(() => {
+      if (!isPaused && !document.hidden) {
+        currentIdx = (currentIdx + 1) % offers.length;
+        renderOffer(currentIdx, true);
+      }
+    }, 4500);
   }
 }
 

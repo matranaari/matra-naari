@@ -923,15 +923,23 @@ textarea.font-hand,
    BOUTIQUE HEADER & NAVIGATION ARCHITECTURE
    ========================================================================== */
 .mn-announcement-bar {
-  background: var(--ql-deep-burgundy);
-  color: var(--ql-pure-ivory);
-  border-bottom: 1px solid rgba(230, 222, 213, 0.2);
+  position: relative;
+  width: 100%;
+  max-width: 100vw;
+  height: 34px;
+  min-height: 34px;
+  max-height: 36px;
+  background-color: #542C34;
+  color: #F7F4EE;
+  border-bottom: 1px solid rgba(230, 222, 213, 0.18);
   font-family: var(--font-sans);
   font-size: 0.65rem;
   font-weight: 500;
-  letter-spacing: 0.2em;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
-  min-height: 2rem;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
 }
 
 .mn-site-header {
@@ -2620,4 +2628,271 @@ textarea:disabled {
 .shadow-xl,
 .shadow-2xl {
   box-shadow: 0 12px 32px -12px rgba(41, 39, 37, 0.12), 0 2px 8px -2px rgba(41, 39, 37, 0.05) !important;
+}
+
+/* ==========================================================================
+   ANIMATED TOP ANNOUNCEMENT TICKER & SLIM HOMEPAGE OFFER RIBBON
+   ========================================================================== */
+@keyframes mn-ticker-marquee {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  100% {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+.mn-ticker-viewport {
+  width: 100%;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  height: 100%;
+}
+
+.mn-ticker-track {
+  display: flex;
+  align-items: center;
+  width: max-content;
+  will-change: transform;
+  animation: mn-ticker-marquee 38s linear infinite;
+}
+
+.mn-announcement-bar:hover .mn-ticker-track,
+.mn-announcement-bar:focus-within .mn-ticker-track,
+.mn-announcement-bar:focus .mn-ticker-track {
+  animation-play-state: paused;
+}
+
+.mn-ticker-group {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.mn-ticker-item {
+  display: inline-flex;
+  align-items: center;
+  color: #F7F4EE;
+  text-decoration: none;
+  padding: 0.25rem 0;
+  font-family: var(--font-sans);
+  font-size: 0.65rem;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  transition: opacity 0.2s ease;
+}
+
+a.mn-ticker-item:hover,
+a.mn-ticker-item:focus-visible {
+  opacity: 0.82;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.mn-ticker-sep {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 1.35rem;
+  color: #B4A69A;
+  font-size: 0.6rem;
+  line-height: 1;
+  user-select: none;
+}
+
+@media (max-width: 639px) {
+  .mn-announcement-bar {
+    height: 32px;
+    min-height: 32px;
+  }
+  .mn-ticker-item {
+    font-size: 0.62rem;
+    letter-spacing: 0.14em;
+  }
+  .mn-ticker-sep {
+    margin: 0 1rem;
+  }
+}
+
+.mn-ticker-reduced-motion {
+  display: none;
+  width: 100%;
+  padding: 0 0.75rem;
+  text-align: center;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: #F7F4EE;
+}
+
+/* Slim Homepage Promotional Offer Ribbon */
+.mn-offer-ribbon {
+  background-color: #FFFCF8;
+  border-top: 1px solid #E6DED5;
+  border-bottom: 1px solid #E6DED5;
+  padding: 0.48rem 0;
+  overflow: hidden;
+}
+
+.mn-offer-ribbon-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  min-height: 1.65rem;
+}
+
+.mn-offer-ribbon-tag {
+  display: none;
+  align-items: center;
+  gap: 0.45rem;
+  font-family: var(--font-sans);
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #542C34;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+@media (min-width: 768px) {
+  .mn-offer-ribbon-tag {
+    display: inline-flex;
+  }
+}
+
+.mn-offer-ribbon-star {
+  color: #B4A69A;
+  font-size: 0.62rem;
+  line-height: 1;
+}
+
+.mn-offer-ribbon-stage {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.mn-offer-ribbon-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.6rem;
+  font-family: var(--font-sans);
+  font-size: 0.72rem;
+  color: #292725;
+  text-decoration: none;
+  line-height: 1.35;
+  transition: opacity 0.28s ease, transform 0.28s ease, color 0.2s ease;
+}
+
+.mn-offer-ribbon-link.mn-offer-fading {
+  opacity: 0;
+  transform: translateY(3px);
+}
+
+.mn-offer-ribbon-code {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.12rem 0.45rem;
+  background-color: rgba(84, 44, 52, 0.08);
+  border: 1px solid rgba(84, 44, 52, 0.22);
+  color: #542C34;
+  font-family: var(--font-sans);
+  font-size: 0.63rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.mn-offer-ribbon-text {
+  color: #292725;
+  font-weight: 400;
+}
+
+.mn-offer-ribbon-cta {
+  color: #542C34;
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  border-bottom: 1px solid rgba(84, 44, 52, 0.35);
+  padding-bottom: 1px;
+  white-space: nowrap;
+}
+
+.mn-offer-ribbon-link:hover .mn-offer-ribbon-cta {
+  border-bottom-color: #542C34;
+}
+
+.mn-offer-ribbon-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  flex-shrink: 0;
+}
+
+.mn-offer-ribbon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border: 1px solid #E6DED5;
+  background: transparent;
+  color: #706963;
+  font-size: 0.75rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: border-color 0.2s ease, color 0.2s ease, background-color 0.2s ease;
+}
+
+.mn-offer-ribbon-btn:hover {
+  border-color: #542C34;
+  color: #542C34;
+  background-color: rgba(84, 44, 52, 0.04);
+}
+
+@media (max-width: 639px) {
+  .mn-offer-ribbon {
+    padding: 0.42rem 0;
+  }
+  .mn-offer-ribbon-link {
+    font-size: 0.67rem;
+    gap: 0.25rem 0.45rem;
+  }
+  .mn-offer-ribbon-code {
+    font-size: 0.59rem;
+    padding: 0.1rem 0.38rem;
+  }
+  .mn-offer-ribbon-cta {
+    font-size: 0.6rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mn-ticker-viewport {
+    display: none !important;
+  }
+  .mn-ticker-track {
+    animation: none !important;
+    transform: none !important;
+  }
+  .mn-ticker-reduced-motion {
+    display: flex !important;
+  }
+  .mn-offer-ribbon-link {
+    transition: none !important;
+  }
 }
