@@ -281,6 +281,97 @@ class DiscoveryAndWishlistTests(unittest.TestCase):
         self.assertEqual(p_res["product"]["price"], 1299)
         self.assertGreater(p_res["product"]["stock"], 0)
 
+    def test_08_checkout_mobile_responsive_and_controls_regression(self):
+        """Regression test for mobile checkout horizontal overflow prevention (320px+) and checkout controls."""
+        for route in ["/checkout.html", "/checkout/"]:
+            resp = self.client.get(route)
+            self.assertEqual(resp.status_code, 200)
+            html = resp.get_data(as_text=True)
+
+            # 1. Responsive grid and min-w-0 / minmax(0, 1fr) rules present
+            self.assertIn("grid-cols-1", html)
+            self.assertIn("minmax(0, 1fr)", html)
+            self.assertIn("min-w-0", html)
+            self.assertIn("resizeActiveDeliveryMap", html)
+            self.assertIn("bindMapResizeObserver", html)
+
+            # 2. All essential checkout controls present and intact
+            for control_id in [
+                "checkout-main-grid",
+                "address-search-input",
+                "address-autocomplete-dropdown",
+                "use-current-location-btn",
+                "delivery-map",
+                "map-selected-address-text",
+                "map-coords-badge",
+                "checkout-form",
+                "cust-name",
+                "cust-phone",
+                "cust-email",
+                "cust-house-no",
+                "cust-street-area",
+                "cust-address1",
+                "cust-address2",
+                "cust-pincode",
+                "cust-city",
+                "cust-state",
+                "address-confirmation-card",
+                "confirm-address-btn",
+                "payment-method-cod",
+                "payment-method-razorpay",
+                "place-order-btn",
+                "summary-items-list",
+                "checkout-coupon-input",
+                "checkout-apply-coupon-btn",
+            ]:
+                self.assertIn(f'id="{control_id}"', html, f"Missing control #{control_id} in {route}")
+
+        # 3. Verify CSS rules in assets/styles.css enforce responsive checkout sizing
+        css_resp = self.client.get("/assets/styles.css")
+        self.assertEqual(css_resp.status_code, 200)
+        css_text = css_resp.get_data(as_text=True)
+        self.assertIn("#checkout-main-grid", css_text)
+        self.assertIn("grid-template-columns: minmax(0, 1fr);", css_text)
+        self.assertIn("#delivery-map .gm-style", css_text)
+        self.assertIn("overflow-wrap: anywhere", css_text)
+
+        # 4. Verify address validation, saved addresses, and coupon APIs work for authenticated checkout customer
+        token, _ = self._register_user("checkout_resp@matranaari.com")
+        headers = {"Authorization": f"Bearer {token}"}
+        val_res = self.client.post(
+            "/api/address/validate",
+            headers=headers,
+            json={
+                "address": {
+                    "name": "Ananya Sharma",
+                    "phone": "9876543210",
+                    "email": "checkout_resp@matranaari.com",
+                    "house_no": "Flat 402, Tower B",
+                    "street_area": "Lotus Apartments, MI Road",
+                    "address_line1": "Flat 402, Tower B, Lotus Apartments, MI Road",
+                    "address_line2": "Near Ajmeri Gate",
+                    "city": "Jaipur",
+                    "state": "Rajasthan",
+                    "pincode": "302001",
+                    "latitude": 26.9124,
+                    "longitude": 75.7873,
+                    "address_label": "Home",
+                },
+                "require_split_fields": True,
+                "save_to_account": True,
+                "is_default": True,
+            },
+        ).get_json()
+        self.assertTrue(val_res["ok"])
+        self.assertGreaterEqual(len(val_res.get("addresses", [])), 1)
+
+        cp_res = self.client.post(
+            "/api/apply-coupon",
+            json={"code": "NAARI10", "subtotal": 2499, "items": [{"id": "anarkali", "qty": 1, "price": 2499}]},
+        ).get_json()
+        self.assertTrue(cp_res["ok"])
+        self.assertGreater(cp_res["discount_amount"], 0)
+
 
 if __name__ == "__main__":
     unittest.main()
