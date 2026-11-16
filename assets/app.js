@@ -2241,70 +2241,100 @@ async function initAnnouncementBar() {
   initOfferRibbon({ promoEnabled, activePromoCoupon, verifiedCoupons, freeThreshold });
 }
 
+function copyCouponCodeToClipboard(code, minOrd = 0, btnEl = null) {
+  const cleanCode = String(code || '').trim().toUpperCase();
+  if (!cleanCode) return;
+
+  const onCopied = () => {
+    if (btnEl) {
+      const origText = btnEl.dataset.origLabel || 'Copy Code';
+      btnEl.dataset.origLabel = origText;
+      btnEl.textContent = '✓ Copied';
+      btnEl.classList.add('copied');
+      setTimeout(() => {
+        btnEl.textContent = origText;
+        btnEl.classList.remove('copied');
+      }, 2200);
+    }
+    const minNote = minOrd > 0 ? ` (valid on orders above ₹${Number(minOrd).toLocaleString('en-IN')})` : '';
+    getToast().success(`Copied coupon ${cleanCode}${minNote}! Apply at bag or checkout.`);
+  };
+
+  if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+    navigator.clipboard.writeText(cleanCode).then(onCopied).catch(() => {
+      fallbackCopyText(cleanCode);
+      onCopied();
+    });
+  } else {
+    fallbackCopyText(cleanCode);
+    onCopied();
+  }
+}
+
+function fallbackCopyText(text) {
+  try {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.setAttribute('readonly', '');
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+  } catch (e) {}
+}
+
 function initOfferRibbon({ promoEnabled = true, activePromoCoupon = null, verifiedCoupons = [], freeThreshold = 999 } = {}) {
   const ribbon = document.getElementById('mn-offer-ribbon');
   if (!ribbon) return;
 
-  const linkEl = document.getElementById('mn-offer-ribbon-link');
+  const tagEl = document.getElementById('mn-promo-tag');
+  const headlineEl = document.getElementById('mn-promo-headline');
+  const subEl = document.getElementById('mn-promo-sub');
+  const couponBox = document.getElementById('mn-promo-coupon-box');
   const codeEl = document.getElementById('mn-offer-ribbon-code');
-  const textEl = document.getElementById('mn-offer-ribbon-text');
-  const ctaEl = document.getElementById('mn-offer-ribbon-cta');
+  const copyBtn = document.getElementById('mn-promo-copy-btn');
   const prevBtn = document.getElementById('mn-offer-prev-btn');
   const nextBtn = document.getElementById('mn-offer-next-btn');
-  if (!linkEl || !codeEl || !textEl || !ctaEl) return;
 
-  const offers = [];
+  const thresholdVal = Number(freeThreshold || 999);
+  const shipHeadline = thresholdVal > 0
+    ? `Free Express Delivery on Orders Above ₹${thresholdVal.toLocaleString('en-IN')}`
+    : 'Free Express Delivery Across India';
+
+  const validCoupons = [];
   const seenCodes = new Set();
-
-  const candidateCoupons = [];
+  const candidates = [];
   if (activePromoCoupon && isCouponCurrentlyValid(activePromoCoupon)) {
-    candidateCoupons.push(activePromoCoupon);
+    candidates.push(activePromoCoupon);
   }
   if (Array.isArray(verifiedCoupons)) {
     verifiedCoupons.forEach(c => {
-      if (isCouponCurrentlyValid(c)) candidateCoupons.push(c);
+      if (isCouponCurrentlyValid(c)) candidates.push(c);
     });
   }
 
   if (promoEnabled) {
-    candidateCoupons.forEach(cp => {
-      const code = String(cp.code || '').toUpperCase();
+    candidates.forEach(cp => {
+      const code = String(cp.code || '').trim().toUpperCase();
       if (!code || seenCodes.has(code)) return;
       seenCodes.add(code);
       const minOrd = Number(cp.min_order_value || 0);
-      const isFestive = /FESTIVE|ANARKALI/i.test(code) || /festive/i.test(cp.description || '');
       const valText = cp.discount_type === 'percentage'
-        ? `${cp.discount_value}% Off`
+        ? `Extra ${cp.discount_value}% Off`
         : `Flat ₹${Number(cp.discount_value).toLocaleString('en-IN')} Off`;
-      const minText = minOrd > 0 ? ` on Orders Above ₹${minOrd.toLocaleString('en-IN')}` : '';
+      const condText = minOrd > 0
+        ? `on orders above ₹${minOrd.toLocaleString('en-IN')}`
+        : 'on all orders';
 
-      offers.push({
-        code: `CODE: ${code}`,
-        text: isFestive
-          ? `${valText} on Festive Styles${minText}`
-          : `${valText} on Handcrafted Kurtis & Co-ord Sets${minText}`,
-        href: isFestive ? 'shop.html?category=Anarkali' : 'shop.html',
-        cta: isFestive ? 'Shop Festive Edit →' : 'Shop Collection →'
+      validCoupons.push({
+        code,
+        minOrd,
+        tag: `EXPRESS DELIVERY · PRIVILEGE OFFER`,
+        headline: `${shipHeadline} + ${valText}`,
+        sub: `Use code ${code} at checkout (${condText})`,
       });
-    });
-
-    if (freeThreshold > 0) {
-      offers.push({
-        code: 'EXPRESS DELIVERY',
-        text: `Complimentary Pan-India Delivery on Orders Above ₹${freeThreshold.toLocaleString('en-IN')}`,
-        href: 'shop.html',
-        cta: 'Explore Kurtis →'
-      });
-    }
-  }
-
-  // Fallback non-promotional collection message if no active offer is verified
-  if (offers.length === 0) {
-    offers.push({
-      code: 'MATRA NAARI',
-      text: 'Modern Kurtis, Rooted in Craft — Seven Signature Silhouettes in Sizes XS to XXL',
-      href: 'shop.html',
-      cta: 'Explore Collection →'
     });
   }
 
@@ -2312,39 +2342,54 @@ function initOfferRibbon({ promoEnabled = true, activePromoCoupon = null, verifi
   let currentIdx = 0;
   let isPaused = false;
 
-  function renderOffer(idx, animate = true) {
-    const item = offers[idx] || offers[0];
-    if (!animate || (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches)) {
-      codeEl.textContent = item.code;
-      textEl.textContent = item.text;
-      ctaEl.textContent = item.cta;
-      linkEl.setAttribute('href', item.href);
+  function renderPromoSlide(idx) {
+    if (validCoupons.length === 0) {
+      if (tagEl) tagEl.textContent = 'COMPLIMENTARY DISPATCH';
+      if (headlineEl) headlineEl.textContent = shipHeadline;
+      if (subEl) subEl.textContent = 'Fast pan-India delivery · Cash on Delivery & 7-day size exchanges';
+      if (couponBox) couponBox.classList.add('hidden');
       return;
     }
-    linkEl.classList.add('mn-offer-fading');
-    setTimeout(() => {
-      codeEl.textContent = item.code;
-      textEl.textContent = item.text;
-      ctaEl.textContent = item.cta;
-      linkEl.setAttribute('href', item.href);
-      linkEl.classList.remove('mn-offer-fading');
-    }, 220);
+    const item = validCoupons[idx % validCoupons.length];
+    if (tagEl) tagEl.textContent = item.tag;
+    if (headlineEl) headlineEl.textContent = item.headline;
+    if (subEl) subEl.textContent = item.sub;
+    if (couponBox) couponBox.classList.remove('hidden');
+    if (codeEl) codeEl.textContent = item.code;
+    if (copyBtn) {
+      copyBtn.setAttribute('data-copy-coupon', item.code);
+      copyBtn.setAttribute('data-min-order', String(item.minOrd || 0));
+    }
   }
 
-  renderOffer(0, false);
+  renderPromoSlide(0);
+
+  if (copyBtn && !copyBtn.dataset.boundCopy) {
+    copyBtn.dataset.boundCopy = '1';
+    copyBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const c = copyBtn.getAttribute('data-copy-coupon') || (codeEl ? codeEl.textContent : 'NAARI10');
+      const m = Number(copyBtn.getAttribute('data-min-order') || 999);
+      copyCouponCodeToClipboard(c, m, copyBtn);
+    });
+  }
 
   if (prevBtn && !prevBtn.dataset.bound) {
     prevBtn.dataset.bound = '1';
     prevBtn.addEventListener('click', () => {
-      currentIdx = (currentIdx - 1 + offers.length) % offers.length;
-      renderOffer(currentIdx, true);
+      if (validCoupons.length <= 1) return;
+      currentIdx = (currentIdx - 1 + validCoupons.length) % validCoupons.length;
+      renderPromoSlide(currentIdx);
     });
   }
+
   if (nextBtn && !nextBtn.dataset.bound) {
     nextBtn.dataset.bound = '1';
     nextBtn.addEventListener('click', () => {
-      currentIdx = (currentIdx + 1) % offers.length;
-      renderOffer(currentIdx, true);
+      if (validCoupons.length <= 1) return;
+      currentIdx = (currentIdx + 1) % validCoupons.length;
+      renderPromoSlide(currentIdx);
     });
   }
 
@@ -2353,14 +2398,14 @@ function initOfferRibbon({ promoEnabled = true, activePromoCoupon = null, verifi
   ribbon.addEventListener('focusin', () => { isPaused = true; });
   ribbon.addEventListener('focusout', () => { isPaused = false; });
 
-  if (offers.length > 1 && !(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches)) {
+  if (validCoupons.length > 1 && !(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches)) {
     if (window.__NAARI_OFFER_RIBBON_TIMER__) clearInterval(window.__NAARI_OFFER_RIBBON_TIMER__);
     window.__NAARI_OFFER_RIBBON_TIMER__ = setInterval(() => {
       if (!isPaused && !document.hidden) {
-        currentIdx = (currentIdx + 1) % offers.length;
-        renderOffer(currentIdx, true);
+        currentIdx = (currentIdx + 1) % validCoupons.length;
+        renderPromoSlide(currentIdx);
       }
-    }, 4500);
+    }, 5000);
   }
 }
 

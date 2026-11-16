@@ -135,24 +135,35 @@ class DiscoveryAndWishlistTests(unittest.TestCase):
         for k in cfg_res.keys():
             self.assertFalse(str(k).startswith("user_wishlist:"))
 
-    def test_05_cormorant_garamond_and_cinematic_hero_frontend(self):
+    def test_05_manrope_inter_typography_and_promo_delivery_card_frontend(self):
         home_resp = self.client.get("/")
         home_html = home_resp.get_data(as_text=True)
         home_resp.close()
 
-        self.assertIn("Cormorant+Garamond", home_html)
+        self.assertIn("family=Manrope", home_html)
         self.assertIn("family=Inter", home_html)
+        self.assertNotIn("Cormorant", home_html)
+        self.assertNotIn("Baskerville", home_html)
+        self.assertIn("Shop by Style", home_html)
+        self.assertIn(">Bestsellers<", home_html)
+        self.assertIn('class="mn-promo-delivery-card"', home_html)
+        self.assertIn('id="mn-promo-copy-btn"', home_html)
         self.assertIn('id="home-hero-carousel"', home_html)
-        self.assertIn('class="mn-cinematic-slide active', home_html)
-        self.assertIn('class="mn-banner-headline"', home_html)
-        self.assertIn('id="home-editorial-campaigns"', home_html)
         self.assertIn("initHeroCarousel(3500)", home_html)
 
         css_resp = self.client.get("/assets/styles.css")
         css_txt = css_resp.get_data(as_text=True)
         css_resp.close()
-        self.assertIn('"Cormorant Garamond", Georgia, "Times New Roman", serif', css_txt)
-        self.assertIn(".mn-cinematic-hero", css_txt)
+        self.assertIn('"Manrope", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif', css_txt)
+        self.assertNotIn("Cormorant", css_txt)
+        self.assertNotIn("Baskerville", css_txt)
+        self.assertIn("#EF8557", css_txt)
+        self.assertIn(".mn-promo-delivery-card", css_txt)
+
+        js_resp = self.client.get("/assets/app.js")
+        js_txt = js_resp.get_data(as_text=True)
+        js_resp.close()
+        self.assertIn("copyCouponCodeToClipboard", js_txt)
 
     def test_06_admin_banner_management_crud_reorder_and_editorial_campaigns(self):
         # Unauthenticated admin banner access must be rejected with 401
