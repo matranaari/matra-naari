@@ -8,8 +8,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
   <link rel="stylesheet"
-    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap" />
-  <link rel="stylesheet" href="assets/styles.css?v=quiet-luxury-20261117.1" />
+    href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600&family=Inter:wght@400;500;600;700&display=swap" />
+  <link rel="stylesheet" href="assets/styles.css?v=cinematic-20261117.2" />
   <title>Matra Naari — Buy Women's Indian Kurtis, Anarkalis &amp; Kurta Sets Online | Woven with Meaning</title>
   <meta name="description"
     content="Official Matra Naari store (matranaari.com) — Woven with Meaning. Shop women's Indian kurtis online across India: straight cut kurtis, A-line, Anarkali kurtas, angrakhas, short kurtis, kaftans &amp; 2-piece co-ord sets in sizes XS to XXL." />
@@ -238,158 +238,97 @@
   <main>
 
     <!-- =====================================================================
-         SECTION 1 — PHOTOGRAPHY-LED HERO CAROUSEL (Swipeable + Dots)
+         SECTION 1 — FULL-WIDTH AUTOMATIC CINEMATIC HERO BANNER SLIDER
+         (3.5s Auto-Advance, Staggered Animated Text, Admin-Manageable)
          ===================================================================== -->
-    <section class="mn-atelier-hero" aria-label="Featured Collections">
-      <div class="mn-container py-4 sm:py-7 lg:py-10">
-        <div class="mn-hero-carousel" id="home-hero-carousel">
-          <div class="mn-hero-slides-stage" id="home-hero-slides-stage">
+    <section id="home-hero-carousel" class="mn-cinematic-hero" aria-roledescription="carousel" aria-label="Matra Naari Fashion Campaigns">
+      <div class="mn-cinematic-stage" id="mn-cinematic-stage">
 
-            <!-- Slide 1: Signature Ready-to-Wear -->
-            <div class="mn-hero-slide active" data-hero-slide="0">
-              <div class="mn-hero-grid">
-                <div class="order-2 lg:order-1 flex flex-col items-start text-left max-w-xl">
-                  <span class="mn-eyebrow mb-2.5">Matra Naari · Ready-to-Wear</span>
-                  <h1 class="mn-display-hero text-foreground">
-                    Modern Kurtis,<br />
-                    <span class="mn-editorial-accent text-primary">Rooted in Craft.</span>
-                  </h1>
-                  <p class="mt-2.5 text-xs sm:text-sm text-muted-foreground leading-relaxed font-sans max-w-md">
-                    Breathable Indian silhouettes tailored in sizes XS to XXL.
-                  </p>
-                  <div class="mt-4 sm:mt-5 w-full sm:w-auto">
-                    <a href="shop.html" class="mn-btn-primary">
-                      <span>Explore Collection</span>
-                      <span aria-hidden="true">→</span>
-                    </a>
-                  </div>
-                </div>
-                <div class="order-1 lg:order-2 w-full">
-                  <div class="mn-hero-diptych">
-                    <a href="product.html?id=straight" class="mn-hero-portrait-main group">
-                      <div class="mn-hero-portrait-main-media">
-                        <img src="assets/hero.jpg" alt="Gulmohar Straight Kurti by Matra Naari" fetchpriority="high" />
-                      </div>
-                      <div class="mn-hero-caption">
-                        <span>Gulmohar Straight Kurti</span>
-                        <span class="mn-price text-foreground font-medium">₹1,299</span>
-                      </div>
-                    </a>
-                    <a href="product.html?id=anarkali" class="mn-hero-portrait-secondary group">
-                      <div class="mn-hero-portrait-secondary-media">
-                        <img src="assets/k-anarkali.jpg" alt="Genda Anarkali Kurta by Matra Naari" loading="eager" />
-                      </div>
-                      <div class="mn-hero-caption">
-                        <span>Genda Anarkali</span>
-                        <span class="mn-price text-foreground font-medium">₹2,499</span>
-                      </div>
-                    </a>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Slide 2: The Festive Edit -->
-            <div class="mn-hero-slide" data-hero-slide="1">
-              <div class="mn-hero-grid">
-                <div class="order-2 lg:order-1 flex flex-col items-start text-left max-w-xl">
-                  <span class="mn-eyebrow mb-2.5">The Festive Edit</span>
-                  <h2 class="mn-display-hero text-foreground">
-                    Fluid Anarkalis &amp;<br />
-                    <span class="mn-editorial-accent text-primary">Artisanal Wraps.</span>
-                  </h2>
-                  <p class="mt-2.5 text-xs sm:text-sm text-muted-foreground leading-relaxed font-sans max-w-md">
-                    Graceful flare and hand-tied details for celebratory evenings.
-                  </p>
-                  <div class="mt-4 sm:mt-5 w-full sm:w-auto">
-                    <a href="shop.html?category=Anarkali" class="mn-btn-primary">
-                      <span>Shop Festive Edit</span>
-                      <span aria-hidden="true">→</span>
-                    </a>
-                  </div>
-                </div>
-                <div class="order-1 lg:order-2 w-full">
-                  <div class="mn-hero-diptych">
-                    <a href="product.html?id=anarkali" class="mn-hero-portrait-main group">
-                      <div class="mn-hero-portrait-main-media">
-                        <img src="assets/k-anarkali.jpg" alt="Genda Anarkali Kurta by Matra Naari" loading="lazy" />
-                      </div>
-                      <div class="mn-hero-caption">
-                        <span>Genda Anarkali Kurta</span>
-                        <span class="mn-price text-foreground font-medium">₹2,499</span>
-                      </div>
-                    </a>
-                    <a href="product.html?id=angrakha" class="mn-hero-portrait-secondary group">
-                      <div class="mn-hero-portrait-secondary-media">
-                        <img src="assets/k-angrakha.jpg" alt="Tulsi Angrakha by Matra Naari" loading="lazy" />
-                      </div>
-                      <div class="mn-hero-caption">
-                        <span>Tulsi Angrakha</span>
-                        <span class="mn-price text-foreground font-medium">₹1,799</span>
-                      </div>
-                    </a>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Slide 3: Effortless Co-ords & Kaftans -->
-            <div class="mn-hero-slide" data-hero-slide="2">
-              <div class="mn-hero-grid">
-                <div class="order-2 lg:order-1 flex flex-col items-start text-left max-w-xl">
-                  <span class="mn-eyebrow mb-2.5">Curated Silhouettes</span>
-                  <h2 class="mn-display-hero text-foreground">
-                    Tailored Co-ords &amp;<br />
-                    <span class="mn-editorial-accent text-primary">Relaxed Kaftans.</span>
-                  </h2>
-                  <p class="mt-2.5 text-xs sm:text-sm text-muted-foreground leading-relaxed font-sans max-w-md">
-                    Matched two-piece sets and fluid silhouettes for effortless days.
-                  </p>
-                  <div class="mt-4 sm:mt-5 w-full sm:w-auto">
-                    <a href="shop.html?view=trends" class="mn-btn-primary">
-                      <span>Explore Curated Edits</span>
-                      <span aria-hidden="true">→</span>
-                    </a>
-                  </div>
-                </div>
-                <div class="order-1 lg:order-2 w-full">
-                  <div class="mn-hero-diptych">
-                    <a href="product.html?id=coord" class="mn-hero-portrait-main group">
-                      <div class="mn-hero-portrait-main-media">
-                        <img src="assets/k-coord.jpg" alt="Gulabi Kurta Set by Matra Naari" loading="lazy" />
-                      </div>
-                      <div class="mn-hero-caption">
-                        <span>Gulabi Kurta Set</span>
-                        <span class="mn-price text-foreground font-medium">₹2,199</span>
-                      </div>
-                    </a>
-                    <a href="product.html?id=kaftan" class="mn-hero-portrait-secondary group">
-                      <div class="mn-hero-portrait-secondary-media">
-                        <img src="assets/k-kaftan.jpg" alt="Sandhya Kaftan Kurti by Matra Naari" loading="lazy" />
-                      </div>
-                      <div class="mn-hero-caption">
-                        <span>Sandhya Kaftan</span>
-                        <span class="mn-price text-foreground font-medium">₹1,599</span>
-                      </div>
-                    </a>
-                  </div>
-                </div>
-              </div>
-            </div>
-
+        <!-- Slide 1 (Immediate SSR Paint) -->
+        <article class="mn-cinematic-slide active mn-theme-dark" data-hero-slide="0" aria-hidden="false">
+          <div class="mn-cinematic-media">
+            <picture>
+              <source media="(max-width: 767px)" srcset="assets/hero.jpg" />
+              <img src="assets/hero.jpg" alt="Matra Naari Signature Kurti Campaign" fetchpriority="high" loading="eager" decoding="async" />
+            </picture>
           </div>
+          <div class="mn-cinematic-scrim mn-cinematic-scrim-dark"></div>
+          <div class="mn-cinematic-overlay-wrap mn-pos-bottom-left">
+            <div class="mn-cinematic-copy mn-align-left">
+              <span class="mn-banner-eyebrow">MATRA NAARI · SIGNATURE CAMPAIGN</span>
+              <h1 class="mn-banner-headline">Modern Kurtis, Rooted in Craft</h1>
+              <p class="mn-banner-subtitle">Thoughtfully proportioned Indian silhouettes tailored for effortless grace.</p>
+              <div class="mn-banner-cta-wrap">
+                <a href="shop.html" class="mn-banner-btn">
+                  <span>Explore Collection</span>
+                  <span aria-hidden="true">→</span>
+                </a>
+              </div>
+            </div>
+          </div>
+        </article>
 
-          <!-- Carousel Pagination Dots & Controls -->
-          <div class="mn-hero-controls-bar">
-            <div class="mn-hero-dots" role="tablist" aria-label="Hero Slides">
-              <button type="button" class="mn-hero-dot active" data-hero-dot="0" aria-label="Slide 1: Ready-to-Wear" aria-selected="true"></button>
-              <button type="button" class="mn-hero-dot" data-hero-dot="1" aria-label="Slide 2: Festive Edit" aria-selected="false"></button>
-              <button type="button" class="mn-hero-dot" data-hero-dot="2" aria-label="Slide 3: Co-ords and Kaftans" aria-selected="false"></button>
+        <!-- Slide 2 -->
+        <article class="mn-cinematic-slide mn-theme-dark" data-hero-slide="1" aria-hidden="true">
+          <div class="mn-cinematic-media">
+            <picture>
+              <source media="(max-width: 767px)" srcset="assets/k-anarkali.jpg" />
+              <img src="assets/k-anarkali.jpg" alt="Matra Naari Festive Anarkali Campaign" loading="eager" decoding="async" />
+            </picture>
+          </div>
+          <div class="mn-cinematic-scrim mn-cinematic-scrim-dark"></div>
+          <div class="mn-cinematic-overlay-wrap mn-pos-bottom-left">
+            <div class="mn-cinematic-copy mn-align-left">
+              <span class="mn-banner-eyebrow">THE FESTIVE &amp; OCCASION EDIT</span>
+              <h2 class="mn-banner-headline">Fluid Anarkalis &amp; Artisanal Wraps</h2>
+              <p class="mn-banner-subtitle">Graceful flare and hand-tied details crafted for celebratory evenings.</p>
+              <div class="mn-banner-cta-wrap">
+                <a href="shop.html?category=Anarkali" class="mn-banner-btn">
+                  <span>Discover Festive Edit</span>
+                  <span aria-hidden="true">→</span>
+                </a>
+              </div>
             </div>
-            <div class="mn-hero-arrows">
-              <button type="button" id="hero-prev-btn" class="mn-hero-arrow-btn" aria-label="Previous slide">‹</button>
-              <button type="button" id="hero-next-btn" class="mn-hero-arrow-btn" aria-label="Next slide">›</button>
+          </div>
+        </article>
+
+        <!-- Slide 3 -->
+        <article class="mn-cinematic-slide mn-theme-dark" data-hero-slide="2" aria-hidden="true">
+          <div class="mn-cinematic-media">
+            <picture>
+              <source media="(max-width: 767px)" srcset="assets/k-coord.jpg" />
+              <img src="assets/k-coord.jpg" alt="Matra Naari Co-ord Sets and Kaftan Campaign" loading="lazy" decoding="async" />
+            </picture>
+          </div>
+          <div class="mn-cinematic-scrim mn-cinematic-scrim-dark"></div>
+          <div class="mn-cinematic-overlay-wrap mn-pos-bottom-center">
+            <div class="mn-cinematic-copy mn-align-center">
+              <span class="mn-banner-eyebrow">CONTEMPORARY ENSEMBLES</span>
+              <h2 class="mn-banner-headline">Effortless Co-ords &amp; Resort Kaftans</h2>
+              <p class="mn-banner-subtitle">Breathable two-piece sets and relaxed silhouettes from day to dusk.</p>
+              <div class="mn-banner-cta-wrap">
+                <a href="shop.html?view=trends" class="mn-banner-btn">
+                  <span>Explore Curated Edits</span>
+                  <span aria-hidden="true">→</span>
+                </a>
+              </div>
             </div>
+          </div>
+        </article>
+
+      </div>
+
+      <!-- Discreet Navigation Dots & Prev/Next Controls -->
+      <div class="mn-cinematic-nav-bar">
+        <div class="mn-cinematic-nav-inner">
+          <div class="mn-cinematic-dots" id="mn-cinematic-dots" role="tablist" aria-label="Campaign Slides">
+            <button type="button" class="mn-cinematic-dot mn-hero-dot active" data-hero-dot="0" aria-label="Slide 1" aria-selected="true"></button>
+            <button type="button" class="mn-cinematic-dot mn-hero-dot" data-hero-dot="1" aria-label="Slide 2" aria-selected="false"></button>
+            <button type="button" class="mn-cinematic-dot mn-hero-dot" data-hero-dot="2" aria-label="Slide 3" aria-selected="false"></button>
+          </div>
+          <div class="mn-cinematic-arrows">
+            <button type="button" id="hero-prev-btn" class="mn-cinematic-arrow" aria-label="Previous campaign slide">‹</button>
+            <button type="button" id="hero-next-btn" class="mn-cinematic-arrow" aria-label="Next campaign slide">›</button>
           </div>
         </div>
       </div>
@@ -587,6 +526,67 @@
       </div>
     </section>
 
+
+
+    <!-- =====================================================================
+         SECTION 4B — EDITORIAL CAMPAIGN PHOTO SECTIONS (Admin-Manageable)
+         ===================================================================== -->
+    <div id="home-editorial-campaigns">
+      <section class="mn-editorial-section mn-section" data-mn-reveal data-campaign-id="camp_1">
+        <div class="mn-container">
+          <div class="mn-editorial-grid">
+            <div class="mn-editorial-media-composition">
+              <a href="shop.html?view=trends&amp;edit=festive" class="mn-editorial-img-primary block">
+                <img src="assets/k-angrakha.jpg" alt="Matra Naari Festive Craft Editorial Campaign" loading="lazy" />
+              </a>
+              <a href="shop.html?view=trends&amp;edit=festive" class="mn-editorial-img-secondary block">
+                <img src="assets/k-anarkali.jpg" alt="Genda Anarkali Kurta — Festive Edit" loading="lazy" />
+              </a>
+            </div>
+            <div class="max-w-lg">
+              <span class="mn-eyebrow block mb-2">ATELIER CAMPAIGN · FESTIVE &amp; CRAFT</span>
+              <h2 class="mn-display-section text-foreground">The Grace of Unhurried Craft</h2>
+              <p class="mt-2.5 text-xs sm:text-sm text-muted-foreground leading-relaxed font-sans">
+                Hand-tied Angrakhas and flared Anarkalis pairing timeless Indian proportions with cloud-soft weaves.
+              </p>
+              <div class="mt-4 sm:mt-6">
+                <a href="shop.html?view=trends&amp;edit=festive" class="mn-btn-outline">
+                  <span>Explore the Edit</span>
+                  <span aria-hidden="true">→</span>
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="mn-section pt-0" data-mn-reveal data-campaign-id="camp_2">
+        <div class="mn-container">
+          <div class="mn-campaign-full-card">
+            <picture>
+              <source media="(max-width: 767px)" srcset="assets/k-aline.jpg" />
+              <img src="assets/k-aline.jpg" alt="Matra Naari Everyday Luxury Campaign" loading="lazy" />
+            </picture>
+            <div class="mn-campaign-full-overlay">
+              <div class="max-w-lg">
+                <span class="mn-banner-eyebrow block" style="opacity:1;transform:none;">EVERYDAY LUXURY</span>
+                <h2 class="mn-display-section" style="color:#FFFCF8 !important;">Silhouettes Designed to Move With You</h2>
+                <p class="mt-2 text-xs sm:text-sm" style="color:rgba(247,244,238,0.88);">
+                  From tailored straight kurtis to fluid A-line cuts across sizes XS to XXL.
+                </p>
+                <div class="mt-4">
+                  <a href="shop.html?view=trends&amp;edit=everyday" class="mn-btn-primary">
+                    <span>Shop Everyday Kurtis</span>
+                    <span aria-hidden="true">→</span>
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
     <!-- =====================================================================
          SECTION 5 — NEW ARRIVALS (Image-First Showcase)
          ===================================================================== -->
@@ -726,7 +726,7 @@
     </div>
   </footer>
 
-  <script src="assets/app.js?v=quiet-luxury-20261117.1"></script>
+  <script src="assets/app.js?v=cinematic-20261117.2"></script>
   <script>
     let _homepageCatalogCache = [];
     let _activeWardrobeFilter = 'all';
@@ -794,71 +794,278 @@
     }
 
 
-    function initHeroCarousel() {
-      const carousel = document.getElementById('home-hero-carousel');
-      if (!carousel || carousel.dataset.bound) return;
-      carousel.dataset.bound = '1';
+    let _heroSlideTimer = null;
+    let _heroDurationMs = 3500;
 
-      const slides = Array.from(carousel.querySelectorAll('.mn-hero-slide'));
-      const dots = Array.from(carousel.querySelectorAll('.mn-hero-dot'));
+    function buildHeroBannerSlidesHtml(banners) {
+      return banners.map((b, idx) => {
+        const deskImg = escapeHtml(b.desktop_image || b.image || 'assets/hero.jpg');
+        const mobImg = escapeHtml(b.mobile_image || b.desktop_image || b.image || 'assets/hero.jpg');
+        const altTxt = escapeHtml(b.alt_text || b.headline || b.title || 'Matra Naari Campaign');
+        const eyebrow = escapeHtml(b.eyebrow || '');
+        const headline = escapeHtml(b.headline || b.title || '');
+        const subtitle = escapeHtml(b.subtitle || b.tagline || '');
+        const ctaText = escapeHtml(b.cta_text || '');
+        const ctaLink = escapeHtml(b.cta_link || '');
+        const align = ['left', 'center', 'right'].includes(b.text_align) ? b.text_align : 'left';
+        const pos = ['bottom-left', 'center-left', 'center', 'bottom-center', 'bottom-right', 'center-right'].includes(b.text_position)
+          ? b.text_position
+          : 'bottom-left';
+        const theme = ['dark', 'light', 'none'].includes(b.overlay_theme) ? b.overlay_theme : 'dark';
+        const hasCopy = Boolean(eyebrow || headline || subtitle || (ctaText && ctaLink));
+        const scrimClass = (!hasCopy || theme === 'none')
+          ? 'mn-cinematic-scrim-none'
+          : (theme === 'light' ? 'mn-cinematic-scrim-light' : 'mn-cinematic-scrim-dark');
+        const headingTag = idx === 0 ? 'h1' : 'h2';
+
+        return `
+          <article class="mn-cinematic-slide ${idx === 0 ? 'active' : ''} mn-theme-${theme === 'light' ? 'light' : 'dark'}" data-hero-slide="${idx}" aria-hidden="${idx === 0 ? 'false' : 'true'}">
+            <div class="mn-cinematic-media">
+              <picture>
+                <source media="(max-width: 767px)" srcset="${mobImg}" />
+                <img src="${deskImg}" alt="${altTxt}" ${idx === 0 ? 'fetchpriority="high" loading="eager"' : (idx === 1 ? 'loading="eager"' : 'loading="lazy"')} decoding="async" onerror="this.onerror=null;this.src='assets/hero.jpg';" />
+              </picture>
+            </div>
+            <div class="mn-cinematic-scrim ${scrimClass}"></div>
+            ${hasCopy ? `
+              <div class="mn-cinematic-overlay-wrap mn-pos-${pos}">
+                <div class="mn-cinematic-copy mn-align-${align}">
+                  ${eyebrow ? `<span class="mn-banner-eyebrow">${eyebrow}</span>` : ''}
+                  ${headline ? `<${headingTag} class="mn-banner-headline">${headline}</${headingTag}>` : ''}
+                  ${subtitle ? `<p class="mn-banner-subtitle">${subtitle}</p>` : ''}
+                  ${ctaText && ctaLink ? `
+                    <div class="mn-banner-cta-wrap">
+                      <a href="${ctaLink}" class="mn-banner-btn">
+                        <span>${ctaText}</span>
+                        <span aria-hidden="true">→</span>
+                      </a>
+                    </div>
+                  ` : ''}
+                </div>
+              </div>
+            ` : ''}
+          </article>
+        `;
+      }).join('');
+    }
+
+    function renderEditorialCampaignSections(campaigns) {
+      const mount = document.getElementById('home-editorial-campaigns');
+      if (!mount) return;
+      if (!Array.isArray(campaigns)) return;
+      const valid = campaigns.filter(c => c && c.enabled !== false && (c.desktop_image || c.image));
+      if (valid.length === 0) {
+        mount.innerHTML = '';
+        mount.classList.add('hidden');
+        return;
+      }
+      mount.classList.remove('hidden');
+      mount.innerHTML = valid.map(c => {
+        const deskImg = escapeHtml(c.desktop_image || c.image || '');
+        const secImg = escapeHtml(c.secondary_image || '');
+        const mobImg = escapeHtml(c.mobile_image || deskImg);
+        const eyebrow = escapeHtml(c.eyebrow || '');
+        const headline = escapeHtml(c.headline || '');
+        const subtitle = escapeHtml(c.subtitle || '');
+        const ctaText = escapeHtml(c.cta_text || '');
+        const ctaLink = escapeHtml(c.cta_link || 'shop.html');
+        const altTxt = escapeHtml(c.alt_text || headline || 'Matra Naari Campaign');
+
+        if (c.layout === 'full') {
+          return `
+            <section class="mn-section pt-0" data-mn-reveal data-campaign-id="${escapeHtml(c.id || '')}">
+              <div class="mn-container">
+                <div class="mn-campaign-full-card">
+                  <picture>
+                    <source media="(max-width: 767px)" srcset="${mobImg}" />
+                    <img src="${deskImg}" alt="${altTxt}" loading="lazy" onerror="this.onerror=null;this.src='assets/hero.jpg';" />
+                  </picture>
+                  ${(eyebrow || headline || subtitle || ctaText) ? `
+                    <div class="mn-campaign-full-overlay">
+                      <div class="max-w-lg">
+                        ${eyebrow ? `<span class="mn-banner-eyebrow block" style="opacity:1;transform:none;">${eyebrow}</span>` : ''}
+                        ${headline ? `<h2 class="mn-display-section" style="color:#FFFCF8 !important;">${headline}</h2>` : ''}
+                        ${subtitle ? `<p class="mt-2 text-xs sm:text-sm" style="color:rgba(247,244,238,0.88);">${subtitle}</p>` : ''}
+                        ${ctaText ? `
+                          <div class="mt-4">
+                            <a href="${ctaLink}" class="mn-btn-primary">
+                              <span>${ctaText}</span>
+                              <span aria-hidden="true">→</span>
+                            </a>
+                          </div>
+                        ` : ''}
+                      </div>
+                    </div>
+                  ` : ''}
+                </div>
+              </div>
+            </section>
+          `;
+        }
+
+        return `
+          <section class="mn-editorial-section mn-section" data-mn-reveal data-campaign-id="${escapeHtml(c.id || '')}">
+            <div class="mn-container">
+              <div class="mn-editorial-grid">
+                <div class="mn-editorial-media-composition">
+                  <a href="${ctaLink}" class="mn-editorial-img-primary block">
+                    <img src="${deskImg}" alt="${altTxt}" loading="lazy" onerror="this.onerror=null;this.src='assets/hero.jpg';" />
+                  </a>
+                  ${secImg ? `
+                    <a href="${ctaLink}" class="mn-editorial-img-secondary block">
+                      <img src="${secImg}" alt="${altTxt}" loading="lazy" onerror="this.onerror=null;this.src='assets/k-anarkali.jpg';" />
+                    </a>
+                  ` : ''}
+                </div>
+                <div class="max-w-lg">
+                  ${eyebrow ? `<span class="mn-eyebrow block mb-2">${eyebrow}</span>` : ''}
+                  ${headline ? `<h2 class="mn-display-section text-foreground">${headline}</h2>` : ''}
+                  ${subtitle ? `<p class="mt-2.5 text-xs sm:text-sm text-muted-foreground leading-relaxed font-sans">${subtitle}</p>` : ''}
+                  ${ctaText ? `
+                    <div class="mt-4 sm:mt-6">
+                      <a href="${ctaLink}" class="mn-btn-outline">
+                        <span>${ctaText}</span>
+                        <span aria-hidden="true">→</span>
+                      </a>
+                    </div>
+                  ` : ''}
+                </div>
+              </div>
+            </div>
+          </section>
+        `;
+      }).join('');
+    }
+
+    function initHeroCarousel(customDurationMs) {
+      const carousel = document.getElementById('home-hero-carousel');
+      if (!carousel) return;
+      if (customDurationMs && Number(customDurationMs) >= 1500) {
+        _heroDurationMs = Number(customDurationMs);
+      }
+
+      const slides = Array.from(carousel.querySelectorAll('.mn-cinematic-slide'));
+      const dots = Array.from(carousel.querySelectorAll('[data-hero-dot]'));
       const prevBtn = document.getElementById('hero-prev-btn');
       const nextBtn = document.getElementById('hero-next-btn');
-      if (slides.length <= 1) return;
+      const navBar = carousel.querySelector('.mn-cinematic-nav-bar');
+      if (navBar) {
+        navBar.style.display = slides.length <= 1 ? 'none' : '';
+      }
+      if (slides.length <= 1) {
+        if (_heroSlideTimer) clearInterval(_heroSlideTimer);
+        return;
+      }
 
       let activeIdx = 0;
       let isPaused = false;
       let touchStartX = 0;
       let touchEndX = 0;
 
+      function preloadSlideImage(idx) {
+        const nextSlide = slides[(idx + slides.length) % slides.length];
+        if (!nextSlide) return;
+        const img = nextSlide.querySelector('img');
+        if (img && img.getAttribute('loading') === 'lazy') {
+          img.setAttribute('loading', 'eager');
+        }
+      }
+
       function goToSlide(idx) {
         activeIdx = (idx + slides.length) % slides.length;
-        slides.forEach((s, i) => s.classList.toggle('active', i === activeIdx));
+        slides.forEach((s, i) => {
+          const isMatch = i === activeIdx;
+          s.classList.toggle('active', isMatch);
+          s.setAttribute('aria-hidden', isMatch ? 'false' : 'true');
+        });
         dots.forEach((d, i) => {
           const isMatch = i === activeIdx;
           d.classList.toggle('active', isMatch);
           d.setAttribute('aria-selected', isMatch ? 'true' : 'false');
         });
+        preloadSlideImage(activeIdx + 1);
       }
 
       dots.forEach((dot, i) => {
-        dot.addEventListener('click', () => goToSlide(i));
+        dot.onclick = () => goToSlide(i);
       });
-      if (prevBtn) prevBtn.addEventListener('click', () => goToSlide(activeIdx - 1));
-      if (nextBtn) nextBtn.addEventListener('click', () => goToSlide(activeIdx + 1));
+      if (prevBtn) prevBtn.onclick = () => goToSlide(activeIdx - 1);
+      if (nextBtn) nextBtn.onclick = () => goToSlide(activeIdx + 1);
 
-      carousel.addEventListener('mouseenter', () => { isPaused = true; });
-      carousel.addEventListener('mouseleave', () => { isPaused = false; });
-      carousel.addEventListener('focusin', () => { isPaused = true; });
-      carousel.addEventListener('focusout', () => { isPaused = false; });
+      if (!carousel.dataset.boundListeners) {
+        carousel.dataset.boundListeners = '1';
+        carousel.addEventListener('mouseenter', () => { isPaused = true; });
+        carousel.addEventListener('mouseleave', () => { isPaused = false; });
+        carousel.addEventListener('focusin', () => { isPaused = true; });
+        carousel.addEventListener('focusout', () => { isPaused = false; });
 
-      carousel.addEventListener('touchstart', (e) => {
-        if (e.changedTouches && e.changedTouches[0]) {
-          touchStartX = e.changedTouches[0].screenX;
-        }
-      }, { passive: true });
-
-      carousel.addEventListener('touchend', (e) => {
-        if (e.changedTouches && e.changedTouches[0]) {
-          touchEndX = e.changedTouches[0].screenX;
-          const diff = touchStartX - touchEndX;
-          if (Math.abs(diff) > 42) {
-            if (diff > 0) goToSlide(activeIdx + 1);
-            else goToSlide(activeIdx - 1);
+        carousel.addEventListener('keydown', (e) => {
+          if (e.key === 'ArrowLeft') {
+            e.preventDefault();
+            goToSlide(activeIdx - 1);
+          } else if (e.key === 'ArrowRight') {
+            e.preventDefault();
+            goToSlide(activeIdx + 1);
           }
-        }
-      }, { passive: true });
+        });
 
+        carousel.addEventListener('touchstart', (e) => {
+          isPaused = true;
+          if (e.changedTouches && e.changedTouches[0]) {
+            touchStartX = e.changedTouches[0].screenX;
+          }
+        }, { passive: true });
+
+        carousel.addEventListener('touchend', (e) => {
+          if (e.changedTouches && e.changedTouches[0]) {
+            touchEndX = e.changedTouches[0].screenX;
+            const diff = touchStartX - touchEndX;
+            if (Math.abs(diff) > 40) {
+              if (diff > 0) goToSlide(activeIdx + 1);
+              else goToSlide(activeIdx - 1);
+            }
+          }
+          setTimeout(() => { isPaused = false; }, 1200);
+        }, { passive: true });
+      }
+
+      if (_heroSlideTimer) clearInterval(_heroSlideTimer);
       if (!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches)) {
-        setInterval(() => {
+        _heroSlideTimer = setInterval(() => {
           if (!isPaused && !document.hidden) {
             goToSlide(activeIdx + 1);
           }
-        }, 5500);
+        }, _heroDurationMs);
       }
     }
 
+    async function hydrateHomepageBannersAndCampaigns() {
+      try {
+        const res = await fetch(`${API_BASE}/api/banners`);
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!data || !data.ok) return;
+
+        if (Array.isArray(data.hero_banners) && data.hero_banners.length > 0) {
+          const stage = document.getElementById('mn-cinematic-stage');
+          const dotsWrap = document.getElementById('mn-cinematic-dots');
+          if (stage && dotsWrap) {
+            stage.innerHTML = buildHeroBannerSlidesHtml(data.hero_banners);
+            dotsWrap.innerHTML = data.hero_banners.map((b, i) => `
+              <button type="button" class="mn-cinematic-dot mn-hero-dot ${i === 0 ? 'active' : ''}" data-hero-dot="${i}" aria-label="Slide ${i + 1}: ${escapeHtml(b.headline || b.title || 'Campaign')}" aria-selected="${i === 0 ? 'true' : 'false'}"></button>
+            `).join('');
+          }
+        }
+        if ('editorial_campaigns' in data) {
+          renderEditorialCampaignSections(data.editorial_campaigns);
+        }
+        initHeroCarousel(data.hero_slide_duration_ms || 3500);
+      } catch (e) {}
+    }
+
     async function loadHomepageCatalog() {
-      initHeroCarousel();
+      initHeroCarousel(3500);
+      hydrateHomepageBannersAndCampaigns();
       initWardrobeFilterTabs();
 
       if (typeof PRODUCTS !== 'undefined' && Array.isArray(PRODUCTS) && PRODUCTS.length > 0) {

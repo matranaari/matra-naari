@@ -148,6 +148,10 @@
           <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
           <span>Returns &amp; Exchanges</span>
         </button>
+        <button type="button" data-tab="banners" class="admin-tab-btn admin-sidebar-btn">
+          <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+          <span>Homepage Banners</span>
+        </button>
         <button type="button" data-tab="settings" class="admin-tab-btn admin-sidebar-btn">
           <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
           <span>Settings</span>
@@ -671,6 +675,189 @@
       </section>
 
       <!-- ============================================================== -->
+      <!-- 6B. HOMEPAGE BANNERS & EDITORIAL CAMPAIGNS TAB                 -->
+      <!-- ============================================================== -->
+      <section id="tab-banners" class="admin-tab-panel hidden space-y-6">
+        <div class="bg-card/90 border border-border p-6 space-y-6">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-4">
+            <div>
+              <h2 class="font-display text-2xl font-bold">Homepage Banners &amp; Campaign Slider</h2>
+              <p class="text-xs text-muted-foreground mt-0.5">Upload desktop &amp; mobile campaign banners, customize animated overlay text, reorder slides, and preview before publishing.</p>
+            </div>
+            <div class="flex flex-wrap items-center gap-3">
+              <div class="flex items-center gap-2 bg-background border border-border px-3 py-1.5">
+                <label for="bnr-slide-duration-sec" class="text-xs uppercase tracking-wider text-muted-foreground font-semibold">Slide Duration (s):</label>
+                <input type="number" id="bnr-slide-duration-sec" min="1.5" max="15" step="0.5" value="3.5" class="w-16 bg-card border border-border px-2 py-1 text-xs font-mono font-bold text-center" />
+              </div>
+              <button type="button" id="bnr-save-duration-btn" class="bg-primary text-primary-foreground px-4 py-2 text-xs font-semibold uppercase tracking-wider hover:bg-primary/90 transition cursor-pointer">
+                Save Timing
+              </button>
+              <button type="button" id="bnr-new-slide-btn" class="border border-primary text-primary px-4 py-2 text-xs font-semibold uppercase tracking-wider hover:bg-primary/5 transition cursor-pointer">
+                + New Banner Slide
+              </button>
+            </div>
+          </div>
+
+          <p id="bnr-status-msg" class="text-xs hidden"></p>
+
+          <!-- Current Slides List (Reorder, Enable/Disable, Edit, Delete) -->
+          <div>
+            <h3 class="font-display text-lg font-bold mb-2">Configured Hero Slider Banners</h3>
+            <div id="admin-banners-list" class="space-y-3">
+              <!-- Populated by JS -->
+            </div>
+          </div>
+
+          <!-- Banner Editor + Live Interactive Preview -->
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 pt-4 border-t border-border">
+            <!-- Left: Banner Editor Form -->
+            <form id="admin-banner-editor-form" class="space-y-4 bg-background/60 border border-border p-4">
+              <div class="flex items-center justify-between border-b border-border pb-2">
+                <h3 id="bnr-form-heading" class="font-display text-lg font-bold text-primary">Add / Edit Hero Banner</h3>
+                <button type="button" id="bnr-reset-form-btn" class="text-xs text-muted-foreground hover:text-primary underline cursor-pointer">Clear Form</button>
+              </div>
+              <input type="hidden" id="bnr-id" value="" />
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-xs uppercase tracking-wider text-muted-foreground mb-1">Desktop Banner Image *</label>
+                  <input type="text" id="bnr-desktop-image" required placeholder="assets/hero.jpg or uploaded URL" class="w-full bg-card border border-border px-3 py-2 text-xs font-mono" />
+                  <label class="mt-1.5 inline-flex items-center gap-1.5 border border-primary/40 bg-primary/5 text-primary px-2.5 py-1 text-[11px] font-semibold cursor-pointer hover:bg-primary/10 transition">
+                    <span>Upload Desktop Image</span>
+                    <input type="file" id="bnr-desktop-file-input" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" class="hidden" />
+                  </label>
+                </div>
+
+                <div>
+                  <label class="block text-xs uppercase tracking-wider text-muted-foreground mb-1">Mobile Banner Image (Optional)</label>
+                  <input type="text" id="bnr-mobile-image" placeholder="Optional mobile-cropped image" class="w-full bg-card border border-border px-3 py-2 text-xs font-mono" />
+                  <label class="mt-1.5 inline-flex items-center gap-1.5 border border-border bg-card text-foreground px-2.5 py-1 text-[11px] font-semibold cursor-pointer hover:border-primary transition">
+                    <span>Upload Mobile Image</span>
+                    <input type="file" id="bnr-mobile-file-input" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" class="hidden" />
+                  </label>
+                </div>
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-xs uppercase tracking-wider text-muted-foreground mb-1">Eyebrow Text (Optional)</label>
+                  <input type="text" id="bnr-eyebrow" placeholder="e.g. MATRA NAARI · NEW COLLECTION" class="w-full bg-card border border-border px-3 py-2 text-xs" />
+                </div>
+                <div>
+                  <label class="block text-xs uppercase tracking-wider text-muted-foreground mb-1">Image Alt Text</label>
+                  <input type="text" id="bnr-alt-text" placeholder="Descriptive alt text for accessibility" class="w-full bg-card border border-border px-3 py-2 text-xs" />
+                </div>
+              </div>
+
+              <div>
+                <label class="block text-xs uppercase tracking-wider text-muted-foreground mb-1">Banner Headline (Optional — leave blank for image-only banner)</label>
+                <input type="text" id="bnr-headline" placeholder="e.g. Modern Kurtis, Rooted in Craft" class="w-full bg-card border border-border px-3 py-2 text-sm" />
+              </div>
+
+              <div>
+                <label class="block text-xs uppercase tracking-wider text-muted-foreground mb-1">Short Subtitle (Optional)</label>
+                <input type="text" id="bnr-subtitle" placeholder="e.g. Thoughtfully proportioned Indian silhouettes tailored for effortless grace." class="w-full bg-card border border-border px-3 py-2 text-xs" />
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-xs uppercase tracking-wider text-muted-foreground mb-1">Button Text (Optional)</label>
+                  <input type="text" id="bnr-cta-text" placeholder="e.g. Explore Collection" class="w-full bg-card border border-border px-3 py-2 text-xs" />
+                </div>
+                <div>
+                  <label class="block text-xs uppercase tracking-wider text-muted-foreground mb-1">Button Destination URL</label>
+                  <input type="text" id="bnr-cta-link" placeholder="e.g. shop.html or shop.html?category=Anarkali" class="w-full bg-card border border-border px-3 py-2 text-xs font-mono" />
+                </div>
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <label class="block text-xs uppercase tracking-wider text-muted-foreground mb-1">Text Alignment</label>
+                  <select id="bnr-text-align" class="w-full bg-card border border-border px-2.5 py-2 text-xs">
+                    <option value="left">Left</option>
+                    <option value="center">Center</option>
+                    <option value="right">Right</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-xs uppercase tracking-wider text-muted-foreground mb-1">Text Position</label>
+                  <select id="bnr-text-position" class="w-full bg-card border border-border px-2.5 py-2 text-xs">
+                    <option value="bottom-left">Bottom Left</option>
+                    <option value="center-left">Center Left</option>
+                    <option value="center">Center</option>
+                    <option value="bottom-center">Bottom Center</option>
+                    <option value="bottom-right">Bottom Right</option>
+                    <option value="center-right">Center Right</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-xs uppercase tracking-wider text-muted-foreground mb-1">Overlay Scrim</label>
+                  <select id="bnr-overlay-theme" class="w-full bg-card border border-border px-2.5 py-2 text-xs">
+                    <option value="dark">Dark Scrim (Light Text)</option>
+                    <option value="light">Light Scrim (Dark Text)</option>
+                    <option value="none">None (Image Only)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="flex items-center justify-between pt-2">
+                <label class="inline-flex items-center gap-2 text-xs font-semibold cursor-pointer">
+                  <input type="checkbox" id="bnr-enabled" checked class="accent-primary h-4 w-4" />
+                  <span>Enable &amp; Publish this Banner</span>
+                </label>
+
+                <button type="submit" id="bnr-save-btn" class="bg-primary text-primary-foreground px-6 py-2.5 text-xs font-semibold uppercase tracking-widest hover:bg-primary/90 transition cursor-pointer">
+                  Save &amp; Publish Banner
+                </button>
+              </div>
+            </form>
+
+            <!-- Right: Live Interactive Banner Preview -->
+            <div class="space-y-3">
+              <div class="flex items-center justify-between">
+                <h3 class="font-display text-lg font-bold">Live Banner Preview</h3>
+                <div class="inline-flex border border-border bg-background text-xs">
+                  <button type="button" id="bnr-preview-mode-desktop" class="px-3 py-1 bg-primary text-primary-foreground font-semibold cursor-pointer">Desktop</button>
+                  <button type="button" id="bnr-preview-mode-mobile" class="px-3 py-1 text-foreground cursor-pointer">Mobile</button>
+                </div>
+              </div>
+
+              <div id="admin-banner-live-preview-frame" class="relative w-full overflow-hidden border border-border bg-[#292725]" style="height: 320px;">
+                <img id="bnr-preview-img" src="assets/hero.jpg" alt="Banner Preview" class="w-full h-full object-cover object-top" onerror="this.onerror=null;this.src='assets/hero.jpg';" />
+                <div id="bnr-preview-scrim" class="absolute inset-0" style="background: linear-gradient(180deg, rgba(25,18,19,0.15) 0%, rgba(25,18,19,0.75) 100%);"></div>
+                <div id="bnr-preview-pos-wrap" class="absolute inset-0 p-6 flex items-end justify-start">
+                  <div id="bnr-preview-copy-box" class="max-w-md flex flex-col items-start text-left">
+                    <span id="bnr-preview-eyebrow" class="text-[10px] uppercase tracking-[0.2em] font-semibold text-[#E6DED5] mb-1">MATRA NAARI · SIGNATURE CAMPAIGN</span>
+                    <h4 id="bnr-preview-headline" class="font-display text-2xl sm:text-3xl font-medium text-[#FFFCF8] leading-tight">Modern Kurtis, Rooted in Craft</h4>
+                    <p id="bnr-preview-subtitle" class="text-xs text-[#F7F4EE]/90 mt-1.5">Thoughtfully proportioned Indian silhouettes tailored for effortless grace.</p>
+                    <span id="bnr-preview-cta" class="mt-3 inline-block bg-[#FFFCF8] text-[#292725] px-4 py-1.5 text-[10px] uppercase tracking-[0.16em] font-semibold">Explore Collection →</span>
+                  </div>
+                </div>
+              </div>
+              <p class="text-[11px] text-muted-foreground">Preview updates automatically as you edit text, alignment, position, or upload new banner images.</p>
+            </div>
+          </div>
+
+          <!-- Editorial Campaign Photo Sections Manager -->
+          <div class="pt-6 border-t border-border space-y-4">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div>
+                <h3 class="font-display text-xl font-bold">Homepage Editorial Campaign Photo Sections</h3>
+                <p class="text-xs text-muted-foreground">Manage the large editorial campaign sections on the homepage. Disable or clear a section's image to hide it gracefully.</p>
+              </div>
+              <button type="button" id="save-editorial-campaigns-btn" class="bg-primary text-primary-foreground px-5 py-2 text-xs font-semibold uppercase tracking-wider hover:bg-primary/90 transition cursor-pointer">
+                Save Editorial Sections
+              </button>
+            </div>
+            <div id="admin-editorial-campaigns-list" class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <!-- Populated by JS -->
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- ============================================================== -->
       <!-- 7. STORE SETTINGS TAB                                          -->
       <!-- ============================================================== -->
       <section id="tab-settings" class="admin-tab-panel hidden space-y-6">
@@ -730,7 +917,12 @@
 
             <!-- Homepage Banners & Promotional Messages -->
             <div>
-              <h3 class="font-display text-lg font-bold border-b border-border pb-1.5 mb-3">3. Homepage Banners &amp; Promotional Messages</h3>
+              <div class="flex flex-wrap items-center justify-between border-b border-border pb-1.5 mb-3 gap-2">
+                <h3 class="font-display text-lg font-bold">3. Homepage Banners &amp; Promotional Messages</h3>
+                <button type="button" id="open-banners-tab-shortcut" class="bg-primary text-primary-foreground px-3 py-1 text-xs font-semibold uppercase tracking-wider cursor-pointer">
+                  Manage Hero Slider &amp; Campaign Photos →
+                </button>
+              </div>
               <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
                 <div>
                   <label class="block text-xs uppercase tracking-wider text-muted-foreground mb-1">Top Announcement Bar</label>
@@ -1252,6 +1444,7 @@
               if (data.settings) {
                 applySettingsToForm(data.settings);
               }
+              loadAdminBanners();
               return;
             }
           }
@@ -1267,6 +1460,7 @@
           loadCoupons(),
           loadReturns(),
           loadSettings(),
+          loadAdminBanners(),
         ]);
       }
 
@@ -2625,6 +2819,461 @@
           });
         });
       }
+
+
+      // ==============================================================
+      // 6B. HOMEPAGE BANNERS & EDITORIAL CAMPAIGNS MANAGEMENT
+      // ==============================================================
+      let adminHeroBanners = [];
+      let adminEditorialCampaigns = [];
+      let adminHeroSlideDurationMs = 3500;
+      let adminPreviewMode = "desktop";
+
+      function showBannerAdminMsg(text, isError = false) {
+        const el = document.getElementById("bnr-status-msg");
+        if (!el) return;
+        el.textContent = text;
+        el.className = `text-xs font-semibold block p-2.5 border ${isError ? "bg-red-50 text-red-800 border-red-300" : "bg-emerald-50 text-emerald-800 border-emerald-300"}`;
+        el.classList.remove("hidden");
+        setTimeout(() => el.classList.add("hidden"), 4000);
+      }
+
+      async function loadAdminBanners() {
+        try {
+          const res = await fetch("/api/admin/banners", { headers: getAdminHeaders() });
+          if (res.status === 401) return lockWorkspace();
+          const data = await res.json();
+          if (data && data.ok) {
+            adminHeroBanners = Array.isArray(data.hero_banners) ? data.hero_banners : [];
+            adminEditorialCampaigns = Array.isArray(data.editorial_campaigns) ? data.editorial_campaigns : [];
+            adminHeroSlideDurationMs = Number(data.hero_slide_duration_ms || 3500);
+            const durInput = document.getElementById("bnr-slide-duration-sec");
+            if (durInput) durInput.value = (adminHeroSlideDurationMs / 1000).toFixed(1).replace(/\.0$/, "");
+            renderAdminBannersList();
+            renderAdminEditorialCampaignsList();
+          }
+        } catch (err) {
+          console.error("Failed loading admin banners:", err);
+        }
+      }
+
+      function renderAdminBannersList() {
+        const listEl = document.getElementById("admin-banners-list");
+        if (!listEl) return;
+        if (!adminHeroBanners.length) {
+          listEl.innerHTML = `<p class="text-xs text-muted-foreground py-4">No hero banners configured.</p>`;
+          return;
+        }
+        listEl.innerHTML = adminHeroBanners.map((b, idx) => `
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 bg-background border ${b.enabled ? "border-border" : "border-dashed border-border opacity-65"}">
+            <div class="flex items-center gap-3 min-w-0">
+              <span class="font-mono text-xs font-bold text-primary px-2 py-1 bg-primary/10">#${idx + 1}</span>
+              <img src="${escapeHtml(b.desktop_image)}" alt="${escapeHtml(b.headline || "Banner")}" class="h-14 w-24 object-cover object-top border border-border shrink-0" onerror="this.onerror=null;this.src='assets/hero.jpg';" />
+              <div class="min-w-0">
+                <div class="flex items-center gap-2 flex-wrap">
+                  <span class="font-display font-bold text-base truncate">${escapeHtml(b.headline || "(Image-Only Banner)")}</span>
+                  <span class="px-1.5 py-0.5 text-[10px] uppercase font-bold ${b.enabled ? "bg-emerald-100 text-emerald-800" : "bg-gray-200 text-gray-700"}">${b.enabled ? "Enabled" : "Disabled"}</span>
+                  <span class="px-1.5 py-0.5 text-[10px] font-mono bg-card border border-border text-muted-foreground">${escapeHtml(b.text_position)} · ${escapeHtml(b.text_align)}</span>
+                </div>
+                <p class="text-xs text-muted-foreground truncate mt-0.5">${escapeHtml(b.subtitle || b.eyebrow || b.desktop_image)}</p>
+              </div>
+            </div>
+            <div class="flex items-center gap-1.5 shrink-0">
+              <button type="button" data-bnr-up="${idx}" ${idx === 0 ? "disabled" : ""} class="border border-border bg-card px-2 py-1 text-xs ${idx === 0 ? "opacity-35 cursor-not-allowed" : "hover:border-primary cursor-pointer"}" title="Move Up">↑</button>
+              <button type="button" data-bnr-down="${idx}" ${idx === adminHeroBanners.length - 1 ? "disabled" : ""} class="border border-border bg-card px-2 py-1 text-xs ${idx === adminHeroBanners.length - 1 ? "opacity-35 cursor-not-allowed" : "hover:border-primary cursor-pointer"}" title="Move Down">↓</button>
+              <button type="button" data-bnr-toggle="${idx}" class="border border-border bg-card px-2.5 py-1 text-xs hover:border-primary cursor-pointer">${b.enabled ? "Disable" : "Enable"}</button>
+              <button type="button" data-bnr-edit="${idx}" class="bg-primary text-primary-foreground px-3 py-1 text-xs font-semibold cursor-pointer">Edit / Preview</button>
+              <button type="button" data-bnr-delete="${escapeHtml(b.id)}" class="border border-border bg-card hover:border-destructive hover:text-destructive px-2.5 py-1 text-xs cursor-pointer">Delete</button>
+            </div>
+          </div>
+        `).join("");
+
+        listEl.querySelectorAll("[data-bnr-up]").forEach((btn) => {
+          btn.addEventListener("click", async () => {
+            const i = Number(btn.getAttribute("data-bnr-up"));
+            if (i <= 0) return;
+            const copy = [...adminHeroBanners];
+            [copy[i - 1], copy[i]] = [copy[i], copy[i - 1]];
+            await saveHeroBannersOrder(copy);
+          });
+        });
+
+        listEl.querySelectorAll("[data-bnr-down]").forEach((btn) => {
+          btn.addEventListener("click", async () => {
+            const i = Number(btn.getAttribute("data-bnr-down"));
+            if (i >= adminHeroBanners.length - 1) return;
+            const copy = [...adminHeroBanners];
+            [copy[i], copy[i + 1]] = [copy[i + 1], copy[i]];
+            await saveHeroBannersOrder(copy);
+          });
+        });
+
+        listEl.querySelectorAll("[data-bnr-toggle]").forEach((btn) => {
+          btn.addEventListener("click", async () => {
+            const i = Number(btn.getAttribute("data-bnr-toggle"));
+            const target = adminHeroBanners[i];
+            if (!target) return;
+            target.enabled = !target.enabled;
+            await saveHeroBannersOrder(adminHeroBanners);
+          });
+        });
+
+        listEl.querySelectorAll("[data-bnr-edit]").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            const i = Number(btn.getAttribute("data-bnr-edit"));
+            const b = adminHeroBanners[i];
+            if (!b) return;
+            populateBannerEditorForm(b);
+          });
+        });
+
+        listEl.querySelectorAll("[data-bnr-delete]").forEach((btn) => {
+          btn.addEventListener("click", async () => {
+            const bid = btn.getAttribute("data-bnr-delete");
+            if (adminHeroBanners.length <= 1) {
+              showBannerAdminMsg("At least one banner must remain in the hero slider.", true);
+              return;
+            }
+            const res = await fetch(`/api/admin/banners/${encodeURIComponent(bid)}`, {
+              method: "DELETE",
+              headers: getAdminHeaders(),
+            });
+            const data = await res.json().catch(() => ({}));
+            if (res.ok && data.ok) {
+              adminHeroBanners = data.hero_banners || [];
+              renderAdminBannersList();
+              showBannerAdminMsg("Banner deleted.");
+            } else {
+              showBannerAdminMsg(data.error || "Failed deleting banner.", true);
+            }
+          });
+        });
+      }
+
+      async function saveHeroBannersOrder(updatedList) {
+        const durSec = parseFloat(document.getElementById("bnr-slide-duration-sec")?.value || "3.5") || 3.5;
+        const res = await fetch("/api/admin/banners", {
+          method: "POST",
+          headers: getAdminHeaders({ "Content-Type": "application/json" }),
+          body: JSON.stringify({
+            action: "save_all",
+            hero_slide_duration_ms: Math.round(durSec * 1000),
+            hero_banners: updatedList,
+          }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (res.ok && data.ok) {
+          adminHeroBanners = data.hero_banners || updatedList;
+          renderAdminBannersList();
+          showBannerAdminMsg("Banner order & status published to storefront!");
+        } else {
+          showBannerAdminMsg(data.error || "Failed updating banners.", true);
+        }
+      }
+
+      function populateBannerEditorForm(b) {
+        document.getElementById("bnr-form-heading").textContent = b && b.id ? `Edit Banner (${b.id})` : "Add New Hero Banner";
+        document.getElementById("bnr-id").value = b?.id || "";
+        document.getElementById("bnr-desktop-image").value = b?.desktop_image || "";
+        document.getElementById("bnr-mobile-image").value = b?.mobile_image || "";
+        document.getElementById("bnr-eyebrow").value = b?.eyebrow || "";
+        document.getElementById("bnr-alt-text").value = b?.alt_text || "";
+        document.getElementById("bnr-headline").value = b?.headline || "";
+        document.getElementById("bnr-subtitle").value = b?.subtitle || "";
+        document.getElementById("bnr-cta-text").value = b?.cta_text || "";
+        document.getElementById("bnr-cta-link").value = b?.cta_link || "";
+        document.getElementById("bnr-text-align").value = b?.text_align || "left";
+        document.getElementById("bnr-text-position").value = b?.text_position || "bottom-left";
+        document.getElementById("bnr-overlay-theme").value = b?.overlay_theme || "dark";
+        document.getElementById("bnr-enabled").checked = b?.enabled !== false;
+        updateLiveBannerPreview();
+      }
+
+      function updateLiveBannerPreview() {
+        const deskImg = document.getElementById("bnr-desktop-image")?.value.trim() || "assets/hero.jpg";
+        const mobImg = document.getElementById("bnr-mobile-image")?.value.trim() || deskImg;
+        const eyebrow = document.getElementById("bnr-eyebrow")?.value.trim() || "";
+        const headline = document.getElementById("bnr-headline")?.value.trim() || "";
+        const subtitle = document.getElementById("bnr-subtitle")?.value.trim() || "";
+        const ctaText = document.getElementById("bnr-cta-text")?.value.trim() || "";
+        const align = document.getElementById("bnr-text-align")?.value || "left";
+        const pos = document.getElementById("bnr-text-position")?.value || "bottom-left";
+        const theme = document.getElementById("bnr-overlay-theme")?.value || "dark";
+
+        const frame = document.getElementById("admin-banner-live-preview-frame");
+        const imgEl = document.getElementById("bnr-preview-img");
+        const scrimEl = document.getElementById("bnr-preview-scrim");
+        const posWrap = document.getElementById("bnr-preview-pos-wrap");
+        const copyBox = document.getElementById("bnr-preview-copy-box");
+        const eyeEl = document.getElementById("bnr-preview-eyebrow");
+        const headEl = document.getElementById("bnr-preview-headline");
+        const subEl = document.getElementById("bnr-preview-subtitle");
+        const ctaEl = document.getElementById("bnr-preview-cta");
+        if (!frame || !imgEl) return;
+
+        frame.style.maxWidth = adminPreviewMode === "mobile" ? "280px" : "100%";
+        frame.style.margin = adminPreviewMode === "mobile" ? "0 auto" : "0";
+        imgEl.src = adminPreviewMode === "mobile" ? mobImg : deskImg;
+
+        const hasCopy = Boolean(eyebrow || headline || subtitle || ctaText);
+        if (!hasCopy || theme === "none") {
+          scrimEl.style.background = "transparent";
+        } else if (theme === "light") {
+          scrimEl.style.background = "linear-gradient(90deg, rgba(247,244,238,0.88) 0%, rgba(247,244,238,0.2) 100%)";
+        } else {
+          scrimEl.style.background = "linear-gradient(180deg, rgba(25,18,19,0.15) 0%, rgba(25,18,19,0.76) 100%)";
+        }
+
+        const posMap = {
+          "bottom-left": "items-end justify-start",
+          "center-left": "items-center justify-start",
+          "center": "items-center justify-center",
+          "bottom-center": "items-end justify-center",
+          "bottom-right": "items-end justify-end",
+          "center-right": "items-center justify-end",
+        };
+        posWrap.className = `absolute inset-0 p-5 flex ${posMap[pos] || "items-end justify-start"}`;
+
+        const alignMap = {
+          left: "items-start text-left",
+          center: "items-center text-center",
+          right: "items-end text-right",
+        };
+        copyBox.className = `max-w-md flex flex-col ${alignMap[align] || "items-start text-left"}`;
+
+        const isLight = theme === "light";
+        eyeEl.textContent = eyebrow;
+        eyeEl.style.display = eyebrow ? "block" : "none";
+        eyeEl.style.color = isLight ? "#542C34" : "#E6DED5";
+
+        headEl.textContent = headline;
+        headEl.style.display = headline ? "block" : "none";
+        headEl.style.color = isLight ? "#292725" : "#FFFCF8";
+
+        subEl.textContent = subtitle;
+        subEl.style.display = subtitle ? "block" : "none";
+        subEl.style.color = isLight ? "#706963" : "rgba(247,244,238,0.9)";
+
+        ctaEl.textContent = ctaText ? `${ctaText} →` : "";
+        ctaEl.style.display = ctaText ? "inline-block" : "none";
+      }
+
+      [
+        "bnr-desktop-image",
+        "bnr-mobile-image",
+        "bnr-eyebrow",
+        "bnr-headline",
+        "bnr-subtitle",
+        "bnr-cta-text",
+        "bnr-cta-link",
+        "bnr-text-align",
+        "bnr-text-position",
+        "bnr-overlay-theme",
+      ].forEach((id) => {
+        document.getElementById(id)?.addEventListener("input", updateLiveBannerPreview);
+        document.getElementById(id)?.addEventListener("change", updateLiveBannerPreview);
+      });
+
+      document.getElementById("bnr-preview-mode-desktop")?.addEventListener("click", () => {
+        adminPreviewMode = "desktop";
+        document.getElementById("bnr-preview-mode-desktop").className = "px-3 py-1 bg-primary text-primary-foreground font-semibold cursor-pointer";
+        document.getElementById("bnr-preview-mode-mobile").className = "px-3 py-1 text-foreground cursor-pointer";
+        updateLiveBannerPreview();
+      });
+
+      document.getElementById("bnr-preview-mode-mobile")?.addEventListener("click", () => {
+        adminPreviewMode = "mobile";
+        document.getElementById("bnr-preview-mode-mobile").className = "px-3 py-1 bg-primary text-primary-foreground font-semibold cursor-pointer";
+        document.getElementById("bnr-preview-mode-desktop").className = "px-3 py-1 text-foreground cursor-pointer";
+        updateLiveBannerPreview();
+      });
+
+      document.getElementById("bnr-desktop-file-input")?.addEventListener("change", async (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        try {
+          showBannerAdminMsg("Uploading desktop banner image...");
+          const uploadedPath = await uploadSingleAdminImageFile(file);
+          document.getElementById("bnr-desktop-image").value = uploadedPath;
+          updateLiveBannerPreview();
+          showBannerAdminMsg("Desktop banner image uploaded!");
+        } catch (err) {
+          showBannerAdminMsg(err.message || "Failed uploading desktop image.", true);
+        }
+        e.target.value = "";
+      });
+
+      document.getElementById("bnr-mobile-file-input")?.addEventListener("change", async (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        try {
+          showBannerAdminMsg("Uploading mobile banner image...");
+          const uploadedPath = await uploadSingleAdminImageFile(file);
+          document.getElementById("bnr-mobile-image").value = uploadedPath;
+          updateLiveBannerPreview();
+          showBannerAdminMsg("Mobile banner image uploaded!");
+        } catch (err) {
+          showBannerAdminMsg(err.message || "Failed uploading mobile image.", true);
+        }
+        e.target.value = "";
+      });
+
+      document.getElementById("bnr-reset-form-btn")?.addEventListener("click", () => {
+        populateBannerEditorForm({
+          id: "",
+          desktop_image: "assets/hero.jpg",
+          mobile_image: "",
+          eyebrow: "",
+          headline: "",
+          subtitle: "",
+          cta_text: "Explore Collection",
+          cta_link: "shop.html",
+          text_align: "left",
+          text_position: "bottom-left",
+          overlay_theme: "dark",
+          enabled: true,
+        });
+      });
+
+      document.getElementById("bnr-new-slide-btn")?.addEventListener("click", () => {
+        document.getElementById("bnr-reset-form-btn")?.click();
+        document.getElementById("bnr-desktop-image")?.focus();
+      });
+
+      document.getElementById("bnr-save-duration-btn")?.addEventListener("click", async () => {
+        await saveHeroBannersOrder(adminHeroBanners);
+      });
+
+      document.getElementById("admin-banner-editor-form")?.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const bannerPayload = {
+          id: document.getElementById("bnr-id").value.trim() || `bnr_${Date.now().toString(36)}`,
+          desktop_image: document.getElementById("bnr-desktop-image").value.trim(),
+          mobile_image: document.getElementById("bnr-mobile-image").value.trim(),
+          eyebrow: document.getElementById("bnr-eyebrow").value.trim(),
+          alt_text: document.getElementById("bnr-alt-text").value.trim(),
+          headline: document.getElementById("bnr-headline").value.trim(),
+          subtitle: document.getElementById("bnr-subtitle").value.trim(),
+          cta_text: document.getElementById("bnr-cta-text").value.trim(),
+          cta_link: document.getElementById("bnr-cta-link").value.trim(),
+          text_align: document.getElementById("bnr-text-align").value,
+          text_position: document.getElementById("bnr-text-position").value,
+          overlay_theme: document.getElementById("bnr-overlay-theme").value,
+          enabled: document.getElementById("bnr-enabled").checked,
+        };
+        const durSec = parseFloat(document.getElementById("bnr-slide-duration-sec")?.value || "3.5") || 3.5;
+        const res = await fetch("/api/admin/banners", {
+          method: "POST",
+          headers: getAdminHeaders({ "Content-Type": "application/json" }),
+          body: JSON.stringify({
+            action: "upsert_banner",
+            hero_slide_duration_ms: Math.round(durSec * 1000),
+            banner: bannerPayload,
+          }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (res.ok && data.ok) {
+          adminHeroBanners = data.hero_banners || [];
+          renderAdminBannersList();
+          showBannerAdminMsg("Banner saved and published to homepage!");
+        } else {
+          showBannerAdminMsg(data.error || "Failed saving banner.", true);
+        }
+      });
+
+      function renderAdminEditorialCampaignsList() {
+        const wrap = document.getElementById("admin-editorial-campaigns-list");
+        if (!wrap) return;
+        wrap.innerHTML = adminEditorialCampaigns.map((c, idx) => `
+          <div class="bg-background/60 border border-border p-4 space-y-3" data-camp-card="${idx}">
+            <div class="flex items-center justify-between border-b border-border pb-2">
+              <span class="font-display font-bold text-base">Editorial Section #${idx + 1} (${escapeHtml(c.id || `camp_${idx + 1}`)})</span>
+              <label class="inline-flex items-center gap-1.5 text-xs font-semibold cursor-pointer">
+                <input type="checkbox" class="camp-enabled accent-primary" ${c.enabled !== false ? "checked" : ""} />
+                <span>Enabled</span>
+              </label>
+            </div>
+            <input type="hidden" class="camp-id" value="${escapeHtml(c.id || `camp_${idx + 1}`)}" />
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              <div>
+                <label class="block text-[10px] uppercase tracking-wider text-muted-foreground mb-1">Layout Style</label>
+                <select class="camp-layout w-full bg-card border border-border px-2.5 py-1.5 text-xs">
+                  <option value="split" ${c.layout === "split" ? "selected" : ""}>Split Image + Story</option>
+                  <option value="full" ${c.layout === "full" ? "selected" : ""}>Full-Width Campaign</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-[10px] uppercase tracking-wider text-muted-foreground mb-1">Eyebrow</label>
+                <input type="text" class="camp-eyebrow w-full bg-card border border-border px-2.5 py-1.5 text-xs" value="${escapeHtml(c.eyebrow || "")}" />
+              </div>
+            </div>
+            <div>
+              <label class="block text-[10px] uppercase tracking-wider text-muted-foreground mb-1">Headline</label>
+              <input type="text" class="camp-headline w-full bg-card border border-border px-2.5 py-1.5 text-xs" value="${escapeHtml(c.headline || "")}" />
+            </div>
+            <div>
+              <label class="block text-[10px] uppercase tracking-wider text-muted-foreground mb-1">Subtitle</label>
+              <input type="text" class="camp-subtitle w-full bg-card border border-border px-2.5 py-1.5 text-xs" value="${escapeHtml(c.subtitle || "")}" />
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              <div>
+                <label class="block text-[10px] uppercase tracking-wider text-muted-foreground mb-1">Primary Image Path / URL</label>
+                <input type="text" class="camp-desktop-image w-full bg-card border border-border px-2.5 py-1.5 text-xs font-mono" value="${escapeHtml(c.desktop_image || "")}" />
+              </div>
+              <div>
+                <label class="block text-[10px] uppercase tracking-wider text-muted-foreground mb-1">Secondary Image (Split Layout)</label>
+                <input type="text" class="camp-secondary-image w-full bg-card border border-border px-2.5 py-1.5 text-xs font-mono" value="${escapeHtml(c.secondary_image || "")}" />
+              </div>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              <div>
+                <label class="block text-[10px] uppercase tracking-wider text-muted-foreground mb-1">CTA Button Text</label>
+                <input type="text" class="camp-cta-text w-full bg-card border border-border px-2.5 py-1.5 text-xs" value="${escapeHtml(c.cta_text || "")}" />
+              </div>
+              <div>
+                <label class="block text-[10px] uppercase tracking-wider text-muted-foreground mb-1">CTA Destination URL</label>
+                <input type="text" class="camp-cta-link w-full bg-card border border-border px-2.5 py-1.5 text-xs font-mono" value="${escapeHtml(c.cta_link || "")}" />
+              </div>
+            </div>
+          </div>
+        `).join("");
+      }
+
+      document.getElementById("save-editorial-campaigns-btn")?.addEventListener("click", async () => {
+        const cards = Array.from(document.querySelectorAll("[data-camp-card]"));
+        const updatedCampaigns = cards.map((card, idx) => ({
+          id: card.querySelector(".camp-id")?.value || `camp_${idx + 1}`,
+          layout: card.querySelector(".camp-layout")?.value || "split",
+          eyebrow: card.querySelector(".camp-eyebrow")?.value.trim() || "",
+          headline: card.querySelector(".camp-headline")?.value.trim() || "",
+          subtitle: card.querySelector(".camp-subtitle")?.value.trim() || "",
+          desktop_image: card.querySelector(".camp-desktop-image")?.value.trim() || "",
+          secondary_image: card.querySelector(".camp-secondary-image")?.value.trim() || "",
+          cta_text: card.querySelector(".camp-cta-text")?.value.trim() || "",
+          cta_link: card.querySelector(".camp-cta-link")?.value.trim() || "",
+          enabled: Boolean(card.querySelector(".camp-enabled")?.checked),
+        }));
+        const res = await fetch("/api/admin/banners", {
+          method: "POST",
+          headers: getAdminHeaders({ "Content-Type": "application/json" }),
+          body: JSON.stringify({
+            action: "save_all",
+            editorial_campaigns: updatedCampaigns,
+          }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (res.ok && data.ok) {
+          adminEditorialCampaigns = data.editorial_campaigns || updatedCampaigns;
+          renderAdminEditorialCampaignsList();
+          showBannerAdminMsg("Editorial campaign sections saved and published!");
+        } else {
+          showBannerAdminMsg(data.error || "Failed saving editorial campaign sections.", true);
+        }
+      });
+
+      document.getElementById("open-banners-tab-shortcut")?.addEventListener("click", () => {
+        document.querySelector('.admin-tab-btn[data-tab="banners"]')?.click();
+      });
 
       // ==============================================================
       // 7. STORE SETTINGS

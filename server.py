@@ -3512,6 +3512,261 @@ def api_categories():
     conn.close()
     return jsonify({"ok": True, "categories": [dict(r) for r in rows]})
 
+DEFAULT_HERO_SLIDE_DURATION_MS = 3500
+
+DEFAULT_HERO_BANNERS = [
+    {
+        "id": "bnr_1",
+        "eyebrow": "MATRA NAARI · SIGNATURE CAMPAIGN",
+        "headline": "Modern Kurtis, Rooted in Craft",
+        "subtitle": "Thoughtfully proportioned Indian silhouettes tailored for effortless grace.",
+        "cta_text": "Explore Collection",
+        "cta_link": "shop.html",
+        "desktop_image": "assets/hero.jpg",
+        "mobile_image": "assets/hero.jpg",
+        "alt_text": "Matra Naari Signature Kurti Campaign",
+        "text_align": "left",
+        "text_position": "bottom-left",
+        "overlay_theme": "dark",
+        "enabled": True,
+    },
+    {
+        "id": "bnr_2",
+        "eyebrow": "THE FESTIVE & OCCASION EDIT",
+        "headline": "Fluid Anarkalis & Artisanal Wraps",
+        "subtitle": "Graceful flare and hand-tied details crafted for celebratory evenings.",
+        "cta_text": "Discover Festive Edit",
+        "cta_link": "shop.html?category=Anarkali",
+        "desktop_image": "assets/k-anarkali.jpg",
+        "mobile_image": "assets/k-anarkali.jpg",
+        "alt_text": "Matra Naari Festive Anarkali Campaign",
+        "text_align": "left",
+        "text_position": "bottom-left",
+        "overlay_theme": "dark",
+        "enabled": True,
+    },
+    {
+        "id": "bnr_3",
+        "eyebrow": "CONTEMPORARY ENSEMBLES",
+        "headline": "Effortless Co-ords & Resort Kaftans",
+        "subtitle": "Breathable two-piece sets and relaxed silhouettes from day to dusk.",
+        "cta_text": "Explore Curated Edits",
+        "cta_link": "shop.html?view=trends",
+        "desktop_image": "assets/k-coord.jpg",
+        "mobile_image": "assets/k-coord.jpg",
+        "alt_text": "Matra Naari Co-ord Sets and Kaftan Campaign",
+        "text_align": "center",
+        "text_position": "bottom-center",
+        "overlay_theme": "dark",
+        "enabled": True,
+    },
+]
+
+DEFAULT_EDITORIAL_CAMPAIGNS = [
+    {
+        "id": "camp_1",
+        "layout": "split",
+        "eyebrow": "ATELIER CAMPAIGN · FESTIVE & CRAFT",
+        "headline": "The Grace of Unhurried Craft",
+        "subtitle": "Hand-tied Angrakhas and flared Anarkalis pairing timeless Indian proportions with cloud-soft weaves.",
+        "cta_text": "Explore the Edit",
+        "cta_link": "shop.html?view=trends&edit=festive",
+        "desktop_image": "assets/k-angrakha.jpg",
+        "secondary_image": "assets/k-anarkali.jpg",
+        "mobile_image": "assets/k-angrakha.jpg",
+        "alt_text": "Matra Naari Festive Craft Editorial Campaign",
+        "enabled": True,
+    },
+    {
+        "id": "camp_2",
+        "layout": "full",
+        "eyebrow": "EVERYDAY LUXURY",
+        "headline": "Silhouettes Designed to Move With You",
+        "subtitle": "From tailored straight kurtis to fluid A-line cuts across sizes XS to XXL.",
+        "cta_text": "Shop Everyday Kurtis",
+        "cta_link": "shop.html?view=trends&edit=everyday",
+        "desktop_image": "assets/k-aline.jpg",
+        "secondary_image": "assets/k-kaftan.jpg",
+        "mobile_image": "assets/k-aline.jpg",
+        "alt_text": "Matra Naari Everyday Luxury Campaign",
+        "enabled": True,
+    },
+]
+
+ALLOWED_BANNER_ALIGNMENTS = {"left", "center", "right"}
+ALLOWED_BANNER_POSITIONS = {
+    "bottom-left",
+    "center-left",
+    "center",
+    "bottom-center",
+    "bottom-right",
+    "center-right",
+}
+ALLOWED_OVERLAY_THEMES = {"dark", "light", "none"}
+
+
+def _sanitize_banner_image_url(raw_url):
+    val = str(raw_url or "").strip()
+    if not val:
+        return ""
+    lower = val.lower()
+    if lower.startswith(("javascript:", "data:", "vbscript:", "file:")):
+        return ""
+    if lower.startswith(("https://", "http://", "assets/", "/assets/", "images/", "/images/")):
+        return val.lstrip("/") if lower.startswith(("/assets/", "/images/")) else val
+    return ""
+
+
+def _sanitize_banner_link_url(raw_link):
+    val = str(raw_link or "").strip()
+    if not val:
+        return ""
+    lower = val.lower()
+    if lower.startswith(("javascript:", "data:", "vbscript:")):
+        return ""
+    return val[:300]
+
+
+def _normalize_hero_banner_item(raw_item, index=0):
+    if not isinstance(raw_item, dict):
+        return None
+    desk_img = _sanitize_banner_image_url(
+        raw_item.get("desktop_image") or raw_item.get("image") or ""
+    )
+    if not desk_img:
+        return None
+    mob_img = _sanitize_banner_image_url(raw_item.get("mobile_image") or "") or desk_img
+    bid = str(raw_item.get("id") or f"bnr_{index + 1}").strip()[:48] or f"bnr_{index + 1}"
+    eyebrow = str(raw_item.get("eyebrow") if "eyebrow" in raw_item else raw_item.get("badge", "")).strip()[:120]
+    headline = str(raw_item.get("headline") if "headline" in raw_item else raw_item.get("title", "")).strip()[:180]
+    subtitle = str(raw_item.get("subtitle") if "subtitle" in raw_item else raw_item.get("tagline", "")).strip()[:280]
+    cta_text = str(raw_item.get("cta_text") or "").strip()[:80]
+    cta_link = _sanitize_banner_link_url(raw_item.get("cta_link") or "")
+    alt_text = str(raw_item.get("alt_text") or headline or "Matra Naari Campaign").strip()[:160]
+
+    align = str(raw_item.get("text_align") or "left").strip().lower()
+    if align not in ALLOWED_BANNER_ALIGNMENTS:
+        align = "left"
+
+    pos = str(raw_item.get("text_position") or "bottom-left").strip().lower()
+    if pos not in ALLOWED_BANNER_POSITIONS:
+        pos = "bottom-left"
+
+    overlay_theme = str(raw_item.get("overlay_theme") or "dark").strip().lower()
+    if overlay_theme not in ALLOWED_OVERLAY_THEMES:
+        overlay_theme = "dark"
+
+    raw_en = raw_item.get("enabled", True)
+    enabled = bool(raw_en) if isinstance(raw_en, bool) else str(raw_en).strip().lower() not in ("false", "0", "no")
+
+    return {
+        "id": bid,
+        "eyebrow": eyebrow,
+        "headline": headline,
+        "subtitle": subtitle,
+        "cta_text": cta_text,
+        "cta_link": cta_link,
+        "desktop_image": desk_img,
+        "mobile_image": mob_img,
+        "alt_text": alt_text,
+        "text_align": align,
+        "text_position": pos,
+        "overlay_theme": overlay_theme,
+        "enabled": enabled,
+        # Backwards-compatible aliases
+        "title": headline,
+        "tagline": subtitle,
+        "badge": eyebrow,
+        "image": desk_img,
+    }
+
+
+def _normalize_editorial_campaign_item(raw_item, index=0):
+    if not isinstance(raw_item, dict):
+        return None
+    desk_img = _sanitize_banner_image_url(
+        raw_item.get("desktop_image") or raw_item.get("image") or ""
+    )
+    sec_img = _sanitize_banner_image_url(raw_item.get("secondary_image") or "")
+    mob_img = _sanitize_banner_image_url(raw_item.get("mobile_image") or "") or desk_img
+    cid = str(raw_item.get("id") or f"camp_{index + 1}").strip()[:48] or f"camp_{index + 1}"
+    layout = str(raw_item.get("layout") or "split").strip().lower()
+    if layout not in ("split", "full"):
+        layout = "split"
+    eyebrow = str(raw_item.get("eyebrow") or "").strip()[:120]
+    headline = str(raw_item.get("headline") or "").strip()[:180]
+    subtitle = str(raw_item.get("subtitle") or "").strip()[:280]
+    cta_text = str(raw_item.get("cta_text") or "").strip()[:80]
+    cta_link = _sanitize_banner_link_url(raw_item.get("cta_link") or "")
+    alt_text = str(raw_item.get("alt_text") or headline or "Matra Naari Editorial").strip()[:160]
+    raw_en = raw_item.get("enabled", True)
+    enabled = bool(raw_en) if isinstance(raw_en, bool) else str(raw_en).strip().lower() not in ("false", "0", "no")
+
+    return {
+        "id": cid,
+        "layout": layout,
+        "eyebrow": eyebrow,
+        "headline": headline,
+        "subtitle": subtitle,
+        "cta_text": cta_text,
+        "cta_link": cta_link,
+        "desktop_image": desk_img,
+        "secondary_image": sec_img,
+        "mobile_image": mob_img,
+        "alt_text": alt_text,
+        "enabled": enabled,
+    }
+
+
+def get_hero_slide_duration_ms(settings=None):
+    if settings is None:
+        settings = get_site_settings_dict()
+    try:
+        val = int(float(settings.get("hero_slide_duration_ms", DEFAULT_HERO_SLIDE_DURATION_MS)))
+        return max(1500, min(15000, val))
+    except Exception:
+        return DEFAULT_HERO_SLIDE_DURATION_MS
+
+
+def get_configured_hero_banners(settings=None, include_disabled=False):
+    if settings is None:
+        settings = get_site_settings_dict()
+    raw_list = settings.get("hero_banners")
+    if not isinstance(raw_list, list) or len(raw_list) == 0:
+        raw_list = DEFAULT_HERO_BANNERS
+    normalized = []
+    seen_ids = set()
+    for idx, item in enumerate(raw_list):
+        norm = _normalize_hero_banner_item(item, idx)
+        if not norm:
+            continue
+        if norm["id"] in seen_ids:
+            norm["id"] = f"{norm['id']}_{idx + 1}"
+        seen_ids.add(norm["id"])
+        if include_disabled or norm["enabled"]:
+            normalized.append(norm)
+    return normalized
+
+
+def get_configured_editorial_campaigns(settings=None, include_disabled=False):
+    if settings is None:
+        settings = get_site_settings_dict()
+    raw_list = settings.get("editorial_campaigns")
+    if not isinstance(raw_list, list):
+        raw_list = DEFAULT_EDITORIAL_CAMPAIGNS
+    normalized = []
+    for idx, item in enumerate(raw_list):
+        norm = _normalize_editorial_campaign_item(item, idx)
+        if not norm:
+            continue
+        if not include_disabled:
+            # If disabled or no image is configured for a campaign section, omit so homepage hides it gracefully
+            if not norm["enabled"] or not norm["desktop_image"]:
+                continue
+        normalized.append(norm)
+    return normalized
+
+
 @app.route("/api/banners", methods=["GET"])
 def api_banners():
     settings = get_site_settings_dict()
@@ -3532,7 +3787,7 @@ def api_banners():
         announcements = parts
 
     promo_enabled_val = settings.get("promo_banner_enabled", True)
-    promo_banner_enabled = bool(promo_enabled_val) if isinstance(promo_enabled_val, bool) else str(promo_enabled_val).lower() not in ("false", "0", "no")
+    promo_banner_enabled = bool(promo_enabled_val) if isinstance(promo_enabled_val, bool) else str(promo_enabled_val).strip().lower() not in ("false", "0", "no")
     promo_code = str(settings.get("promo_banner_code", "NAARI10")).strip().upper()
 
     # Verify if the featured promo coupon is actually active in the database
@@ -3554,6 +3809,10 @@ def api_banners():
     if not active_promo_coupon:
         promo_banner_enabled = False
 
+    hero_banners = get_configured_hero_banners(settings, include_disabled=False)
+    editorial_campaigns = get_configured_editorial_campaigns(settings, include_disabled=False)
+    slide_duration_ms = get_hero_slide_duration_ms(settings)
+
     return jsonify({
         "ok": True,
         "announcement_enabled": announcement_enabled,
@@ -3563,16 +3822,158 @@ def api_banners():
         "cod_enabled": bool(cfg.get("cod_enabled", True)),
         "promo_banner_enabled": promo_banner_enabled,
         "active_promo_coupon": active_promo_coupon,
-        "hero_banners": [
-            {
-                "title": "Kurtis for the Modern Naari",
-                "tagline": "Rooted in authentic handcraft, tailored for contemporary elegance.",
-                "cta_text": "Shop New In",
-                "cta_link": "shop.html",
-                "badge": "100% Pure Natural Fibers",
-                "image": "assets/hero.jpg"
-            }
-        ]
+        "hero_slide_duration_ms": slide_duration_ms,
+        "hero_banners": hero_banners,
+        "editorial_campaigns": editorial_campaigns,
+    })
+
+
+@app.route("/api/admin/banners", methods=["GET", "POST", "PUT"])
+def api_admin_banners():
+    if not check_admin_auth():
+        return jsonify({"ok": False, "error": "Unauthorized"}), 401
+
+    if request.method == "GET":
+        settings = get_site_settings_dict()
+        return jsonify({
+            "ok": True,
+            "hero_slide_duration_ms": get_hero_slide_duration_ms(settings),
+            "hero_banners": get_configured_hero_banners(settings, include_disabled=True),
+            "editorial_campaigns": get_configured_editorial_campaigns(settings, include_disabled=True),
+        })
+
+    data = request.get_json(silent=True) or {}
+    action = str(data.get("action") or "save_all").strip().lower()
+    settings = get_site_settings_dict()
+    current_banners = get_configured_hero_banners(settings, include_disabled=True)
+    current_campaigns = get_configured_editorial_campaigns(settings, include_disabled=True)
+    duration_ms = get_hero_slide_duration_ms(settings)
+
+    if "hero_slide_duration_ms" in data or "slide_duration_seconds" in data:
+        try:
+            if "slide_duration_seconds" in data:
+                raw_ms = int(float(data["slide_duration_seconds"]) * 1000)
+            else:
+                raw_ms = int(float(data["hero_slide_duration_ms"]))
+            duration_ms = max(1500, min(15000, raw_ms))
+        except Exception:
+            return jsonify({"ok": False, "error": "Invalid slide duration value."}), 400
+
+    if action == "upsert_banner":
+        raw_bnr = data.get("banner") or data
+        norm = _normalize_hero_banner_item(raw_bnr, len(current_banners))
+        if not norm:
+            return jsonify({"ok": False, "error": "A valid desktop banner image is required."}), 400
+        replaced = False
+        updated_list = []
+        for b in current_banners:
+            if b["id"] == norm["id"]:
+                updated_list.append(norm)
+                replaced = True
+            else:
+                updated_list.append(b)
+        if not replaced:
+            updated_list.append(norm)
+        current_banners = updated_list
+
+    elif action == "delete_banner":
+        target_id = str(data.get("banner_id") or data.get("id") or "").strip()
+        if not target_id:
+            return jsonify({"ok": False, "error": "banner_id is required."}), 400
+        new_list = [b for b in current_banners if b["id"] != target_id]
+        if len(new_list) == 0:
+            return jsonify({"ok": False, "error": "At least one banner must remain in the hero slider."}), 400
+        current_banners = new_list
+
+    elif action == "reorder":
+        order_ids = data.get("banner_ids") or []
+        if not isinstance(order_ids, list):
+            return jsonify({"ok": False, "error": "banner_ids must be a list."}), 400
+        by_id = {b["id"]: b for b in current_banners}
+        reordered = []
+        for bid in order_ids:
+            s_id = str(bid).strip()
+            if s_id in by_id:
+                reordered.append(by_id.pop(s_id))
+        for leftover in current_banners:
+            if leftover["id"] in by_id:
+                reordered.append(leftover)
+        current_banners = reordered
+
+    else:
+        if "hero_banners" in data:
+            raw_banners = data.get("hero_banners")
+            if not isinstance(raw_banners, list) or len(raw_banners) == 0:
+                return jsonify({"ok": False, "error": "hero_banners must be a non-empty list."}), 400
+            cleaned = []
+            for idx, item in enumerate(raw_banners):
+                norm = _normalize_hero_banner_item(item, idx)
+                if not norm:
+                    return jsonify({"ok": False, "error": f"Banner #{idx + 1} is missing a valid desktop image."}), 400
+                cleaned.append(norm)
+            current_banners = cleaned
+
+        if "editorial_campaigns" in data:
+            raw_camps = data.get("editorial_campaigns")
+            if not isinstance(raw_camps, list):
+                return jsonify({"ok": False, "error": "editorial_campaigns must be a list."}), 400
+            cleaned_camps = []
+            for idx, item in enumerate(raw_camps):
+                norm_c = _normalize_editorial_campaign_item(item, idx)
+                if norm_c:
+                    cleaned_camps.append(norm_c)
+            current_campaigns = cleaned_camps
+
+    conn = get_db()
+    c = conn.cursor()
+    c.execute(
+        "INSERT INTO site_settings (key, value) VALUES (?, ?) ON CONFLICT (key) DO UPDATE SET value = excluded.value",
+        ("hero_banners", json.dumps(current_banners)),
+    )
+    c.execute(
+        "INSERT INTO site_settings (key, value) VALUES (?, ?) ON CONFLICT (key) DO UPDATE SET value = excluded.value",
+        ("hero_slide_duration_ms", str(duration_ms)),
+    )
+    c.execute(
+        "INSERT INTO site_settings (key, value) VALUES (?, ?) ON CONFLICT (key) DO UPDATE SET value = excluded.value",
+        ("editorial_campaigns", json.dumps(current_campaigns)),
+    )
+    conn.commit()
+    conn.close()
+    invalidate_site_settings_cache()
+
+    return jsonify({
+        "ok": True,
+        "message": "Homepage banners and campaign settings saved.",
+        "hero_slide_duration_ms": duration_ms,
+        "hero_banners": current_banners,
+        "editorial_campaigns": current_campaigns,
+    })
+
+
+@app.route("/api/admin/banners/<banner_id>", methods=["DELETE"])
+def api_admin_banner_delete(banner_id):
+    if not check_admin_auth():
+        return jsonify({"ok": False, "error": "Unauthorized"}), 401
+    target_id = str(banner_id or "").strip()
+    settings = get_site_settings_dict()
+    current_banners = get_configured_hero_banners(settings, include_disabled=True)
+    new_list = [b for b in current_banners if b["id"] != target_id]
+    if len(new_list) == 0:
+        return jsonify({"ok": False, "error": "At least one banner must remain in the hero slider."}), 400
+    conn = get_db()
+    c = conn.cursor()
+    c.execute(
+        "INSERT INTO site_settings (key, value) VALUES (?, ?) ON CONFLICT (key) DO UPDATE SET value = excluded.value",
+        ("hero_banners", json.dumps(new_list)),
+    )
+    conn.commit()
+    conn.close()
+    invalidate_site_settings_cache()
+    return jsonify({
+        "ok": True,
+        "message": "Banner deleted.",
+        "hero_banners": new_list,
     })
 
 @app.route("/api/coupons", methods=["GET"])
