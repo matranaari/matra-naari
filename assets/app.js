@@ -49,7 +49,7 @@ const PRODUCTS = [
     mrp: 1999,
     discountPercent: 35,
     colors: [
-      { name: 'Maroon', swatch: '#6B2D31' },
+      { name: 'Maroon', swatch: '#542C34' },
       { name: 'Ivory', swatch: '#F5F2EB' },
       { name: 'Indigo', swatch: '#2A3D66' }
     ],
@@ -86,7 +86,7 @@ const PRODUCTS = [
     soldOutSizes: ['XXL'],
     colors: [
       { name: 'Marigold', swatch: '#E69A27' },
-      { name: 'Maroon', swatch: '#6B2D31' },
+      { name: 'Maroon', swatch: '#542C34' },
       { name: 'Emerald', swatch: '#1C583B' },
       { name: 'Rani Pink', swatch: '#C1285C' }
     ],
@@ -195,10 +195,10 @@ class ToastManager {
     const toast = document.createElement('div');
     toast.className = `pointer-events-auto transform transition-all duration-300 ease-out flex items-center gap-3 px-4 py-3 rounded shadow-xl text-sm font-sans ${
       type === 'error'
-        ? 'bg-[#2A1810] text-[#FFB4AB] border border-[#93000A]/60'
+        ? 'bg-rose-50 text-rose-900 border border-rose-700/20'
         : type === 'success'
-        ? 'bg-[#1D2B1E] text-[#D1F2D9] border border-[#3E6B47]/70'
-        : 'bg-[#2E1E1C] text-[#F9EBEA] border border-[#6B2D31]/60'
+        ? 'bg-card text-foreground border border-primary/30'
+        : 'bg-card text-foreground border border-border'
     } translate-y-4 opacity-0`;
 
     const icon = type === 'error' ? '⚠ ' : type === 'success' ? '✓ ' : '· ';
@@ -323,7 +323,7 @@ function trackRecentlyViewed(product) {
       image: product.relative_image || product.image || product.relativeImage,
       sizes: product.sizes || ['XS', 'S', 'M', 'L', 'XL'],
       soldOutSizes: product.soldOutSizes || [],
-      colors: product.colors || [{ name: 'Maroon', swatch: '#6B2D31' }],
+      colors: product.colors || [{ name: 'Maroon', swatch: '#542C34' }],
       stock: product.stock !== undefined ? product.stock : 25
     });
     localStorage.setItem(RECENTLY_VIEWED_KEY, JSON.stringify(list.slice(0, 8)));
@@ -478,7 +478,7 @@ function renderProductCard(rawProduct) {
           data-product-id="${p.id}"
           aria-label="Save ${escapeHtml(p.name)} to wishlist"
         >
-          <svg class="h-4 w-4" fill="${isSaved ? '#6B2D31' : 'none'}" stroke="${isSaved ? '#6B2D31' : 'currentColor'}" viewBox="0 0 24 24">
+          <svg class="h-4 w-4" fill="${isSaved ? '#542C34' : 'none'}" stroke="${isSaved ? '#542C34' : 'currentColor'}" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
           </svg>
         </button>
@@ -633,8 +633,8 @@ function updateWishlistHeartButtons() {
     const svg = btn.querySelector('svg');
     if (svg) {
       if (isSaved) {
-        svg.setAttribute('fill', '#6B2D31');
-        svg.setAttribute('stroke', '#6B2D31');
+        svg.setAttribute('fill', '#542C34');
+        svg.setAttribute('stroke', '#542C34');
       } else {
         svg.setAttribute('fill', 'none');
         svg.setAttribute('stroke', 'currentColor');
@@ -1515,7 +1515,7 @@ function renderCartDrawerContent() {
             <button type="button" class="drawer-qty-inc h-7 w-7 flex items-center justify-center hover:text-primary cursor-pointer text-xs" data-key="${item.key}" aria-label="Increase quantity">+</button>
           </div>
           <div class="text-right">
-            <span class="font-display text-base font-semibold text-primary">${formatPrice(item.price * item.qty)}</span>
+            <span class="mn-price text-sm font-semibold text-foreground">${formatPrice(item.price * item.qty)}</span>
           </div>
         </div>
       </div>
@@ -1576,7 +1576,7 @@ function renderWishlistDrawerContent() {
           <a href="product.html?id=${item.id}" class="truncate font-display text-base font-semibold hover:text-primary transition block">${item.name}</a>
           <p class="text-xs text-muted-foreground">${item.category}</p>
           <div class="mt-1 flex items-baseline gap-2">
-            <span class="font-display text-base font-semibold text-primary">${formatPrice(item.price)}</span>
+            <span class="mn-price text-sm font-semibold text-foreground">${formatPrice(item.price)}</span>
             ${item.mrp ? `<span class="text-xs line-through text-muted-foreground">${formatPrice(item.mrp)}</span>` : ''}
           </div>
         </div>

@@ -6,8 +6,8 @@
   <link rel="icon" type="image/png" href="../favicon.png"/>
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous"/>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=Manrope:wght@400;500;600;700&display=swap"/>
-  <link rel="stylesheet" href="../assets/styles.css?v=20261115.3"/>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap"/>
+  <link rel="stylesheet" href="../assets/styles.css?v=quiet-luxury-20261116"/>
   <!-- Leaflet Interactive Map (OpenStreetMap) -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
@@ -20,10 +20,10 @@
       -webkit-user-select: none;
     }
     .payment-option-label input[type="radio"] {
-      accent-color: #6B2D31;
+      accent-color: #542C34;
     }
     .payment-option-label:focus-within {
-      outline: 2px solid #6B2D31;
+      outline: 2px solid #542C34;
       outline-offset: 2px;
     }
     #delivery-map {
@@ -37,7 +37,7 @@
       }
     }
     .leaflet-container {
-      font-family: 'Manrope', sans-serif;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
     }
   </style>
   <!-- Razorpay Standard Checkout SDK -->
@@ -253,7 +253,7 @@
                     id="cust-whatsapp-opt-in"
                     name="whatsapp_opt_in"
                     value="1"
-                    class="mt-0.5 h-4 w-4 accent-[#6B2D31] cursor-pointer"
+                    class="mt-0.5 h-4 w-4 accent-[#542C34] cursor-pointer"
                   />
                   <span>Receive order confirmation &amp; delivery updates on WhatsApp (<a href="https://wa.me/918849366915" target="_blank" rel="noreferrer" class="text-primary underline">+91 88493 66915</a>)</span>
                 </label>
@@ -438,7 +438,7 @@
                   name="payment_method"
                   value="cod"
                   checked
-                  class="mt-1 h-4 w-4 cursor-pointer accent-[#6B2D31]"
+                  class="mt-1 h-4 w-4 cursor-pointer accent-[#542C34]"
                 />
                 <div class="flex-1 min-w-0">
                   <div class="flex flex-wrap items-center justify-between gap-2">
@@ -466,7 +466,7 @@
                   name="payment_method"
                   value="razorpay"
                   disabled
-                  class="mt-1 h-4 w-4 cursor-not-allowed accent-[#6B2D31]"
+                  class="mt-1 h-4 w-4 cursor-not-allowed accent-[#542C34]"
                 />
                 <div class="flex-1 min-w-0">
                   <div class="flex flex-wrap items-center justify-between gap-2">
@@ -489,7 +489,7 @@
             </div>
 
             <!-- Error Banner -->
-            <div id="checkout-error-banner" class="mt-4 hidden p-3 bg-[#2A1810] text-[#FFB4AB] border border-[#93000A]/40 text-xs"></div>
+            <div id="checkout-error-banner" class="mt-4 hidden p-3 bg-rose-50 text-rose-900 border border-rose-700/20 text-xs"></div>
 
             <!-- Place Order CTA Button -->
             <button
@@ -596,7 +596,7 @@
     </div>
   </footer>
 
-  <script src="../assets/app.js?v=20261116.1"></script>
+  <script src="../assets/app.js?v=quiet-luxury-20261116"></script>
   <script>
     let serverConfig = null;
     let selectedPaymentMethod = 'cod';
@@ -870,7 +870,7 @@
                 <p class="text-muted-foreground">${item.color || 'Standard'} · Size ${item.size || 'M'}</p>
                 <p class="text-muted-foreground">Qty: ${item.qty || 1} × ${formatPrice(item.price || 0)}</p>
               </div>
-              <span class="font-display text-sm font-semibold text-primary shrink-0">
+              <span class="mn-price text-sm font-semibold text-primary shrink-0">
                 ${formatPrice((item.price || 0) * (item.qty || 1))}
               </span>
             </li>
@@ -1389,7 +1389,7 @@
         const { res, data } = await safeFetchJson(`/api/address/pincode/${encodeURIComponent(cleanPin)}`);
         if (!res.ok || !data || !data.ok) {
           lastPincodeLookup = { ok: false, pincode: cleanPin, error: data?.error || 'Invalid PIN code.' };
-          statusBox.className = 'rounded border border-[#93000A]/40 bg-[#2A1810] px-3 py-2 text-xs text-[#FFB4AB]';
+          statusBox.className = 'rounded border border-rose-700/20 bg-rose-50 px-3 py-2 text-xs text-rose-900';
           statusBox.textContent = `✕ ${data?.error || 'PIN code not found in India Post records.'}`;
           return lastPincodeLookup;
         }
@@ -1414,7 +1414,7 @@
         );
 
         if (stateMismatch) {
-          statusBox.className = 'rounded border border-[#93000A]/40 bg-[#2A1810] px-3 py-2 text-xs text-[#FFB4AB]';
+          statusBox.className = 'rounded border border-rose-700/20 bg-rose-50 px-3 py-2 text-xs text-rose-900';
           statusBox.textContent = `⚠️ PIN ${cleanPin} belongs to ${data.state || allowedStates[0]}${data.district ? ' (' + data.district + ')' : ''}, which does not match selected state "${currentState}".`;
         } else if (data.provider_unavailable) {
           statusBox.className = 'rounded border border-amber-800/30 bg-amber-950/10 px-3 py-2 text-xs text-amber-900';
@@ -2732,7 +2732,7 @@
               order_id: createData.order_id
             },
             theme: {
-              color: '#6B2D31'
+              color: '#542C34'
             },
             modal: {
               ondismiss: function() {
