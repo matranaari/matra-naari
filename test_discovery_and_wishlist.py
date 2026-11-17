@@ -471,6 +471,102 @@ class DiscoveryAndWishlistTests(unittest.TestCase):
         self.assertIn(".mn-cinematic-backdrop", css_text)
         self.assertIn("aspect-ratio: 0.85;", css_text)
 
+    def test_10_admin_panel_redesign_metrics_and_mobile_ui(self):
+        """Verify redesigned Admin Panel design system, mobile nav, quick actions, real DB analytics, and customer address privacy."""
+        admin_headers = self._get_admin_headers()
+
+        # 1. Register a customer, add a saved address, and place a COD order so today_sales and revenue_trend are populated
+        tok, user = self._register_user("admin.redesign@matranaari.com")
+        addr_res = self.client.post(
+            "/api/customer/addresses",
+            headers={"Authorization": f"Bearer {tok}"},
+            json={
+                "label": "Home",
+                "recipient_name": "Ananya Verma",
+                "phone": "9876543210",
+                "address_line1": "Flat 402, Heritage Residency",
+                "city": "Pune",
+                "state": "Maharashtra",
+                "pincode": "411001",
+                "is_default": True,
+            },
+        ).get_json()
+        self.assertTrue(addr_res["ok"])
+
+        ord_res = self.client.post(
+            "/api/create-cod-order",
+            headers={"Authorization": f"Bearer {tok}"},
+            json={
+                "customer": {
+                    "name": "Ananya Verma",
+                    "email": "admin.redesign@matranaari.com",
+                    "phone": "9876543210",
+                    "house_no": "Flat 402",
+                    "street_area": "Heritage Residency",
+                    "address_line1": "Flat 402, Heritage Residency",
+                    "city": "Pune",
+                    "state": "Maharashtra",
+                    "pincode": "411001",
+                    "whatsapp_opt_in": False,
+                },
+                "items": [{"id": "anarkali", "size": "M", "qty": 1}],
+            },
+        ).get_json()
+        self.assertTrue(ord_res["ok"])
+
+        # 2. Verify /api/admin/stats returns today_sales, today_orders, and revenue_trend
+        stats_res = self.client.get("/api/admin/stats?include_all=1", headers=admin_headers).get_json()
+        self.assertTrue(stats_res["ok"])
+        st = stats_res["stats"]
+        self.assertIn("today_sales", st)
+        self.assertIn("today_orders", st)
+        self.assertIn("revenue_trend", st)
+        self.assertGreaterEqual(st["today_orders"], 1)
+        self.assertGreater(st["today_sales"], 0)
+        self.assertIsInstance(st["revenue_trend"], list)
+        self.assertGreaterEqual(len(st["revenue_trend"]), 1)
+        self.assertIn("date", st["revenue_trend"][0])
+        self.assertIn("revenue", st["revenue_trend"][0])
+        self.assertIn("orders", st["revenue_trend"][0])
+
+        # 3. Verify /api/admin/customers attaches saved_addresses and default_address without exposing passwords/tokens
+        cust_res = self.client.get("/api/admin/customers", headers=admin_headers).get_json()
+        self.assertTrue(cust_res["ok"])
+        cust_raw = str(cust_res)
+        self.assertNotIn("password_hash", cust_raw)
+        self.assertNotIn("password_salt", cust_raw)
+        target_cust = next(c for c in cust_res["customers"] if c["email"] == "admin.redesign@matranaari.com")
+        self.assertIn("saved_addresses", target_cust)
+        self.assertGreaterEqual(len(target_cust["saved_addresses"]), 1)
+        self.assertIn("Pune", target_cust["default_address"])
+
+        # 4. Verify admin.html Quiet Luxury design system, typography, mobile bottom nav, and step-by-step product modal
+        adm_html = self.client.get("/admin.html").get_data(as_text=True)
+        self.assertIn("family=Manrope", adm_html)
+        self.assertIn("family=Inter", adm_html)
+        self.assertNotIn("Cormorant+Garamond", adm_html)
+        self.assertNotIn("family=Kalam", adm_html)
+        for token in ["#542C34", "#F7F4EE", "#292725", "#706963"]:
+            self.assertIn(token, adm_html)
+        for elem_id in [
+            "admin-mobile-bottom-nav",
+            "admin-mobile-more-sheet",
+            "dashboard-quick-actions",
+            "qa-add-product-btn",
+            "qa-view-orders-btn",
+            "qa-manage-banners-btn",
+            "qa-create-coupon-btn",
+            "stat-today-sales",
+            "stat-today-orders",
+            "dashboard-revenue-trend-chart",
+            "dashboard-fulfillment-breakdown",
+            "customer-detail-modal",
+            "coupon-live-promo-preview",
+            "p-preview-storefront-link",
+            "p-discount-preview-badge",
+        ]:
+            self.assertIn(f'id="{elem_id}"', adm_html, f"Missing #{elem_id} in admin.html")
+
 
 if __name__ == "__main__":
     unittest.main()

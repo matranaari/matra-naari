@@ -6062,8 +6062,38 @@ def _fetch_admin_customers_data(c, search=""):
     """)
     rows = c.fetchall()
     total_customers = len(rows)
+
+    addr_by_uid = {}
+    try:
+        c.execute(
+            "SELECT user_id, address_label, name, phone, house_no, street_area, address_line1, address_line2, city, state, pincode, is_default "
+            "FROM user_addresses ORDER BY is_default DESC, created_at DESC"
+        )
+        for ar in c.fetchall():
+            uid = str(ar["user_id"] or "")
+            if not uid:
+                continue
+            addr_by_uid.setdefault(uid, []).append({
+                "label": ar["address_label"] or "Home",
+                "name": ar["name"] or "",
+                "phone": ar["phone"] or "",
+                "house_no": ar["house_no"] or "",
+                "street_area": ar["street_area"] or "",
+                "address_line1": ar["address_line1"] or "",
+                "address_line2": ar["address_line2"] or "",
+                "city": ar["city"] or "",
+                "state": ar["state"] or "",
+                "pincode": ar["pincode"] or "",
+                "is_default": bool(ar["is_default"]),
+            })
+    except Exception:
+        addr_by_uid = {}
+
     customers = []
     for r in rows:
+        uid_str = str(r["id"])
+        saved_addrs = addr_by_uid.get(uid_str, [])
+        default_addr = saved_addrs[0] if saved_addrs else None
         cust = {
             "id": r["id"],
             "name": r["name"] or "",
@@ -6072,9 +6102,15 @@ def _fetch_admin_customers_data(c, search=""):
             "created_at": r["created_at"] or "",
             "orders_count": int(r["orders_count"] or 0),
             "total_spent": int(r["total_spent"] or 0),
+            "saved_addresses": saved_addrs,
+            "default_address": (
+                f"{default_addr['address_line1']}, {default_addr['city']}, {default_addr['state']} - {default_addr['pincode']}"
+                if default_addr and default_addr.get("address_line1")
+                else ""
+            ),
         }
         if search:
-            haystack = f"{cust['id']} {cust['name']} {cust['email']} {cust['phone']} {cust['created_at']}".lower()
+            haystack = f"{cust['id']} {cust['name']} {cust['email']} {cust['phone']} {cust['default_address']} {cust['created_at']}".lower()
             if search not in haystack:
                 continue
         customers.append(cust)
@@ -6276,6 +6312,40 @@ def api_admin_stats():
     totals["active_coupons"] = active_coupons_cnt
     totals["total_users"] = int(agg_row.get("total_users") or 0)
     totals["total_customers"] = totals["total_users"]
+
+    # Calculate Today's Sales & 7-Period Real Database Revenue Trend
+    today_utc_str = datetime.utcnow().strftime("%Y-%m-%d")
+    today_local_str = datetime.now().strftime("%Y-%m-%d")
+    c.execute("""
+        SELECT SUBSTR(COALESCE(created_at, ''), 1, 10) AS order_date,
+               COALESCE(total_amount, 0) AS total_amount
+        FROM orders
+        WHERE LOWER(COALESCE(order_status, '')) != 'cancelled'
+          AND (
+              (LOWER(COALESCE(payment_method, '')) = 'cod' AND LOWER(COALESCE(payment_status, 'cod_confirmed')) NOT IN ('failed', 'cancelled', 'refunded'))
+              OR (LOWER(COALESCE(payment_method, '')) != 'cod' AND LOWER(COALESCE(payment_status, '')) = 'paid')
+          )
+        ORDER BY created_at DESC
+    """)
+    today_sales_val = 0
+    today_orders_cnt = 0
+    daily_buckets = {}
+    for srow in c.fetchall():
+        odate = str(srow["order_date"] or "").strip()
+        amt = int(srow["total_amount"] or 0)
+        if odate in (today_utc_str, today_local_str):
+            today_sales_val += amt
+            today_orders_cnt += 1
+        if odate and len(odate) == 10:
+            if odate not in daily_buckets:
+                daily_buckets[odate] = {"date": odate, "revenue": 0, "orders": 0}
+            daily_buckets[odate]["revenue"] += amt
+            daily_buckets[odate]["orders"] += 1
+
+    revenue_trend = sorted(daily_buckets.values(), key=lambda x: x["date"])[-7:]
+    totals["today_sales"] = today_sales_val
+    totals["today_orders"] = today_orders_cnt
+    totals["revenue_trend"] = revenue_trend
 
     all_orders_formatted = None
     if include_all:

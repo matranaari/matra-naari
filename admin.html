@@ -6,73 +6,326 @@
   <link rel="icon" type="image/png" href="favicon.png"/>
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous"/>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Kalam:wght@300;400;700&family=Karla:wght@400;500;600;700&display=swap"/>
-  <link rel="stylesheet" href="assets/styles.css?v=20261115.3"/>
-  <title>Admin Dashboard — Matra Naari</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap"/>
+  <link rel="stylesheet" href="assets/styles.css?v=admin-luxury-20261117.7"/>
+  <title>Store Manager — Matra Naari Admin</title>
   <meta name="robots" content="noindex, nofollow"/>
   <style>
-    body {
-      background-image: url('images/paper.jpg'), url('/images/paper.jpg');
-      background-size: 700px;
+    :root {
+      --adm-burgundy: #542C34;
+      --adm-burgundy-hover: #432229;
+      --adm-ivory: #F7F4EE;
+      --adm-white: #FFFFFF;
+      --adm-charcoal: #292725;
+      --adm-muted: #706963;
+      --adm-border: #E6DED5;
     }
+
+    html, body {
+      background-color: var(--adm-ivory) !important;
+      background-image: none !important;
+      color: var(--adm-charcoal) !important;
+      font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important;
+      font-size: 15px;
+      line-height: 1.5;
+      max-width: 100%;
+      overflow-x: hidden;
+    }
+
+    h1, h2, h3, h4, .font-display, .admin-sidebar-btn, .adm-nav-btn {
+      font-family: "Manrope", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important;
+      letter-spacing: -0.018em;
+    }
+
+    /* Clean elevated cards */
+    #admin-workspace .bg-card,
+    #admin-workspace .bg-card\/90,
+    #admin-auth-gate > div,
+    #order-detail-modal > div,
+    #product-modal > div,
+    #customer-detail-modal > div {
+      background-color: var(--adm-white) !important;
+      border-color: var(--adm-border) !important;
+      border-radius: 12px !important;
+      box-shadow: 0 4px 18px -6px rgba(41, 39, 37, 0.06);
+    }
+
+    /* Readable typography overrides (eliminate tiny 9px/10px labels & excessive uppercase) */
+    #admin-workspace .text-\[9px\],
+    #admin-workspace .text-\[10px\],
+    #admin-workspace .text-\[11px\] {
+      font-size: 0.76rem !important;
+      line-height: 1.35 !important;
+      letter-spacing: 0.03em !important;
+    }
+
+    #admin-workspace .text-xs {
+      font-size: 0.82rem !important;
+      line-height: 1.45 !important;
+    }
+
+    #admin-workspace label {
+      font-size: 0.8rem !important;
+      font-weight: 600 !important;
+      color: var(--adm-charcoal) !important;
+      letter-spacing: 0.02em !important;
+      text-transform: none !important;
+    }
+
+    #admin-workspace input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+    #admin-workspace select,
+    #admin-workspace textarea {
+      border-radius: 8px !important;
+      border-color: var(--adm-border) !important;
+      background-color: #FFFFFF !important;
+      color: var(--adm-charcoal) !important;
+      font-size: 0.9rem !important;
+      min-height: 2.6rem;
+      padding: 0.5rem 0.75rem !important;
+    }
+
+    #admin-workspace input:focus,
+    #admin-workspace select:focus,
+    #admin-workspace textarea:focus {
+      border-color: var(--adm-burgundy) !important;
+      box-shadow: 0 0 0 3px rgba(84, 44, 52, 0.12) !important;
+      outline: none !important;
+    }
+
+    #admin-workspace button,
+    #product-modal button,
+    #order-detail-modal button {
+      border-radius: 8px;
+      font-family: "Manrope", sans-serif !important;
+      letter-spacing: 0.02em !important;
+    }
+
+    /* Desktop Sidebar Navigation */
     .admin-sidebar-btn {
       display: flex;
       align-items: center;
       gap: 0.75rem;
       width: 100%;
-      padding: 0.7rem 1rem;
-      font-size: 0.85rem;
+      padding: 0.75rem 1rem;
+      font-size: 0.92rem;
       font-weight: 600;
       text-align: left;
-      border-radius: 2px;
-      transition: all 0.15s ease;
-      color: var(--color-muted-foreground, #6b5b53);
+      border-radius: 10px !important;
+      transition: all 0.18s ease;
+      color: var(--adm-muted);
       cursor: pointer;
     }
     .admin-sidebar-btn:hover {
-      background-color: rgba(139, 38, 53, 0.06);
-      color: var(--color-primary, #8b2635);
+      background-color: rgba(84, 44, 52, 0.07);
+      color: var(--adm-burgundy);
     }
     .admin-sidebar-btn.active {
-      background-color: var(--color-primary, #8b2635);
-      color: #ffffff;
+      background-color: var(--adm-burgundy);
+      color: #FFFFFF;
+      box-shadow: 0 4px 12px rgba(84, 44, 52, 0.22);
     }
+
     .size-stock-pill {
       display: inline-flex;
       align-items: center;
       gap: 0.25rem;
-      padding: 0.125rem 0.4rem;
-      font-size: 11px;
-      border: 1px solid rgba(0,0,0,0.12);
-      border-radius: 2px;
+      padding: 0.2rem 0.55rem;
+      font-size: 0.76rem;
+      font-weight: 600;
+      border: 1px solid var(--adm-border);
+      border-radius: 6px;
       margin-right: 0.25rem;
       margin-bottom: 0.25rem;
+    }
+
+    /* Quick Action Cards on Dashboard Home */
+    .adm-quick-action-btn {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.9rem 1.1rem;
+      background: #FFFFFF;
+      border: 1px solid var(--adm-border);
+      border-radius: 12px !important;
+      color: var(--adm-charcoal);
+      font-weight: 600;
+      font-size: 0.9rem;
+      text-align: left;
+      cursor: pointer;
+      transition: all 0.18s ease;
+      box-shadow: 0 2px 8px rgba(41, 39, 37, 0.04);
+    }
+    .adm-quick-action-btn:hover {
+      border-color: var(--adm-burgundy);
+      transform: translateY(-1px);
+      box-shadow: 0 6px 16px rgba(84, 44, 52, 0.1);
+    }
+    .adm-quick-action-btn.primary {
+      background: var(--adm-burgundy);
+      border-color: var(--adm-burgundy);
+      color: #FFFFFF;
+    }
+    .adm-quick-action-icon {
+      width: 2.25rem;
+      height: 2.25rem;
+      border-radius: 8px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(84, 44, 52, 0.09);
+      color: var(--adm-burgundy);
+      flex-shrink: 0;
+    }
+    .adm-quick-action-btn.primary .adm-quick-action-icon {
+      background: rgba(255, 255, 255, 0.16);
+      color: #FFFFFF;
+    }
+
+    /* Mobile-First Fixed Bottom Navigation (< 1024px) */
+    #admin-mobile-bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      z-index: 45;
+      background: rgba(255, 255, 255, 0.98);
+      -webkit-backdrop-filter: blur(14px);
+      backdrop-filter: blur(14px);
+      border-top: 1px solid var(--adm-border);
+      padding: 0.35rem 0.5rem calc(0.35rem + env(safe-area-inset-bottom, 0px));
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 0.25rem;
+      box-shadow: 0 -6px 20px rgba(41, 39, 37, 0.08);
+    }
+    @media (min-width: 1024px) {
+      #admin-mobile-bottom-nav,
+      #admin-mobile-more-sheet {
+        display: none !important;
+      }
+    }
+    @media (max-width: 1023px) {
+      #admin-workspace {
+        padding-bottom: 5rem;
+      }
+    }
+    .adm-mob-nav-item {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.2rem;
+      min-height: 3.1rem;
+      border-radius: 10px !important;
+      color: var(--adm-muted);
+      font-size: 0.74rem;
+      font-weight: 600;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .adm-mob-nav-item.active {
+      color: var(--adm-burgundy);
+      background: rgba(84, 44, 52, 0.09);
+      font-weight: 700;
+    }
+
+    /* Mobile Card Transformation for Tables (< 768px): Zero horizontal scroll or squeezed tables */
+    @media (max-width: 767px) {
+      #admin-workspace .overflow-x-auto {
+        overflow-x: visible !important;
+      }
+      #admin-workspace table,
+      #admin-workspace thead,
+      #admin-workspace tbody,
+      #admin-workspace th,
+      #admin-workspace td,
+      #admin-workspace tr {
+        display: block;
+        width: 100%;
+        box-sizing: border-box;
+      }
+      #admin-workspace thead {
+        display: none;
+      }
+      #admin-workspace tbody tr {
+        background: #FFFFFF;
+        border: 1px solid var(--adm-border);
+        border-radius: 10px;
+        padding: 0.85rem;
+        margin-bottom: 0.75rem;
+        box-shadow: 0 2px 6px rgba(41, 39, 37, 0.04);
+      }
+      #admin-workspace tbody td {
+        padding: 0.35rem 0 !important;
+        text-align: left !important;
+        white-space: normal !important;
+        overflow-wrap: break-word;
+        border: none;
+      }
+      #admin-workspace tbody td:last-child {
+        padding-top: 0.65rem !important;
+        margin-top: 0.4rem;
+        border-top: 1px solid rgba(230, 222, 213, 0.7);
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+      }
+      #admin-workspace tbody td .inv-sz-input {
+        width: 4.5rem !important;
+      }
+    }
+
+    /* Step-by-step section cards inside Product Modal */
+    .adm-step-box {
+      background: var(--adm-ivory);
+      border: 1px solid var(--adm-border);
+      border-radius: 10px;
+      padding: 1rem;
+    }
+    .adm-step-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 1.5rem;
+      height: 1.5rem;
+      border-radius: 999px;
+      background: var(--adm-burgundy);
+      color: #FFFFFF;
+      font-size: 0.75rem;
+      font-weight: 700;
+      margin-right: 0.5rem;
     }
   </style>
 </head>
 <body class="text-foreground antialiased selection:bg-primary/20 selection:text-primary min-h-screen flex flex-col">
 
   <!-- Top Admin Header -->
-  <header class="border-b border-border bg-card/95 backdrop-blur-md sticky top-0 z-40">
-    <div class="mx-auto flex max-w-[1440px] items-center justify-between px-4 py-3 sm:px-6">
-      <div class="flex items-center gap-3">
-        <button id="mobile-sidebar-toggle" type="button" class="lg:hidden p-1.5 border border-border rounded-xs text-foreground hover:text-primary cursor-pointer" aria-label="Toggle Menu">
+  <header class="border-b border-border bg-white/95 backdrop-blur-md sticky top-0 z-40">
+    <div class="mx-auto flex max-w-[1440px] items-center justify-between px-4 py-3 sm:px-6 gap-2">
+      <div class="flex items-center gap-2.5 min-w-0">
+        <button id="mobile-sidebar-toggle" type="button" class="lg:hidden p-2 border border-border rounded-lg text-foreground hover:text-primary cursor-pointer shrink-0" aria-label="Toggle Menu">
           <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
         </button>
-        <a href="index.html" class="flex items-center gap-2">
+        <a href="index.html" class="flex items-center gap-2 shrink-0">
           <img src="images/naari-logo.png" alt="Matra Naari" class="h-9 w-auto mix-blend-multiply"/>
         </a>
-        <span class="rounded bg-primary/10 px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wider text-primary font-sans">
-          Admin Dashboard
-        </span>
+        <div class="min-w-0">
+          <span class="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-xs font-bold text-primary truncate">
+            <span class="h-2 w-2 rounded-full bg-emerald-600"></span>
+            <span>Store Manager</span>
+          </span>
+        </div>
       </div>
-      <div class="flex items-center gap-3 sm:gap-4">
-        <a href="index.html" target="_blank" class="text-xs text-muted-foreground hover:text-primary transition font-sans flex items-center gap-1">
-          <span>View Live Storefront</span>
+      <div class="flex items-center gap-2 sm:gap-3 shrink-0">
+        <a href="index.html" target="_blank" class="border border-border bg-background hover:border-primary text-foreground px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1.5">
+          <span>Live Store</span>
           <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
         </a>
-        <button id="admin-logout-btn" type="button" class="hidden text-xs bg-card border border-border px-3 py-1.5 hover:bg-destructive/10 hover:text-destructive transition font-medium cursor-pointer">
-          Lock / Logout
+        <button id="admin-logout-btn" type="button" class="hidden text-xs bg-white border border-border px-3 py-1.5 rounded-lg hover:bg-destructive/10 hover:text-destructive transition font-semibold cursor-pointer">
+          Lock
         </button>
       </div>
     </div>
@@ -80,31 +333,31 @@
 
   <!-- Login Gate Modal / Card (Shown when not authenticated) -->
   <section id="admin-auth-gate" class="flex-1 flex items-center justify-center p-4">
-    <div class="w-full max-w-md bg-card/95 border border-border shadow-xl p-8 rounded-xs">
+    <div class="w-full max-w-md bg-card border border-border shadow-xl p-6 sm:p-8">
       <div class="text-center mb-6">
-        <p class="font-hand text-lg text-primary">authorized personnel only</p>
-        <h1 class="font-display text-3xl font-bold">Matra Naari Admin</h1>
-        <p class="text-xs text-muted-foreground mt-1">Sign in with your administrative passkey to manage products, inventory, orders, coupons, and store settings.</p>
+        <span class="inline-block rounded-full bg-primary/10 text-primary px-3 py-1 text-xs font-bold mb-2">Store Owner &amp; Staff Access</span>
+        <h1 class="font-display text-2xl sm:text-3xl font-bold text-foreground">Matra Naari Admin</h1>
+        <p class="text-sm text-muted-foreground mt-1.5">Enter your admin passkey to manage orders, products, banners, coupons, and inventory.</p>
       </div>
       <form id="admin-login-form" class="space-y-4">
         <div>
-          <label for="admin-passkey-input" class="block text-xs uppercase tracking-wider text-muted-foreground mb-1.5 font-sans font-medium">Admin Security Passkey</label>
+          <label for="admin-passkey-input" class="block text-sm font-semibold text-foreground mb-1.5">Admin Passkey</label>
           <input
             type="password"
             id="admin-passkey-input"
             required
             autocomplete="current-password"
             placeholder="Enter admin passkey"
-            class="w-full bg-background border border-border px-3.5 py-2.5 text-sm focus:outline-none focus:border-primary"
+            class="w-full bg-white border border-border px-3.5 py-3 text-base rounded-lg focus:outline-none focus:border-primary"
           />
         </div>
-        <p id="admin-login-error" class="text-xs text-destructive hidden"></p>
+        <p id="admin-login-error" class="text-xs text-destructive font-medium hidden"></p>
         <button
           type="submit"
           id="admin-login-submit"
-          class="w-full bg-primary text-primary-foreground py-2.5 text-xs font-semibold uppercase tracking-widest hover:bg-primary/90 transition cursor-pointer"
+          class="w-full bg-primary text-primary-foreground py-3 rounded-lg text-sm font-bold hover:bg-primary/90 transition cursor-pointer"
         >
-          Unlock Dashboard
+          Unlock Store Manager
         </button>
       </form>
     </div>
@@ -113,115 +366,200 @@
   <!-- Main Authenticated Workspace (Sidebar + Content) -->
   <div id="admin-workspace" class="hidden flex-1 mx-auto w-full max-w-[1440px] flex flex-col lg:flex-row">
 
-    <!-- Responsive Sidebar Navigation -->
-    <aside id="admin-sidebar" class="hidden lg:flex lg:flex-col lg:w-64 shrink-0 border-b lg:border-b-0 lg:border-r border-border bg-card/90 p-4 justify-between">
+    <!-- Responsive Sidebar Navigation (Desktop Sidebar + Mobile Drawer) -->
+    <aside id="admin-sidebar" class="hidden lg:flex lg:flex-col lg:w-64 shrink-0 border-b lg:border-b-0 lg:border-r border-border bg-white p-4 justify-between">
       <div class="space-y-1">
-        <p class="px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Store Management</p>
+        <p class="px-3 py-1.5 text-xs font-bold text-muted-foreground">Navigation</p>
         <button type="button" data-tab="overview" class="admin-tab-btn admin-sidebar-btn active">
-          <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
-          <span>Dashboard</span>
+          <svg class="h-5 w-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+          <span>Dashboard Home</span>
+        </button>
+        <button type="button" data-tab="orders" class="admin-tab-btn admin-sidebar-btn">
+          <svg class="h-5 w-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
+          <span class="flex-1">Orders</span>
+          <span id="sidebar-pending-orders-badge" class="hidden rounded-full bg-primary text-white px-2 py-0.5 text-xs font-bold">0</span>
         </button>
         <button type="button" data-tab="products" class="admin-tab-btn admin-sidebar-btn">
-          <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+          <svg class="h-5 w-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
           <span>Products</span>
         </button>
         <button type="button" data-tab="inventory" class="admin-tab-btn admin-sidebar-btn">
-          <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
-          <span class="flex-1">Inventory</span>
-          <span id="sidebar-low-stock-badge" class="hidden rounded-full bg-amber-600 text-white px-1.5 py-0.5 text-[10px] font-bold">0</span>
-        </button>
-        <button type="button" data-tab="orders" class="admin-tab-btn admin-sidebar-btn">
-          <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
-          <span class="flex-1">Orders</span>
-          <span id="sidebar-pending-orders-badge" class="hidden rounded-full bg-primary text-white px-1.5 py-0.5 text-[10px] font-bold">0</span>
-        </button>
-        <button type="button" data-tab="customers" class="admin-tab-btn admin-sidebar-btn">
-          <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-          <span class="flex-1">Customers</span>
-          <span id="sidebar-customers-badge" class="hidden rounded-full bg-primary/15 text-primary px-1.5 py-0.5 text-[10px] font-bold">0</span>
-        </button>
-        <button type="button" data-tab="coupons" class="admin-tab-btn admin-sidebar-btn">
-          <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
-          <span>Coupons</span>
-        </button>
-        <button type="button" data-tab="returns" class="admin-tab-btn admin-sidebar-btn">
-          <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-          <span>Returns &amp; Exchanges</span>
+          <svg class="h-5 w-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+          <span class="flex-1">Stock &amp; Sizes</span>
+          <span id="sidebar-low-stock-badge" class="hidden rounded-full bg-amber-600 text-white px-2 py-0.5 text-xs font-bold">0</span>
         </button>
         <button type="button" data-tab="banners" class="admin-tab-btn admin-sidebar-btn">
-          <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+          <svg class="h-5 w-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
           <span>Homepage Banners</span>
         </button>
+        <button type="button" data-tab="coupons" class="admin-tab-btn admin-sidebar-btn">
+          <svg class="h-5 w-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
+          <span>Coupons &amp; Offers</span>
+        </button>
+        <button type="button" data-tab="customers" class="admin-tab-btn admin-sidebar-btn">
+          <svg class="h-5 w-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+          <span class="flex-1">Customers</span>
+          <span id="sidebar-customers-badge" class="hidden rounded-full bg-primary/15 text-primary px-2 py-0.5 text-xs font-bold">0</span>
+        </button>
+        <button type="button" data-tab="returns" class="admin-tab-btn admin-sidebar-btn">
+          <svg class="h-5 w-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+          <span>Returns &amp; Exchanges</span>
+        </button>
         <button type="button" data-tab="settings" class="admin-tab-btn admin-sidebar-btn">
-          <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-          <span>Settings</span>
+          <svg class="h-5 w-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+          <span>Settings &amp; Staff</span>
         </button>
       </div>
 
-      <div class="mt-8 pt-4 border-t border-border hidden lg:block">
-        <button id="refresh-all-btn" type="button" class="w-full bg-background border border-border px-3 py-2 text-xs font-semibold uppercase tracking-wider hover:border-primary hover:text-primary transition cursor-pointer flex items-center justify-center gap-2">
-          <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-          <span>Sync Live Data</span>
+      <div class="mt-8 pt-4 border-t border-border space-y-3">
+        <div class="bg-background rounded-lg p-3 text-xs">
+          <div class="font-bold text-foreground flex items-center justify-between">
+            <span>Access Level</span>
+            <span class="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded font-bold">Owner</span>
+          </div>
+          <p class="text-muted-foreground mt-0.5">Protected session · Encrypted API</p>
+        </div>
+        <button id="refresh-all-btn" type="button" class="w-full bg-background border border-border px-3 py-2.5 rounded-lg text-xs font-bold hover:border-primary hover:text-primary transition cursor-pointer flex items-center justify-center gap-2">
+          <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+          <span>Refresh Live Data</span>
         </button>
       </div>
     </aside>
 
     <!-- Main Content Column -->
-    <main class="flex-1 p-4 sm:p-6 lg:p-8 overflow-x-hidden">
+    <main class="flex-1 p-4 sm:p-6 lg:p-8 min-w-0 max-w-full overflow-x-hidden">
 
       <!-- ============================================================== -->
-      <!-- 1. DASHBOARD OVERVIEW TAB                                      -->
+      <!-- 1. DASHBOARD HOME TAB                                          -->
       <!-- ============================================================== -->
       <section id="tab-overview" class="admin-tab-panel space-y-6">
-        <div class="flex flex-wrap items-center justify-between gap-4">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
-            <h1 class="font-display text-2xl sm:text-3xl font-bold">Store Overview</h1>
-            <p class="text-xs text-muted-foreground">Real-time metrics calculated from your live database records.</p>
-          </div>
-          <div class="flex flex-wrap gap-2">
-            <button type="button" onclick="openProductModal(null)" class="bg-primary text-primary-foreground px-3.5 py-2 text-xs font-semibold uppercase tracking-wider hover:bg-primary/90 transition cursor-pointer">
-              + Add New Product
-            </button>
-            <button type="button" onclick="switchTab('orders')" class="bg-card border border-border px-3.5 py-2 text-xs font-semibold uppercase tracking-wider hover:border-primary transition cursor-pointer">
-              Manage Orders
-            </button>
+            <h1 class="font-display text-2xl sm:text-3xl font-bold text-foreground">Store Dashboard</h1>
+            <p class="text-sm text-muted-foreground">Live sales, orders, inventory alerts, and store quick actions.</p>
           </div>
         </div>
 
-        <!-- KPI Summary Cards -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-          <div class="bg-card/90 border border-border p-5">
-            <p class="text-xs uppercase tracking-wider text-muted-foreground font-semibold">Total Store Revenue</p>
-            <p id="stat-revenue" class="font-display text-3xl font-bold text-primary mt-1">—</p>
+        <!-- 4 Clear Quick-Action Buttons -->
+        <div id="dashboard-quick-actions" class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          <button type="button" id="qa-add-product-btn" onclick="openProductModal(null)" class="adm-quick-action-btn primary">
+            <span class="adm-quick-action-icon">
+              <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M12 4v16m8-8H4"/></svg>
+            </span>
+            <div>
+              <div class="font-bold text-sm">Add Product</div>
+              <div class="text-xs opacity-80 font-normal">New kurti &amp; photos</div>
+            </div>
+          </button>
+
+          <button type="button" id="qa-view-orders-btn" onclick="switchTab('orders')" class="adm-quick-action-btn">
+            <span class="adm-quick-action-icon">
+              <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
+            </span>
+            <div>
+              <div class="font-bold text-sm">View Orders</div>
+              <div class="text-xs text-muted-foreground font-normal">Ship &amp; track</div>
+            </div>
+          </button>
+
+          <button type="button" id="qa-manage-banners-btn" onclick="switchTab('banners')" class="adm-quick-action-btn">
+            <span class="adm-quick-action-icon">
+              <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+            </span>
+            <div>
+              <div class="font-bold text-sm">Manage Banners</div>
+              <div class="text-xs text-muted-foreground font-normal">Hero &amp; crop</div>
+            </div>
+          </button>
+
+          <button type="button" id="qa-create-coupon-btn" onclick="switchTab('coupons')" class="adm-quick-action-btn">
+            <span class="adm-quick-action-icon">
+              <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
+            </span>
+            <div>
+              <div class="font-bold text-sm">Create Coupon</div>
+              <div class="text-xs text-muted-foreground font-normal">Discounts &amp; promos</div>
+            </div>
+          </button>
+        </div>
+
+        <!-- Real Database KPI Summary Cards -->
+        <div class="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
+          <div class="bg-card border border-border p-4 sm:p-5">
+            <p class="text-xs font-semibold text-muted-foreground">Today's Sales</p>
+            <p id="stat-today-sales" class="font-display text-2xl sm:text-3xl font-bold text-primary mt-1">₹0</p>
+            <p class="text-xs text-muted-foreground mt-1">Today's Orders: <span id="stat-today-orders" class="font-semibold text-foreground">0</span></p>
+          </div>
+          <div class="bg-card border border-border p-4 sm:p-5">
+            <p class="text-xs font-semibold text-muted-foreground">Total Revenue</p>
+            <p id="stat-revenue" class="font-display text-2xl sm:text-3xl font-bold text-primary mt-1">—</p>
             <p class="text-xs text-muted-foreground mt-1">Online Paid: <span id="stat-paid-revenue" class="font-semibold text-foreground">—</span></p>
           </div>
-          <div class="bg-card/90 border border-border p-5">
-            <p class="text-xs uppercase tracking-wider text-muted-foreground font-semibold">Orders &amp; Fulfillment</p>
-            <p id="stat-orders" class="font-display text-3xl font-bold mt-1">—</p>
+          <div class="bg-card border border-border p-4 sm:p-5">
+            <p class="text-xs font-semibold text-muted-foreground">Total Orders</p>
+            <p id="stat-orders" class="font-display text-2xl sm:text-3xl font-bold mt-1">—</p>
             <p class="text-xs text-muted-foreground mt-1">
-              Pending Fulfillment: <span id="stat-pending-orders" class="font-semibold text-amber-700">—</span>
+              Pending: <span id="stat-pending-orders" class="font-bold text-amber-700">—</span>
             </p>
           </div>
-          <div class="bg-card/90 border border-border p-5">
-            <p class="text-xs uppercase tracking-wider text-muted-foreground font-semibold">Registered Customers</p>
-            <p id="stat-customers" class="font-display text-3xl font-bold text-primary mt-1">—</p>
+          <div class="bg-card border border-border p-4 sm:p-5">
+            <p class="text-xs font-semibold text-muted-foreground">Total Products</p>
+            <p id="stat-products" class="font-display text-2xl sm:text-3xl font-bold mt-1">—</p>
             <p class="text-xs text-muted-foreground mt-1">
-              <button type="button" onclick="switchTab('customers')" class="text-primary font-semibold hover:underline cursor-pointer">View Customer Directory →</button>
+              Low Stock: <span id="stat-low-stock" class="font-bold text-amber-700">—</span> · Out: <span id="stat-out-of-stock" class="font-bold text-destructive">—</span>
             </p>
           </div>
-          <div class="bg-card/90 border border-border p-5">
-            <p class="text-xs uppercase tracking-wider text-muted-foreground font-semibold">Products &amp; Stock</p>
-            <p id="stat-products" class="font-display text-3xl font-bold mt-1">—</p>
+          <div class="bg-card border border-border p-4 sm:p-5 col-span-2 lg:col-span-1">
+            <p class="text-xs font-semibold text-muted-foreground">Customers &amp; Promos</p>
+            <p id="stat-customers" class="font-display text-2xl sm:text-3xl font-bold text-primary mt-1">—</p>
             <p class="text-xs text-muted-foreground mt-1">
-              Low Stock: <span id="stat-low-stock" class="font-semibold text-amber-700">—</span> · Out of Stock: <span id="stat-out-of-stock" class="font-semibold text-destructive">—</span>
+              Coupons: <span id="stat-coupons" class="font-semibold text-foreground">—</span> · Returns: <span id="stat-returns" class="font-semibold text-foreground">—</span>
             </p>
           </div>
-          <div class="bg-card/90 border border-border p-5">
-            <p class="text-xs uppercase tracking-wider text-muted-foreground font-semibold">Coupons &amp; Returns</p>
-            <p id="stat-returns" class="font-display text-3xl font-bold mt-1">—</p>
-            <p class="text-xs text-muted-foreground mt-1">
-              Pending Returns · Active Coupons: <span id="stat-coupons" class="font-semibold text-foreground">—</span>
-            </p>
+        </div>
+
+        <!-- Revenue Trends & Analytics Overview (Real Database Data) -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div class="lg:col-span-2 bg-card border border-border p-5">
+            <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
+              <div>
+                <h2 class="font-display text-lg sm:text-xl font-bold">Revenue Trends (Recent Order Dates)</h2>
+                <p class="text-xs text-muted-foreground">Calculated directly from confirmed &amp; paid orders in your database</p>
+              </div>
+              <span id="stat-cod-revenue-pill" class="rounded-full bg-secondary px-3 py-1 text-xs font-semibold text-foreground">COD Revenue: <span id="stat-cod-revenue">₹0</span></span>
+            </div>
+            <div id="dashboard-revenue-trend-chart" class="grid grid-cols-7 gap-2 items-end h-40 pt-4 pb-2 border-b border-border/70">
+              <div class="col-span-7 text-center text-xs text-muted-foreground py-12">Loading revenue trend...</div>
+            </div>
+          </div>
+
+          <div class="bg-card border border-border p-5 flex flex-col justify-between">
+            <div>
+              <h2 class="font-display text-lg sm:text-xl font-bold mb-1">Fulfillment &amp; Store Health</h2>
+              <p class="text-xs text-muted-foreground mb-4">Live order pipeline across statuses</p>
+              <div id="dashboard-fulfillment-breakdown" class="space-y-3 text-sm">
+                <div class="flex items-center justify-between py-1.5 border-b border-border/60">
+                  <span class="text-muted-foreground">Pending Dispatch</span>
+                  <span id="health-pending-count" class="font-bold text-amber-700">0</span>
+                </div>
+                <div class="flex items-center justify-between py-1.5 border-b border-border/60">
+                  <span class="text-muted-foreground">Shipped / In Transit</span>
+                  <span id="health-shipped-count" class="font-bold text-primary">0</span>
+                </div>
+                <div class="flex items-center justify-between py-1.5 border-b border-border/60">
+                  <span class="text-muted-foreground">Delivered</span>
+                  <span id="health-delivered-count" class="font-bold text-emerald-700">0</span>
+                </div>
+                <div class="flex items-center justify-between py-1.5">
+                  <span class="text-muted-foreground">Cancelled</span>
+                  <span id="health-cancelled-count" class="font-bold text-muted-foreground">0</span>
+                </div>
+              </div>
+            </div>
+            <div class="mt-4 pt-3 border-t border-border flex items-center justify-between text-xs">
+              <span class="text-muted-foreground">Role: <strong class="text-foreground">Store Owner</strong></span>
+              <button type="button" onclick="switchTab('customers')" class="text-primary font-bold hover:underline cursor-pointer">Customers →</button>
+            </div>
           </div>
         </div>
 
@@ -335,6 +673,13 @@
             />
             <select id="product-category-filter" class="bg-background border border-border px-3 py-2 text-xs focus:outline-none focus:border-primary">
               <option value="ALL">All Categories</option>
+              <option value="Straight Cut">Straight Cut</option>
+              <option value="A-Line">A-Line</option>
+              <option value="Anarkali">Anarkali</option>
+              <option value="Short Kurti">Short Kurti</option>
+              <option value="Angrakha">Angrakha</option>
+              <option value="Kaftan">Kaftan</option>
+              <option value="Co-ord Set">Co-ord Set</option>
               <option value="Anarkali Suits">Anarkali Suits</option>
               <option value="Straight Kurtas">Straight Kurtas</option>
               <option value="Kurta Sets">Kurta Sets</option>
@@ -520,11 +865,11 @@
               <thead>
                 <tr class="border-b border-border text-xs uppercase tracking-wider text-muted-foreground">
                   <th class="py-3 px-3">Customer ID</th>
-                  <th class="py-3 px-3">Full Name</th>
-                  <th class="py-3 px-3">Email Address</th>
-                  <th class="py-3 px-3">Phone</th>
-                  <th class="py-3 px-3">Orders / Spent</th>
-                  <th class="py-3 px-3">Account Created</th>
+                  <th class="py-3 px-3">Full Name &amp; Contact</th>
+                  <th class="py-3 px-3">Delivery Address</th>
+                  <th class="py-3 px-3">Orders &amp; Spent</th>
+                  <th class="py-3 px-3">Joined</th>
+                  <th class="py-3 px-3 text-right">History</th>
                 </tr>
               </thead>
               <tbody id="admin-customers-tbody" class="divide-y divide-border">
@@ -612,6 +957,11 @@
               <div>
                 <label class="block text-xs uppercase tracking-wider text-muted-foreground mb-1">Display Description</label>
                 <input type="text" id="new-coupon-desc" placeholder="e.g. 15% off on orders above ₹1,999" class="w-full bg-background border border-border px-3 py-2 text-sm focus:outline-none focus:border-primary"/>
+              </div>
+              <div id="coupon-live-promo-preview" class="rounded-lg bg-[#542C34] text-[#F7F4EE] p-3 text-xs space-y-1">
+                <div class="text-[11px] font-bold text-[#EF8557] uppercase tracking-wider">Storefront Promo Preview</div>
+                <div id="coupon-preview-headline" class="font-semibold text-sm">Extra 10% Off with code NAARI10</div>
+                <div id="coupon-preview-sub" class="opacity-85">Valid on orders above ₹999 · Applied at bag &amp; checkout</div>
               </div>
               <p id="coupon-form-msg" class="text-xs hidden"></p>
               <button type="submit" class="w-full bg-primary text-primary-foreground py-2.5 text-xs font-semibold uppercase tracking-widest hover:bg-primary/90 transition cursor-pointer">
@@ -1028,12 +1378,20 @@
               </div>
             </div>
 
-            <!-- Admin Security Passkey Update -->
+            <!-- Store Owner & Staff Security -->
             <div>
-              <h3 class="font-display text-lg font-bold border-b border-border pb-1.5 mb-3">4. Admin Security Passkey</h3>
+              <h3 class="font-display text-lg font-bold border-b border-border pb-1.5 mb-3">4. Store Owner &amp; Staff Security</h3>
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div class="bg-background border border-border p-3.5 rounded-xl flex items-center justify-between">
+                  <div>
+                    <div class="text-xs font-semibold text-muted-foreground">Active Access Role</div>
+                    <div class="font-display font-bold text-sm text-foreground mt-0.5">Store Owner (Full Admin Access)</div>
+                    <div class="text-[11px] text-muted-foreground mt-0.5">Protected by server-side session token &amp; passkey verification</div>
+                  </div>
+                  <span class="px-2.5 py-1 rounded-full text-xs font-bold bg-green-100 text-green-800">Verified</span>
+                </div>
                 <div>
-                  <label class="block text-xs uppercase tracking-wider text-muted-foreground mb-1">New Admin Passkey (Leave blank to keep current)</label>
+                  <label for="set-new-passkey" class="block mb-1">Rotate Admin Passkey (Leave blank to keep current)</label>
                   <input type="password" id="set-new-passkey" autocomplete="new-password" placeholder="Min 6 characters" class="w-full bg-background border border-border px-3 py-2 text-sm"/>
                 </div>
               </div>
@@ -1048,6 +1406,75 @@
       </section>
 
     </main>
+  </div>
+
+  <!-- ================================================================ -->
+  <!-- MOBILE FIXED BOTTOM NAVIGATION (Home, Orders, Products, More)    -->
+  <!-- ================================================================ -->
+  <nav id="admin-mobile-bottom-nav" class="hidden" aria-label="Mobile Admin Navigation">
+    <button type="button" data-mob-tab="overview" class="adm-mob-nav-item active">
+      <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+      <span>Home</span>
+    </button>
+    <button type="button" data-mob-tab="orders" class="adm-mob-nav-item">
+      <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
+      <span>Orders</span>
+      <span id="mob-nav-orders-badge" class="hidden absolute top-1 right-4 rounded-full bg-primary text-white px-1.5 text-[10px] font-bold">0</span>
+    </button>
+    <button type="button" data-mob-tab="products" class="adm-mob-nav-item">
+      <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+      <span>Products</span>
+    </button>
+    <button type="button" id="admin-mobile-more-btn" class="adm-mob-nav-item">
+      <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+      <span>More</span>
+    </button>
+  </nav>
+
+  <!-- Mobile "More" Bottom Sheet -->
+  <div id="admin-mobile-more-sheet" class="fixed inset-0 z-50 hidden bg-black/50 backdrop-blur-xs flex items-end justify-center">
+    <div class="w-full max-w-lg bg-white rounded-t-2xl border-t border-border p-5 space-y-4 shadow-2xl">
+      <div class="flex items-center justify-between border-b border-border pb-3">
+        <h3 class="font-display text-lg font-bold">More Store Controls</h3>
+        <button type="button" id="close-mobile-more-sheet" class="p-1.5 text-muted-foreground hover:text-foreground text-xl leading-none cursor-pointer">&times;</button>
+      </div>
+      <div class="grid grid-cols-2 gap-2.5">
+        <button type="button" data-mob-sheet-tab="banners" class="flex items-center gap-2.5 p-3 rounded-xl border border-border bg-background hover:border-primary text-left font-semibold text-sm cursor-pointer">
+          <span>🖼️</span><span>Banners &amp; Hero</span>
+        </button>
+        <button type="button" data-mob-sheet-tab="coupons" class="flex items-center gap-2.5 p-3 rounded-xl border border-border bg-background hover:border-primary text-left font-semibold text-sm cursor-pointer">
+          <span>🏷️</span><span>Coupons &amp; Offers</span>
+        </button>
+        <button type="button" data-mob-sheet-tab="inventory" class="flex items-center gap-2.5 p-3 rounded-xl border border-border bg-background hover:border-primary text-left font-semibold text-sm cursor-pointer">
+          <span>📦</span><span>Stock &amp; Sizes</span>
+        </button>
+        <button type="button" data-mob-sheet-tab="customers" class="flex items-center gap-2.5 p-3 rounded-xl border border-border bg-background hover:border-primary text-left font-semibold text-sm cursor-pointer">
+          <span>👥</span><span>Customers</span>
+        </button>
+        <button type="button" data-mob-sheet-tab="returns" class="flex items-center gap-2.5 p-3 rounded-xl border border-border bg-background hover:border-primary text-left font-semibold text-sm cursor-pointer">
+          <span>↩️</span><span>Returns</span>
+        </button>
+        <button type="button" data-mob-sheet-tab="settings" class="flex items-center gap-2.5 p-3 rounded-xl border border-border bg-background hover:border-primary text-left font-semibold text-sm cursor-pointer">
+          <span>⚙️</span><span>Store Settings</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================================================================ -->
+  <!-- CUSTOMER DETAILS & SAVED ADDRESSES MODAL                         -->
+  <!-- ================================================================ -->
+  <div id="customer-detail-modal" class="fixed inset-0 z-50 hidden bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="bg-card border border-border shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6">
+      <div class="flex items-start justify-between border-b border-border pb-3 mb-4">
+        <div>
+          <p class="text-xs font-semibold text-muted-foreground">Customer Profile &amp; Order History</p>
+          <h3 id="modal-customer-name" class="font-display text-2xl font-bold text-primary">Customer</h3>
+        </div>
+        <button id="close-customer-modal" type="button" class="text-muted-foreground hover:text-foreground text-xl leading-none px-2 cursor-pointer">&times;</button>
+      </div>
+      <div id="modal-customer-body" class="space-y-4 text-sm"></div>
+    </div>
   </div>
 
   <!-- ================================================================ -->
@@ -1118,100 +1545,124 @@
   </div>
 
   <!-- ================================================================ -->
-  <!-- PRODUCT ADD / EDIT MODAL                                         -->
+  <!-- PRODUCT ADD / EDIT MODAL (STEP-BY-STEP EASY PRODUCT MANAGER)     -->
   <!-- ================================================================ -->
-  <div id="product-modal" class="fixed inset-0 z-50 hidden bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-    <div class="bg-card border border-border shadow-2xl w-full max-w-3xl max-h-[92vh] overflow-y-auto p-6">
-      <div class="flex items-start justify-between border-b border-border pb-3 mb-4">
+  <div id="product-modal" class="fixed inset-0 z-50 hidden bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4">
+    <div class="bg-card border border-border shadow-2xl w-full max-w-3xl max-h-[92vh] overflow-y-auto p-5 sm:p-6">
+      <div class="flex flex-wrap items-start justify-between gap-2 border-b border-border pb-3 mb-4">
         <div>
-          <p class="text-xs uppercase tracking-widest text-muted-foreground">Catalog Item Editor</p>
+          <p class="text-xs font-semibold text-muted-foreground">Step-by-Step Product Editor</p>
           <h3 id="product-modal-title" class="font-display text-2xl font-bold text-primary">Add / Edit Product</h3>
         </div>
-        <button id="close-product-modal" type="button" class="text-muted-foreground hover:text-foreground text-xl leading-none px-2 cursor-pointer">&times;</button>
+        <div class="flex items-center gap-2">
+          <a id="p-preview-storefront-link" href="shop.html" target="_blank" class="border border-border bg-background hover:border-primary text-foreground px-3 py-1.5 rounded-lg text-xs font-semibold transition inline-flex items-center gap-1">
+            <span>Preview Product Page</span>
+            <span>↗</span>
+          </a>
+          <button id="close-product-modal" type="button" class="text-muted-foreground hover:text-foreground text-2xl leading-none px-2 cursor-pointer">&times;</button>
+        </div>
       </div>
 
       <form id="admin-product-form" class="space-y-4 text-sm">
-        <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
-          <div>
-            <label class="block text-xs uppercase tracking-wider text-muted-foreground mb-1">Product ID</label>
-            <input type="text" id="p-form-id" placeholder="e.g. anarkali or 101" class="w-full bg-background border border-border px-3 py-2 text-sm"/>
+        <!-- Step 1: Basic Info & Category -->
+        <div class="adm-step-box space-y-3">
+          <div class="font-display font-bold text-base text-foreground flex items-center">
+            <span class="adm-step-badge">1</span>
+            <span>Product Name, Category &amp; Code</span>
           </div>
-          <div>
-            <label class="block text-xs uppercase tracking-wider text-muted-foreground mb-1">SKU Code *</label>
-            <input type="text" id="p-form-sku" required placeholder="e.g. MN-101" class="w-full bg-background border border-border px-3 py-2 text-sm uppercase"/>
-          </div>
-          <div class="sm:col-span-2">
-            <label class="block text-xs uppercase tracking-wider text-muted-foreground mb-1">Product Name *</label>
-            <input type="text" id="p-form-name" required placeholder="e.g. Crimson Zari Anarkali" class="w-full bg-background border border-border px-3 py-2 text-sm"/>
-          </div>
-        </div>
-
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div>
-            <label class="block text-xs uppercase tracking-wider text-muted-foreground mb-1">Category *</label>
-            <select id="p-form-category" class="w-full bg-background border border-border px-3 py-2 text-sm">
-              <option value="Straight Cut">Straight Cut</option>
-              <option value="A-Line">A-Line</option>
-              <option value="Anarkali">Anarkali</option>
-              <option value="Short Kurti">Short Kurti</option>
-              <option value="Angrakha">Angrakha</option>
-              <option value="Kaftan">Kaftan</option>
-              <option value="Co-ord Set">Co-ord Set</option>
-              <option value="Anarkali Suits">Anarkali Suits</option>
-              <option value="Straight Kurtas">Straight Kurtas</option>
-              <option value="Kurta Sets">Kurta Sets</option>
-              <option value="Festive Wear">Festive Wear</option>
-              <option value="A-Line Kurtas">A-Line Kurtas</option>
-              <option value="Everyday Kurtis">Everyday Kurtis</option>
-            </select>
-          </div>
-          <div>
-            <label class="block text-xs uppercase tracking-wider text-muted-foreground mb-1">Sale Price (₹) *</label>
-            <input type="number" id="p-form-price" required min="1" step="1" class="w-full bg-background border border-border px-3 py-2 text-sm"/>
-          </div>
-          <div>
-            <label class="block text-xs uppercase tracking-wider text-muted-foreground mb-1">Original MRP (₹) *</label>
-            <input type="number" id="p-form-mrp" required min="1" step="1" class="w-full bg-background border border-border px-3 py-2 text-sm"/>
+          <div class="grid grid-cols-1 sm:grid-cols-4 gap-3">
+            <div class="sm:col-span-2">
+              <label for="p-form-name" class="block mb-1">Product Name *</label>
+              <input type="text" id="p-form-name" required placeholder="e.g. Gulmohar Straight Kurti" class="w-full bg-white border border-border px-3 py-2 text-sm"/>
+            </div>
+            <div>
+              <label for="p-form-category" class="block mb-1">Category *</label>
+              <select id="p-form-category" class="w-full bg-white border border-border px-3 py-2 text-sm">
+                <option value="Straight Cut">Straight Cut</option>
+                <option value="A-Line">A-Line</option>
+                <option value="Anarkali">Anarkali</option>
+                <option value="Short Kurti">Short Kurti</option>
+                <option value="Angrakha">Angrakha</option>
+                <option value="Kaftan">Kaftan</option>
+                <option value="Co-ord Set">Co-ord Set</option>
+                <option value="Anarkali Suits">Anarkali Suits</option>
+                <option value="Straight Kurtas">Straight Kurtas</option>
+                <option value="Kurta Sets">Kurta Sets</option>
+                <option value="Festive Wear">Festive Wear</option>
+                <option value="A-Line Kurtas">A-Line Kurtas</option>
+                <option value="Everyday Kurtis">Everyday Kurtis</option>
+              </select>
+            </div>
+            <div>
+              <label for="p-form-sku" class="block mb-1">SKU Code *</label>
+              <input type="text" id="p-form-sku" required placeholder="e.g. MN-101" class="w-full bg-white border border-border px-3 py-2 text-sm uppercase"/>
+              <input type="hidden" id="p-form-id" />
+            </div>
           </div>
         </div>
 
-        <!-- Size-Wise Stock Quantities (S, M, L, XL) -->
-        <div class="bg-background/70 border border-border p-4">
-          <div class="flex items-center justify-between mb-2">
-            <label class="block text-xs uppercase tracking-wider font-semibold text-foreground">Size-Wise Inventory Quantities (S, M, L, XL)</label>
-            <span class="text-xs text-muted-foreground">Total Stock: <strong id="p-form-stock-total" class="text-primary">0</strong> units</span>
+        <!-- Step 2: Prices & Discount -->
+        <div class="adm-step-box space-y-3">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <div class="font-display font-bold text-base text-foreground flex items-center">
+              <span class="adm-step-badge">2</span>
+              <span>Selling Price &amp; MRP</span>
+            </div>
+            <span id="p-discount-preview-badge" class="rounded-full bg-emerald-100 text-emerald-800 px-3 py-0.5 text-xs font-bold">Automatic discount calculation</span>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label for="p-form-price" class="block mb-1">Selling Price (₹) *</label>
+              <input type="number" id="p-form-price" required min="1" step="1" placeholder="e.g. 1499" class="w-full bg-white border border-border px-3 py-2 text-sm"/>
+            </div>
+            <div>
+              <label for="p-form-mrp" class="block mb-1">Original MRP (₹) *</label>
+              <input type="number" id="p-form-mrp" required min="1" step="1" placeholder="e.g. 2199" class="w-full bg-white border border-border px-3 py-2 text-sm"/>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 3: Size-Wise Stock Quantities (S, M, L, XL) -->
+        <div class="adm-step-box space-y-3">
+          <div class="flex items-center justify-between">
+            <div class="font-display font-bold text-base text-foreground flex items-center">
+              <span class="adm-step-badge">3</span>
+              <span>Sizes &amp; Stock Quantities (S, M, L, XL)</span>
+            </div>
+            <span class="text-xs font-semibold text-muted-foreground">Total Stock: <strong id="p-form-stock-total" class="text-primary text-sm">0</strong> pcs</span>
           </div>
           <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <div>
-              <label class="block text-[11px] text-muted-foreground mb-1">Size S Stock</label>
-              <input type="number" id="p-size-s" min="0" value="5" class="p-size-input w-full bg-card border border-border px-3 py-1.5 text-sm"/>
+              <label for="p-size-s" class="block mb-1">Size S</label>
+              <input type="number" id="p-size-s" min="0" value="5" class="p-size-input w-full bg-white border border-border px-3 py-1.5 text-sm"/>
             </div>
             <div>
-              <label class="block text-[11px] text-muted-foreground mb-1">Size M Stock</label>
-              <input type="number" id="p-size-m" min="0" value="5" class="p-size-input w-full bg-card border border-border px-3 py-1.5 text-sm"/>
+              <label for="p-size-m" class="block mb-1">Size M</label>
+              <input type="number" id="p-size-m" min="0" value="5" class="p-size-input w-full bg-white border border-border px-3 py-1.5 text-sm"/>
             </div>
             <div>
-              <label class="block text-[11px] text-muted-foreground mb-1">Size L Stock</label>
-              <input type="number" id="p-size-l" min="0" value="5" class="p-size-input w-full bg-card border border-border px-3 py-1.5 text-sm"/>
+              <label for="p-size-l" class="block mb-1">Size L</label>
+              <input type="number" id="p-size-l" min="0" value="5" class="p-size-input w-full bg-white border border-border px-3 py-1.5 text-sm"/>
             </div>
             <div>
-              <label class="block text-[11px] text-muted-foreground mb-1">Size XL Stock</label>
-              <input type="number" id="p-size-xl" min="0" value="5" class="p-size-input w-full bg-card border border-border px-3 py-1.5 text-sm"/>
+              <label for="p-size-xl" class="block mb-1">Size XL</label>
+              <input type="number" id="p-size-xl" min="0" value="5" class="p-size-input w-full bg-white border border-border px-3 py-1.5 text-sm"/>
             </div>
           </div>
           <input type="hidden" id="p-form-stock" value="20"/>
           <input type="hidden" id="p-form-soldout" value=""/>
         </div>
 
-        <!-- Multi-Image Product Gallery Manager (Upload, Reorder, Replace, Remove) -->
-        <div class="bg-background/70 border border-border p-4 space-y-3" id="p-gallery-manager">
+        <!-- Step 4: Multi-Image Product Gallery Manager (Upload, Reorder, Replace, Remove) -->
+        <div class="adm-step-box bg-background/70 border border-border p-4 space-y-3" id="p-gallery-manager">
           <div class="flex flex-wrap items-center justify-between gap-2">
             <div>
-              <label class="block text-xs uppercase tracking-wider font-semibold text-foreground">
-                Product Image Gallery (Supports 1, 3, 5, 7+ Photos)
-              </label>
-              <p class="text-[11px] text-muted-foreground">
-                Image #1 is the primary cover photo. Drag or use arrows to reorder, replace individual slots, or remove photos.
+              <div class="font-display font-bold text-base text-foreground flex items-center">
+                <span class="adm-step-badge">4</span>
+                <span>Product Photos &amp; Gallery (1, 3, 5, 7+ Photos)</span>
+              </div>
+              <p class="text-[11px] text-muted-foreground mt-0.5">
+                Photo #1 is the main cover photo. Upload multiple images, drag or use arrows to reorder, or click "Set as Cover".
               </p>
             </div>
             <span id="p-gallery-count-badge" class="bg-primary/10 text-primary border border-primary/25 px-2.5 py-0.5 text-[11px] font-semibold">
@@ -1256,46 +1707,53 @@
           </div>
         </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div>
-            <label class="block text-xs uppercase tracking-wider text-muted-foreground mb-1">Fabric</label>
-            <input type="text" id="p-form-fabric" placeholder="Pure Chanderi Silk" class="w-full bg-background border border-border px-3 py-2 text-sm"/>
+        <!-- Step 5: Fabric, Details & Visibility -->
+        <div class="adm-step-box space-y-4">
+          <div class="font-display font-bold text-base text-foreground flex items-center">
+            <span class="adm-step-badge">5</span>
+            <span>Fabric, Description &amp; Storefront Visibility</span>
           </div>
-          <div>
-            <label class="block text-xs uppercase tracking-wider text-muted-foreground mb-1">Occasion</label>
-            <input type="text" id="p-form-occasion" placeholder="Festive" class="w-full bg-background border border-border px-3 py-2 text-sm"/>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div>
+              <label for="p-form-fabric" class="block mb-1">Fabric</label>
+              <input type="text" id="p-form-fabric" placeholder="Pure Chanderi Silk" class="w-full bg-background border border-border px-3 py-2 text-sm"/>
+            </div>
+            <div>
+              <label for="p-form-occasion" class="block mb-1">Occasion</label>
+              <input type="text" id="p-form-occasion" placeholder="Festive" class="w-full bg-background border border-border px-3 py-2 text-sm"/>
+            </div>
+            <div>
+              <label for="p-form-pattern" class="block mb-1">Pattern</label>
+              <input type="text" id="p-form-pattern" placeholder="Zari Woven" class="w-full bg-background border border-border px-3 py-2 text-sm"/>
+            </div>
           </div>
-          <div>
-            <label class="block text-xs uppercase tracking-wider text-muted-foreground mb-1">Pattern</label>
-            <input type="text" id="p-form-pattern" placeholder="Zari Woven" class="w-full bg-background border border-border px-3 py-2 text-sm"/>
-          </div>
-        </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label class="block text-xs uppercase tracking-wider text-muted-foreground mb-1">Sleeve Length</label>
-            <input type="text" id="p-form-sleeve" value="Three-Quarter" class="w-full bg-background border border-border px-3 py-2 text-sm"/>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label for="p-form-sleeve" class="block mb-1">Sleeve Length</label>
+              <input type="text" id="p-form-sleeve" value="Three-Quarter" class="w-full bg-background border border-border px-3 py-2 text-sm"/>
+            </div>
+            <div>
+              <label for="p-form-neck" class="block mb-1">Neckline</label>
+              <input type="text" id="p-form-neck" value="Round Neck" class="w-full bg-background border border-border px-3 py-2 text-sm"/>
+            </div>
           </div>
+
           <div>
-            <label class="block text-xs uppercase tracking-wider text-muted-foreground mb-1">Neckline</label>
-            <input type="text" id="p-form-neck" value="Round Neck" class="w-full bg-background border border-border px-3 py-2 text-sm"/>
+            <label for="p-form-desc" class="block mb-1">Product Story &amp; Description</label>
+            <textarea id="p-form-desc" rows="3" placeholder="Describe the silhouette, embroidery, and styling details..." class="w-full bg-background border border-border px-3 py-2 text-sm"></textarea>
           </div>
-        </div>
 
-        <div>
-          <label class="block text-xs uppercase tracking-wider text-muted-foreground mb-1">Description</label>
-          <textarea id="p-form-desc" rows="3" class="w-full bg-background border border-border px-3 py-2 text-sm"></textarea>
-        </div>
-
-        <div class="flex flex-wrap items-center gap-6 pt-1">
-          <label class="flex items-center gap-2 text-xs cursor-pointer">
-            <input type="checkbox" id="p-form-bestseller" class="accent-primary"/>
-            <span>Mark as Bestseller</span>
-          </label>
-          <label class="flex items-center gap-2 text-xs cursor-pointer text-destructive">
-            <input type="checkbox" id="p-form-archived" class="accent-destructive"/>
-            <span>Archive / Unpublish (Hide from Storefront)</span>
-          </label>
+          <div class="flex flex-wrap items-center gap-6 pt-1">
+            <label class="flex items-center gap-2 text-xs font-semibold cursor-pointer">
+              <input type="checkbox" id="p-form-bestseller" class="accent-primary"/>
+              <span>Feature in Homepage Bestsellers</span>
+            </label>
+            <label class="flex items-center gap-2 text-xs font-semibold cursor-pointer text-destructive">
+              <input type="checkbox" id="p-form-archived" class="accent-destructive"/>
+              <span>Draft / Hidden (Hide from Customer Storefront)</span>
+            </label>
+          </div>
         </div>
 
         <p id="product-form-msg" class="text-xs hidden"></p>
@@ -1366,6 +1824,10 @@
         return await res.json();
       }
 
+      const mobileBottomNav = document.getElementById("admin-mobile-bottom-nav");
+      const mobileMoreSheet = document.getElementById("admin-mobile-more-sheet");
+      const mobileMoreBtn = document.getElementById("admin-mobile-more-btn");
+
       async function unlockWorkspace(key, token = "") {
         currentPasskey = key || "";
         if (token) currentToken = token;
@@ -1374,6 +1836,7 @@
         authGate.classList.add("hidden");
         workspace.classList.remove("hidden");
         logoutBtn.classList.remove("hidden");
+        if (mobileBottomNav) mobileBottomNav.classList.remove("hidden");
         await loadAllAdminData();
       }
 
@@ -1385,6 +1848,8 @@
         sessionStorage.removeItem(TOKEN_STORAGE_KEY);
         workspace.classList.add("hidden");
         logoutBtn.classList.add("hidden");
+        if (mobileBottomNav) mobileBottomNav.classList.add("hidden");
+        if (mobileMoreSheet) mobileMoreSheet.classList.add("hidden");
         authGate.classList.remove("hidden");
         passkeyInput.value = "";
       }
@@ -1414,12 +1879,20 @@
         });
       }
 
-      // Sidebar / Tab switching
+      // Sidebar / Tab switching + Mobile Bottom Nav synchronization
       window.switchTab = function (tabName) {
         document.querySelectorAll(".admin-tab-btn").forEach((b) => {
           const isMatch = b.getAttribute("data-tab") === tabName;
           b.classList.toggle("active", isMatch);
         });
+        document.querySelectorAll("[data-mob-tab]").forEach((mb) => {
+          const isMatch = mb.getAttribute("data-mob-tab") === tabName;
+          mb.classList.toggle("active", isMatch);
+        });
+        if (mobileMoreBtn) {
+          const isMoreTab = !["overview", "orders", "products"].includes(tabName);
+          mobileMoreBtn.classList.toggle("active", isMoreTab);
+        }
         document.querySelectorAll(".admin-tab-panel").forEach((panel) => {
           panel.classList.add("hidden");
         });
@@ -1428,6 +1901,10 @@
         if (window.innerWidth < 1024 && adminSidebar) {
           adminSidebar.classList.add("hidden");
         }
+        if (mobileMoreSheet) {
+          mobileMoreSheet.classList.add("hidden");
+        }
+        window.scrollTo({ top: 0, behavior: "smooth" });
       };
 
       document.querySelectorAll(".admin-tab-btn").forEach((btn) => {
@@ -1436,17 +1913,72 @@
         });
       });
 
+      document.querySelectorAll("[data-mob-tab]").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          switchTab(btn.getAttribute("data-mob-tab"));
+        });
+      });
+
+      if (mobileMoreBtn && mobileMoreSheet) {
+        mobileMoreBtn.addEventListener("click", () => {
+          mobileMoreSheet.classList.toggle("hidden");
+        });
+      }
+      document.getElementById("close-mobile-more-sheet")?.addEventListener("click", () => {
+        mobileMoreSheet?.classList.add("hidden");
+      });
+      document.querySelectorAll("[data-mob-sheet-tab]").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          switchTab(btn.getAttribute("data-mob-sheet-tab"));
+        });
+      });
+
       const refreshAllBtn = document.getElementById("refresh-all-btn");
       if (refreshAllBtn) {
         refreshAllBtn.addEventListener("click", loadAllAdminData);
+      }
+
+      function renderDashboardRevenueChart(trendList) {
+        const container = document.getElementById("dashboard-revenue-trend-chart");
+        if (!container) return;
+        const list = Array.isArray(trendList) ? trendList : [];
+        if (!list.length) {
+          container.innerHTML = `<div class="w-full py-10 text-center text-xs text-muted-foreground">No order revenue trend data recorded yet.</div>`;
+          return;
+        }
+        const maxRev = Math.max(...list.map((d) => Number(d.revenue || 0)), 1);
+        container.innerHTML = list.map((d) => {
+          const rev = Number(d.revenue || 0);
+          const ords = Number(d.orders || 0);
+          const pct = Math.max(12, Math.round((rev / maxRev) * 100));
+          const shortDate = d.date ? new Date(d.date + "T00:00:00").toLocaleDateString("en-IN", { day: "2-digit", month: "short" }) : "";
+          return `
+            <div class="flex-1 flex flex-col items-center justify-end h-full gap-1.5 min-w-0">
+              <div class="text-[10px] font-bold text-primary truncate max-w-full" title="${formatINR(rev)} (${ords} orders)">${formatINR(rev)}</div>
+              <div class="w-full max-w-[42px] bg-primary/15 rounded-t-md relative overflow-hidden flex items-end" style="height: 110px;">
+                <div class="w-full bg-primary rounded-t-md transition-all duration-300" style="height: ${pct}%;"></div>
+              </div>
+              <div class="text-[11px] font-semibold text-foreground truncate">${escapeHtml(shortDate)}</div>
+              <div class="text-[10px] text-muted-foreground">${ords} ord</div>
+            </div>
+          `;
+        }).join("");
       }
 
       function applyStatsPayload(data) {
         if (!data || !data.stats) return;
         const s = data.stats;
 
+        const todaySalesEl = document.getElementById("stat-today-sales");
+        if (todaySalesEl) todaySalesEl.textContent = formatINR(s.today_sales ?? 0);
+        const todayOrdersEl = document.getElementById("stat-today-orders");
+        if (todayOrdersEl) todayOrdersEl.textContent = s.today_orders ?? 0;
+
         document.getElementById("stat-revenue").textContent = formatINR(s.total_revenue);
         document.getElementById("stat-paid-revenue").textContent = formatINR(s.verified_paid_revenue ?? s.paid_revenue);
+        const codRevEl = document.getElementById("stat-cod-revenue");
+        if (codRevEl) codRevEl.textContent = formatINR(s.cod_pending_revenue ?? 0);
+
         document.getElementById("stat-orders").textContent = s.total_orders;
         document.getElementById("stat-pending-orders").textContent = s.pending_orders ?? 0;
         const custCount = s.total_customers ?? s.total_users ?? totalRegisteredCustomers ?? allCustomers.length;
@@ -1455,15 +1987,32 @@
         document.getElementById("stat-products").textContent = s.total_products ?? allProducts.length;
         document.getElementById("stat-low-stock").textContent = s.low_stock_count ?? 0;
         document.getElementById("stat-out-of-stock").textContent = s.out_of_stock_count ?? 0;
-        document.getElementById("stat-returns").textContent = s.pending_returns ?? 0;
-        document.getElementById("stat-coupons").textContent = s.active_coupons ?? 0;
+        const statRetEl = document.getElementById("stat-returns");
+        if (statRetEl) statRetEl.textContent = s.pending_returns ?? 0;
+        const statCpnEl = document.getElementById("stat-coupons");
+        if (statCpnEl) statCpnEl.textContent = s.active_coupons ?? 0;
 
-        // Sidebar badges
+        // Fulfillment breakdown counts
+        const hpEl = document.getElementById("health-pending-count");
+        if (hpEl) hpEl.textContent = s.pending_orders ?? 0;
+        const hsEl = document.getElementById("health-shipped-count");
+        if (hsEl) hsEl.textContent = s.shipped_orders ?? 0;
+        const hdEl = document.getElementById("health-delivered-count");
+        if (hdEl) hdEl.textContent = s.delivered_orders ?? 0;
+        const hcEl = document.getElementById("health-cancelled-count");
+        if (hcEl) hcEl.textContent = s.cancelled_orders ?? 0;
+
+        // Sidebar & Mobile Nav badges
+        const pCount = Number(s.pending_orders || 0);
         const pendingBadge = document.getElementById("sidebar-pending-orders-badge");
         if (pendingBadge) {
-          const pCount = Number(s.pending_orders || 0);
           pendingBadge.textContent = pCount;
           pendingBadge.classList.toggle("hidden", pCount === 0);
+        }
+        const mobOrderBadge = document.getElementById("mob-nav-orders-badge");
+        if (mobOrderBadge) {
+          mobOrderBadge.textContent = pCount;
+          mobOrderBadge.classList.toggle("hidden", pCount === 0);
         }
         const custBadge = document.getElementById("sidebar-customers-badge");
         if (custBadge) {
@@ -1478,6 +2027,7 @@
           lowStockBadge.classList.toggle("hidden", lCount === 0);
         }
 
+        renderDashboardRevenueChart(s.revenue_trend || []);
         renderDashboardBestSellers(s.best_selling_products || []);
         renderDashboardLowStock(s.low_stock_alerts || []);
         const recentList = (Array.isArray(data.recent_orders) && data.recent_orders.length)
@@ -1723,7 +2273,10 @@
               </td>
               <td class="py-2.5 px-3">${sizePills}</td>
               <td class="py-2.5 px-3 space-y-1">${statusBadges}</td>
-              <td class="py-2.5 px-3 text-right space-x-2 whitespace-nowrap">
+              <td class="py-2.5 px-3 text-right space-x-1.5 whitespace-nowrap">
+                <a href="product.html?id=${encodeURIComponent(p.id)}" target="_blank" rel="noopener" class="text-xs border border-border px-2 py-1 hover:border-primary hover:text-primary inline-block" title="Preview on storefront">
+                  Preview ↗
+                </a>
                 <button type="button" data-vis-id="${p.id}" data-vis-archived="${p.isArchived ? '1' : '0'}" class="toggle-vis-btn text-xs border border-border px-2 py-1 hover:border-primary cursor-pointer">
                   ${p.isArchived ? "Publish" : "Archive"}
                 </button>
@@ -2120,10 +2673,31 @@
         });
       });
 
+      function updateModalDiscountPreview() {
+        const badge = document.getElementById("p-discount-preview-badge");
+        if (!badge) return;
+        const price = Number(document.getElementById("p-form-price")?.value || 0);
+        const mrp = Number(document.getElementById("p-form-mrp")?.value || 0);
+        if (mrp > price && price > 0) {
+          const pct = Math.round(((mrp - price) / mrp) * 100);
+          badge.textContent = `${pct}% OFF · Save ${formatINR(mrp - price)}`;
+          badge.className = "text-xs font-bold px-2.5 py-1 rounded-full bg-green-100 text-green-800";
+        } else {
+          badge.textContent = "0% OFF";
+          badge.className = "text-xs font-bold px-2.5 py-1 rounded-full bg-primary/10 text-primary";
+        }
+      }
+      document.getElementById("p-form-price")?.addEventListener("input", updateModalDiscountPreview);
+      document.getElementById("p-form-mrp")?.addEventListener("input", updateModalDiscountPreview);
+
       window.openProductModal = function (prod = null) {
         document.getElementById("product-modal-title").textContent = prod ? "Edit Product #" + prod.id : "Add New Kurti Product";
         const nextId = allProducts.reduce((max, p) => Math.max(max, Number(p.id) || 0), 100) + 1;
         const idVal = prod ? prod.id : nextId;
+        const previewLink = document.getElementById("p-preview-storefront-link");
+        if (previewLink) {
+          previewLink.href = prod ? `product.html?id=${encodeURIComponent(prod.id)}` : `shop.html`;
+        }
         document.getElementById("p-form-id").value = idVal;
         document.getElementById("p-form-sku").value = prod ? (prod.sku || `MN-${prod.id}`) : `MN-${idVal}`;
         document.getElementById("p-form-name").value = prod ? prod.name : "";
@@ -2140,6 +2714,7 @@
         }
         document.getElementById("p-form-price").value = prod ? prod.price : "";
         document.getElementById("p-form-mrp").value = prod ? prod.mrp : "";
+        updateModalDiscountPreview();
 
         const ss = prod ? (prod.size_stock || prod.sizeStock || { S: 5, M: 5, L: 5, XL: 5 }) : { S: 5, M: 5, L: 5, XL: 5 };
         document.getElementById("p-size-s").value = Number(ss.S ?? 0);
@@ -2590,6 +3165,7 @@
             c.name,
             c.email,
             c.phone,
+            c.default_address,
             c.created_at,
           ].join(" ").toLowerCase();
           return hay.includes(searchQ);
@@ -2611,24 +3187,104 @@
           const dateStr = c.created_at
             ? new Date(c.created_at).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })
             : "-";
-          const phoneDisplay = c.phone ? escapeHtml(c.phone) : `<span class="text-muted-foreground italic">Not provided</span>`;
+          const phoneDisplay = c.phone ? escapeHtml(c.phone) : `<span class="text-muted-foreground italic">No phone</span>`;
           const ordersCount = Number(c.orders_count || 0);
           const totalSpent = Number(c.total_spent || 0);
+          const addrSummary = c.default_address
+            ? escapeHtml(c.default_address)
+            : `<span class="text-muted-foreground italic">No saved address</span>`;
 
           return `
             <tr class="hover:bg-primary/5 transition">
               <td class="py-3 px-3 font-mono text-xs font-semibold text-primary">${escapeHtml(c.id)}</td>
-              <td class="py-3 px-3 font-medium">${escapeHtml(c.name || "Customer")}</td>
-              <td class="py-3 px-3 text-xs">${escapeHtml(c.email)}</td>
-              <td class="py-3 px-3 text-xs font-mono">${phoneDisplay}</td>
+              <td class="py-3 px-3">
+                <div class="font-semibold text-foreground">${escapeHtml(c.name || "Customer")}</div>
+                <div class="text-xs text-muted-foreground">${escapeHtml(c.email)} · <span class="font-mono">${phoneDisplay}</span></div>
+              </td>
+              <td class="py-3 px-3 text-xs max-w-xs truncate" title="${escapeHtml(c.default_address || '')}">${addrSummary}</td>
               <td class="py-3 px-3 text-xs">
                 <span class="font-semibold">${ordersCount} order${ordersCount === 1 ? "" : "s"}</span>
-                ${totalSpent > 0 ? `<span class="text-muted-foreground"> · ${formatINR(totalSpent)}</span>` : ""}
+                ${totalSpent > 0 ? `<span class="text-primary font-semibold"> · ${formatINR(totalSpent)}</span>` : ""}
               </td>
               <td class="py-3 px-3 text-xs text-muted-foreground">${escapeHtml(dateStr)}</td>
+              <td class="py-3 px-3 text-right">
+                <button type="button" data-inspect-cust="${escapeHtml(c.id)}" class="inspect-cust-btn text-xs bg-background border border-border px-2.5 py-1 hover:border-primary hover:text-primary cursor-pointer">
+                  Profile &amp; Orders
+                </button>
+              </td>
             </tr>
           `;
         }).join("");
+
+        tbody.querySelectorAll(".inspect-cust-btn").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            openCustomerDetailModal(btn.getAttribute("data-inspect-cust"));
+          });
+        });
+      }
+
+      const customerDetailModal = document.getElementById("customer-detail-modal");
+      document.getElementById("close-customer-modal")?.addEventListener("click", () => {
+        customerDetailModal?.classList.add("hidden");
+      });
+
+      function openCustomerDetailModal(custId) {
+        const cust = allCustomers.find((x) => String(x.id) === String(custId));
+        if (!cust || !customerDetailModal) return;
+        const body = document.getElementById("customer-detail-body");
+        const emailLower = String(cust.email || "").trim().toLowerCase();
+        const custOrders = allOrders.filter(
+          (o) => String(o.user_id || "") === String(cust.id) || (emailLower && String(o.customer?.email || "").trim().toLowerCase() === emailLower)
+        );
+        const addrs = Array.isArray(cust.saved_addresses) ? cust.saved_addresses : [];
+        const addrHtml = addrs.length
+          ? addrs.map((a) => `
+              <div class="p-3 bg-background border border-border rounded-lg text-xs">
+                <div class="font-semibold text-foreground">${escapeHtml(a.label || "Saved Address")} ${a.is_default ? '<span class="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded ml-1">Default</span>' : ''}</div>
+                <div class="text-muted-foreground mt-0.5">${escapeHtml(a.recipient_name || cust.name)} · ${escapeHtml(a.phone || cust.phone || "")}</div>
+                <div class="mt-1">${escapeHtml([a.address_line1, a.address_line2, a.landmark, a.city, a.state, a.pincode].filter(Boolean).join(", "))}</div>
+              </div>
+            `).join("")
+          : `<p class="text-xs text-muted-foreground italic">No saved addresses on file yet.</p>`;
+
+        const ordersHtml = custOrders.length
+          ? custOrders.map((o) => `
+              <div class="flex items-center justify-between p-3 bg-background border border-border rounded-lg text-xs">
+                <div>
+                  <div class="font-mono font-bold text-primary">${escapeHtml(o.order_id)}</div>
+                  <div class="text-muted-foreground">${o.created_at ? new Date(o.created_at).toLocaleDateString("en-IN", { dateStyle: "medium" }) : "-"} · ${escapeHtml(o.payment_method)}</div>
+                </div>
+                <div class="text-right">
+                  <div class="font-bold">${formatINR(o.pricing?.total)}</div>
+                  <span class="text-[10px] px-2 py-0.5 rounded bg-primary/10 text-primary font-semibold">${escapeHtml(o.order_status)}</span>
+                </div>
+              </div>
+            `).join("")
+          : `<p class="text-xs text-muted-foreground italic">No orders placed by this customer yet.</p>`;
+
+        body.innerHTML = `
+          <div class="p-4 bg-background border border-border rounded-xl grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+            <div>
+              <div class="text-muted-foreground">Customer Name</div>
+              <div class="font-display font-bold text-base text-foreground">${escapeHtml(cust.name || "Customer")}</div>
+              <div class="font-mono text-primary mt-0.5">${escapeHtml(cust.id)}</div>
+            </div>
+            <div>
+              <div class="text-muted-foreground">Contact Info</div>
+              <div class="font-semibold">${escapeHtml(cust.email)}</div>
+              <div class="font-mono mt-0.5">${escapeHtml(cust.phone || "No phone provided")}</div>
+            </div>
+          </div>
+          <div>
+            <h4 class="font-display font-bold text-sm mb-2">Saved Delivery Addresses (${addrs.length})</h4>
+            <div class="space-y-2">${addrHtml}</div>
+          </div>
+          <div>
+            <h4 class="font-display font-bold text-sm mb-2">Order History (${custOrders.length} orders · Total Spent: ${formatINR(cust.total_spent || 0)})</h4>
+            <div class="space-y-2 max-h-60 overflow-y-auto">${ordersHtml}</div>
+          </div>
+        `;
+        customerDetailModal.classList.remove("hidden");
       }
 
       document.getElementById("customer-search-input")?.addEventListener("input", renderCustomersTable);
@@ -2712,6 +3368,7 @@
             document.getElementById("new-coupon-active").checked = Boolean(c.active);
             document.getElementById("new-coupon-auto").checked = Boolean(c.auto_apply);
             document.getElementById("new-coupon-desc").value = c.description || "";
+            updateCouponPromoPreview();
           });
         });
 
@@ -2743,8 +3400,27 @@
         });
       }
 
+      function updateCouponPromoPreview() {
+        const headlineEl = document.getElementById("coupon-preview-headline");
+        const subEl = document.getElementById("coupon-preview-sub");
+        if (!headlineEl || !subEl) return;
+        const code = (document.getElementById("new-coupon-code")?.value || "NAARI10").trim().toUpperCase() || "NAARI10";
+        const type = document.getElementById("new-coupon-type")?.value || "percentage";
+        const val = Number(document.getElementById("new-coupon-value")?.value || 10);
+        const minOrd = Number(document.getElementById("new-coupon-min")?.value || 0);
+        const desc = (document.getElementById("new-coupon-desc")?.value || "").trim();
+        const offerStr = type === "percentage" ? `${val}% OFF` : `₹${val} OFF`;
+        headlineEl.textContent = `Use code ${code} for ${offerStr}`;
+        subEl.textContent = desc || (minOrd > 0 ? `Valid on orders above ${formatINR(minOrd)}` : "Valid on all boutique styles");
+      }
+      ["new-coupon-code", "new-coupon-type", "new-coupon-value", "new-coupon-min", "new-coupon-desc"].forEach((id) => {
+        document.getElementById(id)?.addEventListener("input", updateCouponPromoPreview);
+        document.getElementById(id)?.addEventListener("change", updateCouponPromoPreview);
+      });
+
       document.getElementById("coupon-form-clear-btn")?.addEventListener("click", () => {
         document.getElementById("admin-coupon-form").reset();
+        updateCouponPromoPreview();
       });
 
       document.getElementById("admin-coupon-form")?.addEventListener("submit", async (e) => {
