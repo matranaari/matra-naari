@@ -19,6 +19,17 @@
       --adm-charcoal: #292725;
       --adm-muted: #706963;
       --adm-border: #E6DED5;
+      --adm-peach: #EF8557;
+      --adm-peach-soft: rgba(239, 133, 87, 0.14);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+      }
     }
 
     html, body {
@@ -440,13 +451,13 @@
   <!-- Main Authenticated Workspace (Sidebar + Content) -->
   <div id="admin-workspace" class="hidden flex-1 mx-auto w-full max-w-[1440px] flex flex-col lg:flex-row">
 
-    <!-- Responsive Sidebar Navigation (Desktop Sidebar + Mobile Drawer) -->
+    <!-- Responsive Sidebar Navigation (Desktop Sidebar + Mobile Drawer — 11 Sections) -->
     <aside id="admin-sidebar" class="hidden lg:flex lg:flex-col lg:w-64 shrink-0 border-b lg:border-b-0 lg:border-r border-border bg-white p-4 justify-between">
       <div class="space-y-1">
-        <p class="px-3 py-1.5 text-xs font-bold text-muted-foreground">Navigation</p>
+        <p class="px-3 py-1.5 text-xs font-bold text-muted-foreground">Store Navigation</p>
         <button type="button" data-tab="overview" class="admin-tab-btn admin-sidebar-btn active">
           <svg class="h-5 w-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
-          <span>Dashboard Home</span>
+          <span>Overview</span>
         </button>
         <button type="button" data-tab="orders" class="admin-tab-btn admin-sidebar-btn">
           <svg class="h-5 w-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
@@ -459,37 +470,45 @@
         </button>
         <button type="button" data-tab="inventory" class="admin-tab-btn admin-sidebar-btn">
           <svg class="h-5 w-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
-          <span class="flex-1">Stock &amp; Sizes</span>
-          <span id="sidebar-low-stock-badge" class="hidden rounded-full bg-amber-600 text-white px-2 py-0.5 text-xs font-bold">0</span>
-        </button>
-        <button type="button" data-tab="banners" class="admin-tab-btn admin-sidebar-btn">
-          <svg class="h-5 w-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-          <span>Homepage Banners</span>
-        </button>
-        <button type="button" data-tab="coupons" class="admin-tab-btn admin-sidebar-btn">
-          <svg class="h-5 w-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
-          <span>Coupons &amp; Offers</span>
+          <span class="flex-1">Inventory</span>
+          <span id="sidebar-low-stock-badge" class="hidden rounded-full bg-[#EF8557] text-white px-2 py-0.5 text-xs font-bold">0</span>
         </button>
         <button type="button" data-tab="customers" class="admin-tab-btn admin-sidebar-btn">
           <svg class="h-5 w-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
           <span class="flex-1">Customers</span>
           <span id="sidebar-customers-badge" class="hidden rounded-full bg-primary/15 text-primary px-2 py-0.5 text-xs font-bold">0</span>
         </button>
+        <button type="button" data-tab="banners" class="admin-tab-btn admin-sidebar-btn">
+          <svg class="h-5 w-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+          <span>Banners</span>
+        </button>
+        <button type="button" data-tab="coupons" class="admin-tab-btn admin-sidebar-btn">
+          <svg class="h-5 w-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
+          <span>Coupons &amp; Offers</span>
+        </button>
+        <button type="button" data-tab="analytics" class="admin-tab-btn admin-sidebar-btn">
+          <svg class="h-5 w-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+          <span>Analytics</span>
+        </button>
         <button type="button" data-tab="returns" class="admin-tab-btn admin-sidebar-btn">
           <svg class="h-5 w-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-          <span>Returns &amp; Exchanges</span>
+          <span>Returns</span>
+        </button>
+        <button type="button" data-tab="staff" class="admin-tab-btn admin-sidebar-btn">
+          <svg class="h-5 w-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+          <span>Staff</span>
         </button>
         <button type="button" data-tab="settings" class="admin-tab-btn admin-sidebar-btn">
           <svg class="h-5 w-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-          <span>Settings &amp; Staff</span>
+          <span>Settings</span>
         </button>
       </div>
 
       <div class="mt-8 pt-4 border-t border-border space-y-3">
         <div class="bg-background rounded-lg p-3 text-xs">
           <div class="font-bold text-foreground flex items-center justify-between">
-            <span>Access Level</span>
-            <span class="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded font-bold">Owner</span>
+            <span>Access Role</span>
+            <span id="sidebar-active-role-badge" class="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded font-bold">Owner</span>
           </div>
           <p class="text-muted-foreground mt-0.5">Protected session · Encrypted API</p>
         </div>
@@ -557,10 +576,13 @@
           </button>
         </div>
 
-        <!-- Real Database KPI Summary Cards -->
-        <div class="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
+        <!-- 8 Bento KPI Summary Cards (Real Database Metrics) -->
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4" id="dashboard-bento-kpis">
           <div class="bg-card border border-border p-4 sm:p-5">
-            <p class="text-xs font-semibold text-muted-foreground">Today's Sales</p>
+            <div class="flex items-center justify-between">
+              <p class="text-xs font-semibold text-muted-foreground">Today's Revenue</p>
+              <span class="h-2 w-2 rounded-full bg-[#EF8557]"></span>
+            </div>
             <p id="stat-today-sales" class="font-display text-2xl sm:text-3xl font-bold text-primary mt-1">₹0</p>
             <p class="text-xs text-muted-foreground mt-1">Today's Orders: <span id="stat-today-orders" class="font-semibold text-foreground">0</span></p>
           </div>
@@ -572,67 +594,94 @@
           <div class="bg-card border border-border p-4 sm:p-5">
             <p class="text-xs font-semibold text-muted-foreground">Total Orders</p>
             <p id="stat-orders" class="font-display text-2xl sm:text-3xl font-bold mt-1">—</p>
-            <p class="text-xs text-muted-foreground mt-1">
-              Pending: <span id="stat-pending-orders" class="font-bold text-amber-700">—</span>
-            </p>
+            <p class="text-xs text-muted-foreground mt-1">COD Revenue: <span id="stat-cod-revenue" class="font-semibold text-foreground">₹0</span></p>
           </div>
           <div class="bg-card border border-border p-4 sm:p-5">
-            <p class="text-xs font-semibold text-muted-foreground">Total Products</p>
-            <p id="stat-products" class="font-display text-2xl sm:text-3xl font-bold mt-1">—</p>
-            <p class="text-xs text-muted-foreground mt-1">
-              Low Stock: <span id="stat-low-stock" class="font-bold text-amber-700">—</span> · Out: <span id="stat-out-of-stock" class="font-bold text-destructive">—</span>
-            </p>
+            <p class="text-xs font-semibold text-muted-foreground">Pending Orders</p>
+            <p id="stat-pending-orders" class="font-display text-2xl sm:text-3xl font-bold text-[#EF8557] mt-1">—</p>
+            <p class="text-xs text-muted-foreground mt-1">Awaiting dispatch / fulfillment</p>
           </div>
-          <div class="bg-card border border-border p-4 sm:p-5 col-span-2 lg:col-span-1">
-            <p class="text-xs font-semibold text-muted-foreground">Customers &amp; Promos</p>
+          <div class="bg-card border border-border p-4 sm:p-5">
+            <p class="text-xs font-semibold text-muted-foreground">Products</p>
+            <p id="stat-products" class="font-display text-2xl sm:text-3xl font-bold mt-1">—</p>
+            <p class="text-xs text-muted-foreground mt-1">Active catalog · Out: <span id="stat-out-of-stock" class="font-bold text-destructive">0</span></p>
+          </div>
+          <div class="bg-card border border-border p-4 sm:p-5">
+            <p class="text-xs font-semibold text-muted-foreground">Customers</p>
             <p id="stat-customers" class="font-display text-2xl sm:text-3xl font-bold text-primary mt-1">—</p>
-            <p class="text-xs text-muted-foreground mt-1">
-              Coupons: <span id="stat-coupons" class="font-semibold text-foreground">—</span> · Returns: <span id="stat-returns" class="font-semibold text-foreground">—</span>
-            </p>
+            <p class="text-xs text-muted-foreground mt-1">Active Coupons: <span id="stat-coupons" class="font-semibold text-foreground">0</span></p>
+          </div>
+          <div class="bg-card border border-border p-4 sm:p-5">
+            <p class="text-xs font-semibold text-muted-foreground">Low Stock Alerts</p>
+            <p id="stat-low-stock" class="font-display text-2xl sm:text-3xl font-bold text-amber-700 mt-1">—</p>
+            <p class="text-xs text-muted-foreground mt-1">Sizes with ≤ 3 units left</p>
+          </div>
+          <div class="bg-card border border-border p-4 sm:p-5">
+            <p class="text-xs font-semibold text-muted-foreground">Pending Returns</p>
+            <p id="stat-returns" class="font-display text-2xl sm:text-3xl font-bold mt-1">—</p>
+            <p class="text-xs text-muted-foreground mt-1">Open return / exchange requests</p>
           </div>
         </div>
 
-        <!-- Revenue Trends & Analytics Overview (Real Database Data) -->
+        <!-- Bento Analytics Row: Sales Trend Chart + Payment & Order Status Distribution -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div class="lg:col-span-2 bg-card border border-border p-5">
             <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
               <div>
-                <h2 class="font-display text-lg sm:text-xl font-bold">Revenue Trends (Recent Order Dates)</h2>
-                <p class="text-xs text-muted-foreground">Calculated directly from confirmed &amp; paid orders in your database</p>
+                <h2 class="font-display text-lg sm:text-xl font-bold">Sales &amp; Order Trend</h2>
+                <p class="text-xs text-muted-foreground">Real database revenue &amp; order volume across active order dates</p>
               </div>
-              <span id="stat-cod-revenue-pill" class="rounded-full bg-secondary px-3 py-1 text-xs font-semibold text-foreground">COD Revenue: <span id="stat-cod-revenue">₹0</span></span>
+              <div class="flex items-center gap-2">
+                <label for="overview-date-range-select" class="text-xs text-muted-foreground">Range:</label>
+                <select id="overview-date-range-select" class="bg-background border border-border px-2.5 py-1 text-xs font-semibold">
+                  <option value="7">Last 7 Active Dates</option>
+                  <option value="30">Last 30 Active Dates</option>
+                  <option value="90">Last 90 Active Dates</option>
+                  <option value="all">All Time</option>
+                </select>
+              </div>
             </div>
-            <div id="dashboard-revenue-trend-chart" class="grid grid-cols-7 gap-2 items-end h-40 pt-4 pb-2 border-b border-border/70">
-              <div class="col-span-7 text-center text-xs text-muted-foreground py-12">Loading revenue trend...</div>
+            <div id="dashboard-revenue-trend-chart" class="flex items-end gap-2 h-44 pt-4 pb-2 border-b border-border/70 overflow-x-auto">
+              <div class="w-full text-center text-xs text-muted-foreground py-12">Loading revenue trend...</div>
             </div>
           </div>
 
-          <div class="bg-card border border-border p-5 flex flex-col justify-between">
+          <div class="bg-card border border-border p-5 flex flex-col justify-between space-y-4">
             <div>
-              <h2 class="font-display text-lg sm:text-xl font-bold mb-1">Fulfillment &amp; Store Health</h2>
-              <p class="text-xs text-muted-foreground mb-4">Live order pipeline across statuses</p>
-              <div id="dashboard-fulfillment-breakdown" class="space-y-3 text-sm">
-                <div class="flex items-center justify-between py-1.5 border-b border-border/60">
+              <h2 class="font-display text-lg sm:text-xl font-bold mb-1">Order Status &amp; Payment Split</h2>
+              <p class="text-xs text-muted-foreground mb-3">Live fulfillment pipeline &amp; payment methods</p>
+              <div id="dashboard-fulfillment-breakdown" class="space-y-2 text-xs">
+                <div class="flex items-center justify-between py-1 border-b border-border/60">
                   <span class="text-muted-foreground">Pending Dispatch</span>
                   <span id="health-pending-count" class="font-bold text-amber-700">0</span>
                 </div>
-                <div class="flex items-center justify-between py-1.5 border-b border-border/60">
+                <div class="flex items-center justify-between py-1 border-b border-border/60">
                   <span class="text-muted-foreground">Shipped / In Transit</span>
                   <span id="health-shipped-count" class="font-bold text-primary">0</span>
                 </div>
-                <div class="flex items-center justify-between py-1.5 border-b border-border/60">
+                <div class="flex items-center justify-between py-1 border-b border-border/60">
                   <span class="text-muted-foreground">Delivered</span>
                   <span id="health-delivered-count" class="font-bold text-emerald-700">0</span>
                 </div>
-                <div class="flex items-center justify-between py-1.5">
+                <div class="flex items-center justify-between py-1">
                   <span class="text-muted-foreground">Cancelled</span>
                   <span id="health-cancelled-count" class="font-bold text-muted-foreground">0</span>
                 </div>
               </div>
             </div>
-            <div class="mt-4 pt-3 border-t border-border flex items-center justify-between text-xs">
-              <span class="text-muted-foreground">Role: <strong class="text-foreground">Store Owner</strong></span>
-              <button type="button" onclick="switchTab('customers')" class="text-primary font-bold hover:underline cursor-pointer">Customers →</button>
+            <div id="overview-payment-breakdown" class="pt-3 border-t border-border space-y-1.5 text-xs">
+              <div class="flex items-center justify-between">
+                <span class="text-muted-foreground">Cash on Delivery (COD)</span>
+                <span id="overview-cod-split" class="font-bold text-foreground">0 orders</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-muted-foreground">Razorpay Online Paid</span>
+                <span id="overview-rzp-split" class="font-bold text-primary">0 orders</span>
+              </div>
+            </div>
+            <div class="pt-2 border-t border-border flex items-center justify-between text-xs">
+              <span class="text-muted-foreground">Full Charts &amp; Breakdown</span>
+              <button type="button" onclick="switchTab('analytics')" class="text-primary font-bold hover:underline cursor-pointer">Open Analytics →</button>
             </div>
           </div>
         </div>
@@ -834,6 +883,30 @@
               </thead>
               <tbody id="admin-inventory-tbody" class="divide-y divide-border">
                 <tr><td colspan="8" class="py-8 text-center text-muted-foreground">Loading inventory...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Recent Stock Change History -->
+        <div class="bg-card/90 border border-border p-5">
+          <div class="flex items-center justify-between mb-3">
+            <div>
+              <h3 class="font-display text-lg font-bold">Recent Stock Adjustment History</h3>
+              <p class="text-xs text-muted-foreground">Audit log of size-level stock updates across products</p>
+            </div>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse text-sm">
+              <thead>
+                <tr class="border-b border-border text-xs uppercase tracking-wider text-muted-foreground">
+                  <th class="py-2.5 px-3">SKU / Product</th>
+                  <th class="py-2.5 px-3">Stock Adjustment Details</th>
+                  <th class="py-2.5 px-3 text-right">Timestamp</th>
+                </tr>
+              </thead>
+              <tbody id="inventory-history-tbody" class="divide-y divide-border text-xs">
+                <tr><td colspan="3" class="py-4 text-center text-muted-foreground">No manual stock adjustments recorded yet.</td></tr>
               </tbody>
             </table>
           </div>
@@ -1046,7 +1119,15 @@
 
           <!-- Coupons Table -->
           <div class="lg:col-span-2 bg-card/90 border border-border p-5">
-            <h2 class="font-display text-xl font-bold mb-4">Configured Promotional Coupons</h2>
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+              <h2 class="font-display text-xl font-bold">Configured Promotional Coupons</h2>
+              <input
+                type="text"
+                id="coupon-search-input"
+                placeholder="Search coupon code or description..."
+                class="w-full sm:w-64 bg-background border border-border px-3 py-1.5 text-xs focus:outline-none focus:border-primary"
+              />
+            </div>
             <div class="overflow-x-auto">
               <table class="w-full text-left border-collapse text-sm">
                 <thead>
@@ -1351,6 +1432,127 @@
       </section>
 
       <!-- ============================================================== -->
+      <!-- 6C. DEDICATED ANALYTICS TAB                                    -->
+      <!-- ============================================================== -->
+      <section id="tab-analytics" class="admin-tab-panel hidden space-y-6">
+        <div class="bg-card/90 border border-border p-6 space-y-6">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-4">
+            <div>
+              <h2 class="font-display text-2xl font-bold">Store Analytics &amp; Performance</h2>
+              <p class="text-xs text-muted-foreground">Real database sales trends, order volume, payment method breakdown, and fulfillment distribution.</p>
+            </div>
+            <div class="flex items-center gap-2">
+              <label for="analytics-date-range-select" class="text-xs font-semibold text-muted-foreground">Date Filter:</label>
+              <select id="analytics-date-range-select" class="bg-background border border-border px-3 py-1.5 text-xs font-semibold">
+                <option value="7">Last 7 Active Dates</option>
+                <option value="30">Last 30 Active Dates</option>
+                <option value="90">Last 90 Active Dates</option>
+                <option value="all">All Time</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="bg-background border border-border p-5 rounded-xl">
+              <h3 class="font-display text-lg font-bold mb-1">Sales Revenue Trend</h3>
+              <p class="text-xs text-muted-foreground mb-4">Daily verified online &amp; COD order revenue</p>
+              <div id="analytics-revenue-chart" class="flex items-end gap-2 h-44 pt-4 pb-2 border-b border-border/70 overflow-x-auto">
+                <div class="w-full text-center text-xs text-muted-foreground py-12">Loading sales chart...</div>
+              </div>
+            </div>
+
+            <div class="bg-background border border-border p-5 rounded-xl">
+              <h3 class="font-display text-lg font-bold mb-1">Order Volume Trend</h3>
+              <p class="text-xs text-muted-foreground mb-4">Daily number of non-cancelled orders</p>
+              <div id="analytics-orders-chart" class="flex items-end gap-2 h-44 pt-4 pb-2 border-b border-border/70 overflow-x-auto">
+                <div class="w-full text-center text-xs text-muted-foreground py-12">Loading order volume chart...</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="bg-background border border-border p-5 rounded-xl space-y-3" id="analytics-payment-breakdown-card">
+              <h3 class="font-display text-lg font-bold">Payment Method Breakdown</h3>
+              <div id="analytics-payment-bars" class="space-y-3 text-xs">
+                <div class="text-muted-foreground">Loading payment breakdown...</div>
+              </div>
+            </div>
+
+            <div class="bg-background border border-border p-5 rounded-xl space-y-3" id="analytics-status-distribution-card">
+              <h3 class="font-display text-lg font-bold">Order Status Distribution</h3>
+              <div id="analytics-status-bars" class="grid grid-cols-2 sm:grid-cols-3 gap-2.5 text-xs">
+                <div class="text-muted-foreground col-span-3">Loading status distribution...</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================== -->
+      <!-- 6D. STAFF & PERMISSIONS TAB                                    -->
+      <!-- ============================================================== -->
+      <section id="tab-staff" class="admin-tab-panel hidden space-y-6">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div class="bg-card/90 border border-border p-5 h-fit space-y-4">
+            <div>
+              <h2 class="font-display text-xl font-bold">Add / Update Staff Member</h2>
+              <p class="text-xs text-muted-foreground mt-0.5">Grant passwordless Email OTP + MFA access with strict server-enforced role permissions.</p>
+            </div>
+            <form id="admin-staff-form" class="space-y-3">
+              <div>
+                <label for="staff-name-input" class="block mb-1">Full Name *</label>
+                <input type="text" id="staff-name-input" required placeholder="e.g. Riya Deshmukh" class="w-full bg-background border border-border px-3 py-2 text-sm"/>
+              </div>
+              <div>
+                <label for="staff-email-input" class="block mb-1">Authorized Email Address *</label>
+                <input type="email" id="staff-email-input" required placeholder="staff@matranaari.com" class="w-full bg-background border border-border px-3 py-2 text-sm"/>
+              </div>
+              <div>
+                <label for="staff-role-select" class="block mb-1">Staff Role &amp; Permission Level *</label>
+                <select id="staff-role-select" class="w-full bg-background border border-border px-3 py-2 text-sm">
+                  <option value="manager">Store Manager (Orders, Products, Banners, Coupons)</option>
+                  <option value="order_staff">Order Staff (Orders, Shipments &amp; Returns Only)</option>
+                  <option value="catalog_staff">Catalog Staff (Products, Stock &amp; Banners Only)</option>
+                  <option value="owner">Store Owner (Full Administrative Control)</option>
+                </select>
+              </div>
+              <label class="flex items-center gap-2 text-xs font-semibold cursor-pointer pt-1">
+                <input type="checkbox" id="staff-active-checkbox" checked class="accent-primary"/>
+                <span>Active Staff Account (Allow Admin Sign-In)</span>
+              </label>
+              <p id="staff-form-msg" class="text-xs hidden"></p>
+              <button type="submit" class="w-full bg-primary text-primary-foreground py-2.5 text-xs font-semibold uppercase tracking-widest hover:bg-primary/90 transition cursor-pointer">
+                Save Staff Member
+              </button>
+            </form>
+          </div>
+
+          <div class="lg:col-span-2 bg-card/90 border border-border p-5 space-y-5">
+            <div>
+              <h2 class="font-display text-xl font-bold">Authorized Staff Directory &amp; Role Matrix</h2>
+              <p class="text-xs text-muted-foreground">Permissions are enforced on the server for every API request.</p>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="w-full text-left border-collapse text-sm">
+                <thead>
+                  <tr class="border-b border-border text-xs uppercase tracking-wider text-muted-foreground">
+                    <th class="py-2.5 px-3">Name &amp; Email</th>
+                    <th class="py-2.5 px-3">Role</th>
+                    <th class="py-2.5 px-3">Permitted Modules</th>
+                    <th class="py-2.5 px-3">Status</th>
+                    <th class="py-2.5 px-3 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="admin-staff-tbody" class="divide-y divide-border">
+                  <tr><td colspan="5" class="py-6 text-center text-muted-foreground">Loading staff accounts...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================== -->
       <!-- 7. STORE SETTINGS TAB                                          -->
       <!-- ============================================================== -->
       <section id="tab-settings" class="admin-tab-panel hidden space-y-6">
@@ -1547,20 +1749,26 @@
         <button type="button" id="close-mobile-more-sheet" class="p-1.5 text-muted-foreground hover:text-foreground text-xl leading-none cursor-pointer">&times;</button>
       </div>
       <div class="grid grid-cols-2 gap-2.5">
-        <button type="button" data-mob-sheet-tab="banners" class="flex items-center gap-2.5 p-3 rounded-xl border border-border bg-background hover:border-primary text-left font-semibold text-sm cursor-pointer">
-          <span>🖼️</span><span>Banners &amp; Hero</span>
-        </button>
-        <button type="button" data-mob-sheet-tab="coupons" class="flex items-center gap-2.5 p-3 rounded-xl border border-border bg-background hover:border-primary text-left font-semibold text-sm cursor-pointer">
-          <span>🏷️</span><span>Coupons &amp; Offers</span>
-        </button>
         <button type="button" data-mob-sheet-tab="inventory" class="flex items-center gap-2.5 p-3 rounded-xl border border-border bg-background hover:border-primary text-left font-semibold text-sm cursor-pointer">
-          <span>📦</span><span>Stock &amp; Sizes</span>
+          <span>📦</span><span>Inventory</span>
         </button>
         <button type="button" data-mob-sheet-tab="customers" class="flex items-center gap-2.5 p-3 rounded-xl border border-border bg-background hover:border-primary text-left font-semibold text-sm cursor-pointer">
           <span>👥</span><span>Customers</span>
         </button>
+        <button type="button" data-mob-sheet-tab="banners" class="flex items-center gap-2.5 p-3 rounded-xl border border-border bg-background hover:border-primary text-left font-semibold text-sm cursor-pointer">
+          <span>🖼️</span><span>Banners</span>
+        </button>
+        <button type="button" data-mob-sheet-tab="coupons" class="flex items-center gap-2.5 p-3 rounded-xl border border-border bg-background hover:border-primary text-left font-semibold text-sm cursor-pointer">
+          <span>🏷️</span><span>Coupons &amp; Offers</span>
+        </button>
+        <button type="button" data-mob-sheet-tab="analytics" class="flex items-center gap-2.5 p-3 rounded-xl border border-border bg-background hover:border-primary text-left font-semibold text-sm cursor-pointer">
+          <span>📊</span><span>Analytics</span>
+        </button>
         <button type="button" data-mob-sheet-tab="returns" class="flex items-center gap-2.5 p-3 rounded-xl border border-border bg-background hover:border-primary text-left font-semibold text-sm cursor-pointer">
           <span>↩️</span><span>Returns</span>
+        </button>
+        <button type="button" data-mob-sheet-tab="staff" class="flex items-center gap-2.5 p-3 rounded-xl border border-border bg-background hover:border-primary text-left font-semibold text-sm cursor-pointer">
+          <span>🛡️</span><span>Staff &amp; Roles</span>
         </button>
         <button type="button" data-mob-sheet-tab="settings" class="flex items-center gap-2.5 p-3 rounded-xl border border-border bg-background hover:border-primary text-left font-semibold text-sm cursor-pointer">
           <span>⚙️</span><span>Store Settings</span>
@@ -1848,11 +2056,20 @@
           </div>
 
           <div>
+            <label for="p-form-colors" class="block mb-1">Color Name &amp; Swatch Hex (e.g. Deep Burgundy:#542C34)</label>
+            <input type="text" id="p-form-colors" value="Deep Burgundy:#542C34" placeholder="Deep Burgundy:#542C34, Warm Ivory:#F7F4EE" class="w-full bg-background border border-border px-3 py-2 text-sm"/>
+          </div>
+
+          <div>
             <label for="p-form-desc" class="block mb-1">Product Story &amp; Description</label>
             <textarea id="p-form-desc" rows="3" placeholder="Describe the silhouette, embroidery, and styling details..." class="w-full bg-background border border-border px-3 py-2 text-sm"></textarea>
           </div>
 
           <div class="flex flex-wrap items-center gap-6 pt-1">
+            <label class="flex items-center gap-2 text-xs font-semibold cursor-pointer">
+              <input type="checkbox" id="p-form-featured" class="accent-primary"/>
+              <span>Featured Collection</span>
+            </label>
             <label class="flex items-center gap-2 text-xs font-semibold cursor-pointer">
               <input type="checkbox" id="p-form-bestseller" class="accent-primary"/>
               <span>Feature in Homepage Bestsellers</span>
@@ -2142,36 +2359,102 @@
         refreshAllBtn.addEventListener("click", loadAllAdminData);
       }
 
-      function renderDashboardRevenueChart(trendList) {
-        const container = document.getElementById("dashboard-revenue-trend-chart");
+      function renderDashboardRevenueChart(trendList, targetId = "dashboard-revenue-trend-chart", metric = "revenue") {
+        const container = document.getElementById(targetId);
         if (!container) return;
         const list = Array.isArray(trendList) ? trendList : [];
         if (!list.length) {
-          container.innerHTML = `<div class="w-full py-10 text-center text-xs text-muted-foreground">No order revenue trend data recorded yet.</div>`;
+          container.innerHTML = `<div class="w-full py-10 text-center text-xs text-muted-foreground">No order trend data recorded yet.</div>`;
           return;
         }
-        const maxRev = Math.max(...list.map((d) => Number(d.revenue || 0)), 1);
+        const maxVal = Math.max(...list.map((d) => Number(metric === "orders" ? d.orders : d.revenue) || 0), 1);
         container.innerHTML = list.map((d) => {
           const rev = Number(d.revenue || 0);
           const ords = Number(d.orders || 0);
-          const pct = Math.max(12, Math.round((rev / maxRev) * 100));
+          const rawVal = metric === "orders" ? ords : rev;
+          const pct = Math.max(12, Math.round((rawVal / maxVal) * 100));
           const shortDate = d.date ? new Date(d.date + "T00:00:00").toLocaleDateString("en-IN", { day: "2-digit", month: "short" }) : "";
+          const barColor = metric === "orders" ? "bg-[#EF8557]" : "bg-primary";
+          const topLabel = metric === "orders" ? `${ords} ord` : formatINR(rev);
+          const subLabel = metric === "orders" ? formatINR(rev) : `${ords} ord`;
           return `
-            <div class="flex-1 flex flex-col items-center justify-end h-full gap-1.5 min-w-0">
-              <div class="text-[10px] font-bold text-primary truncate max-w-full" title="${formatINR(rev)} (${ords} orders)">${formatINR(rev)}</div>
+            <div class="flex-1 flex flex-col items-center justify-end h-full gap-1.5 min-w-[44px]">
+              <div class="text-[10px] font-bold text-primary truncate max-w-full" title="${formatINR(rev)} (${ords} orders)">${topLabel}</div>
               <div class="w-full max-w-[42px] bg-primary/15 rounded-t-md relative overflow-hidden flex items-end" style="height: 110px;">
-                <div class="w-full bg-primary rounded-t-md transition-all duration-300" style="height: ${pct}%;"></div>
+                <div class="w-full ${barColor} rounded-t-md transition-all duration-200" style="height: ${pct}%;"></div>
               </div>
               <div class="text-[11px] font-semibold text-foreground truncate">${escapeHtml(shortDate)}</div>
-              <div class="text-[10px] text-muted-foreground">${ords} ord</div>
+              <div class="text-[10px] text-muted-foreground truncate">${subLabel}</div>
             </div>
           `;
         }).join("");
       }
 
+      function renderAnalyticsBreakdowns(s) {
+        const payBreak = s.payment_method_breakdown || {};
+        const codObj = payBreak.cod || { orders: Number(s.cod_orders || 0), revenue: Number(s.cod_revenue || 0) };
+        const rzpObj = payBreak.razorpay || { orders: Number(s.paid_orders || 0), revenue: Number(s.verified_paid_revenue || 0) };
+        const totalOrds = Math.max(1, Number(codObj.orders || 0) + Number(rzpObj.orders || 0));
+        const codPct = Math.round(((codObj.orders || 0) / totalOrds) * 100);
+        const rzpPct = Math.max(0, 100 - codPct);
+
+        const ovCod = document.getElementById("overview-cod-split");
+        if (ovCod) ovCod.textContent = `${codObj.orders || 0} orders · ${formatINR(codObj.revenue || 0)}`;
+        const ovRzp = document.getElementById("overview-rzp-split");
+        if (ovRzp) ovRzp.textContent = `${rzpObj.orders || 0} orders · ${formatINR(rzpObj.revenue || 0)}`;
+
+        const payBars = document.getElementById("analytics-payment-bars");
+        if (payBars) {
+          payBars.innerHTML = `
+            <div class="space-y-1">
+              <div class="flex justify-between font-semibold">
+                <span>Cash on Delivery (COD)</span>
+                <span>${codObj.orders || 0} orders · ${formatINR(codObj.revenue || 0)} (${codPct}%)</span>
+              </div>
+              <div class="w-full h-2.5 bg-white border border-border rounded-full overflow-hidden">
+                <div class="h-full bg-[#EF8557]" style="width: ${codPct}%;"></div>
+              </div>
+            </div>
+            <div class="space-y-1">
+              <div class="flex justify-between font-semibold">
+                <span>Razorpay Online (Verified Paid)</span>
+                <span>${rzpObj.orders || 0} orders · ${formatINR(rzpObj.revenue || 0)} (${rzpPct}%)</span>
+              </div>
+              <div class="w-full h-2.5 bg-white border border-border rounded-full overflow-hidden">
+                <div class="h-full bg-primary" style="width: ${rzpPct}%;"></div>
+              </div>
+            </div>
+          `;
+        }
+
+        const dist = s.order_status_distribution || {};
+        const statusBars = document.getElementById("analytics-status-bars");
+        if (statusBars) {
+          const items = [
+            { label: "Confirmed", count: dist["confirmed"] ?? s.pending_orders ?? 0 },
+            { label: "Packed", count: dist["packed"] ?? 0 },
+            { label: "Shipped", count: dist["shipped"] ?? s.shipped_orders ?? 0 },
+            { label: "Out for Delivery", count: dist["out for delivery"] ?? 0 },
+            { label: "Delivered", count: dist["delivered"] ?? s.delivered_orders ?? 0 },
+            { label: "Cancelled", count: dist["cancelled"] ?? s.cancelled_orders ?? 0 },
+          ];
+          statusBars.innerHTML = items.map((it) => `
+            <div class="p-3 bg-white border border-border rounded-lg">
+              <div class="text-muted-foreground">${escapeHtml(it.label)}</div>
+              <div class="font-display text-xl font-bold text-primary mt-0.5">${Number(it.count || 0)}</div>
+            </div>
+          `).join("");
+        }
+      }
+
       function applyStatsPayload(data) {
         if (!data || !data.stats) return;
         const s = data.stats;
+
+        if (data.current_role) {
+          const roleBadge = document.getElementById("sidebar-active-role-badge");
+          if (roleBadge) roleBadge.textContent = String(data.current_role).replace("_", " ").toUpperCase();
+        }
 
         const todaySalesEl = document.getElementById("stat-today-sales");
         if (todaySalesEl) todaySalesEl.textContent = formatINR(s.today_sales ?? 0);
@@ -2181,7 +2464,7 @@
         document.getElementById("stat-revenue").textContent = formatINR(s.total_revenue);
         document.getElementById("stat-paid-revenue").textContent = formatINR(s.verified_paid_revenue ?? s.paid_revenue);
         const codRevEl = document.getElementById("stat-cod-revenue");
-        if (codRevEl) codRevEl.textContent = formatINR(s.cod_pending_revenue ?? 0);
+        if (codRevEl) codRevEl.textContent = formatINR(s.cod_revenue ?? s.cod_pending_revenue ?? 0);
 
         document.getElementById("stat-orders").textContent = s.total_orders;
         document.getElementById("stat-pending-orders").textContent = s.pending_orders ?? 0;
@@ -2231,7 +2514,11 @@
           lowStockBadge.classList.toggle("hidden", lCount === 0);
         }
 
-        renderDashboardRevenueChart(s.revenue_trend || []);
+        const trend = s.revenue_trend || [];
+        renderDashboardRevenueChart(trend, "dashboard-revenue-trend-chart", "revenue");
+        renderDashboardRevenueChart(trend, "analytics-revenue-chart", "revenue");
+        renderDashboardRevenueChart(trend, "analytics-orders-chart", "orders");
+        renderAnalyticsBreakdowns(s);
         renderDashboardBestSellers(s.best_selling_products || []);
         renderDashboardLowStock(s.low_stock_alerts || []);
         const recentList = (Array.isArray(data.recent_orders) && data.recent_orders.length)
@@ -2240,9 +2527,50 @@
         renderDashboardRecentOrders(recentList);
       }
 
+      document.getElementById("overview-date-range-select")?.addEventListener("change", (e) => {
+        const days = e.target.value;
+        const anSel = document.getElementById("analytics-date-range-select");
+        if (anSel) anSel.value = days;
+        loadStats(days);
+      });
+      document.getElementById("analytics-date-range-select")?.addEventListener("change", (e) => {
+        const days = e.target.value;
+        const ovSel = document.getElementById("overview-date-range-select");
+        if (ovSel) ovSel.value = days;
+        loadStats(days);
+      });
+
+      function renderInventoryHistory(historyList) {
+        const tbody = document.getElementById("inventory-history-tbody");
+        if (!tbody) return;
+        const list = Array.isArray(historyList) ? historyList : [];
+        if (!list.length) {
+          tbody.innerHTML = `<tr><td colspan="3" class="py-4 text-center text-muted-foreground">No manual stock adjustments recorded yet.</td></tr>`;
+          return;
+        }
+        tbody.innerHTML = list.map((h) => `
+          <tr class="hover:bg-primary/5">
+            <td class="py-2 px-3 font-mono font-bold text-primary">${escapeHtml(h.sku || "-")}</td>
+            <td class="py-2 px-3">${escapeHtml(h.details || "")}</td>
+            <td class="py-2 px-3 text-right text-muted-foreground">${h.created_at ? new Date(h.created_at).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" }) : "-"}</td>
+          </tr>
+        `).join("");
+      }
+
+      async function loadInventoryHistory() {
+        try {
+          const res = await fetch("/api/admin/inventory/history", { headers: getAdminHeaders() });
+          if (res.ok) {
+            const data = await res.json();
+            renderInventoryHistory(data.history || []);
+          }
+        } catch (err) {}
+      }
+
       async function loadAllAdminData() {
         try {
-          const res = await fetch("/api/admin/stats?include_all=1", { headers: getAdminHeaders() });
+          const days = document.getElementById("overview-date-range-select")?.value || "7";
+          const res = await fetch(`/api/admin/stats?include_all=1&days=${encodeURIComponent(days)}`, { headers: getAdminHeaders() });
           if (res.status === 401) return lockWorkspace();
           if (res.ok) {
             const data = await res.json();
@@ -2257,6 +2585,7 @@
               applyStatsPayload(data);
               renderProductsTable();
               renderInventoryTable();
+              renderInventoryHistory(data.inventory_history || []);
               renderOrdersTable();
 
               const totalEl = document.getElementById("customers-total-count");
@@ -2264,6 +2593,7 @@
               renderCustomersTable();
               renderCouponsTable();
               renderReturnsTable();
+              renderStaffTable(data.staff || []);
               if (data.settings) {
                 applySettingsToForm(data.settings);
               }
@@ -2278,10 +2608,12 @@
         await Promise.all([
           loadStats(),
           loadProducts(),
+          loadInventoryHistory(),
           loadOrders(),
           loadCustomers(),
           loadCoupons(),
           loadReturns(),
+          loadStaff(),
           loadSettings(),
           loadAdminBanners(),
         ]);
@@ -2290,9 +2622,10 @@
       // ==============================================================
       // 1. DASHBOARD STATS & TABLES
       // ==============================================================
-      async function loadStats() {
+      async function loadStats(days = "") {
         try {
-          const res = await fetch("/api/admin/stats", { headers: getAdminHeaders() });
+          const dVal = days || document.getElementById("overview-date-range-select")?.value || "7";
+          const res = await fetch(`/api/admin/stats?days=${encodeURIComponent(dVal)}`, { headers: getAdminHeaders() });
           if (res.status === 401) return lockWorkspace();
           const data = await res.json();
           applyStatsPayload(data);
@@ -2635,6 +2968,7 @@
               btn.textContent = "Saved ✓";
               setTimeout(() => { btn.textContent = origText; }, 1200);
               await loadProducts();
+              await loadInventoryHistory();
               await loadStats();
             } else {
               const err = await res.json().catch(() => ({}));
@@ -2946,16 +3280,34 @@
         document.getElementById("p-form-pattern").value = prod ? (prod.pattern || "") : "Printed";
         document.getElementById("p-form-sleeve").value = prod ? (prod.sleeve_length || prod.sleeve || "Three-Quarter") : "Three-Quarter";
         document.getElementById("p-form-neck").value = prod ? (prod.neck_design || prod.neck || "Round Neck") : "Round Neck";
+        const colorsArr = prod && Array.isArray(prod.colors) && prod.colors.length
+          ? prod.colors.map((c) => `${c.name || "Burgundy"}:${c.swatch || "#542C34"}`).join(", ")
+          : "Deep Burgundy:#542C34";
+        const colInp = document.getElementById("p-form-colors");
+        if (colInp) colInp.value = colorsArr;
         document.getElementById("p-form-desc").value = prod ? (prod.description || "") : "";
+        const featBox = document.getElementById("p-form-featured");
+        if (featBox) featBox.checked = prod ? Boolean(prod.is_featured) : false;
         document.getElementById("p-form-bestseller").checked = prod ? Boolean(prod.isBestseller) : false;
         document.getElementById("p-form-archived").checked = prod ? Boolean(prod.isArchived) : false;
         document.getElementById("product-form-msg").classList.add("hidden");
+        isProductFormDirty = false;
         productModal.classList.remove("hidden");
       };
 
+      let isProductFormDirty = false;
+      document.getElementById("admin-product-form")?.addEventListener("input", () => {
+        isProductFormDirty = true;
+      });
+      function closeProductModalSafely() {
+        if (isProductFormDirty && !confirm("Discard unsaved changes to this product?")) return;
+        isProductFormDirty = false;
+        productModal.classList.add("hidden");
+      }
+
       document.getElementById("open-new-product-btn")?.addEventListener("click", () => openProductModal(null));
-      document.getElementById("close-product-modal")?.addEventListener("click", () => productModal.classList.add("hidden"));
-      document.getElementById("cancel-product-modal")?.addEventListener("click", () => productModal.classList.add("hidden"));
+      document.getElementById("close-product-modal")?.addEventListener("click", closeProductModalSafely);
+      document.getElementById("cancel-product-modal")?.addEventListener("click", closeProductModalSafely);
 
       document.getElementById("p-form-image")?.addEventListener("input", (e) => {
         const val = e.target.value.trim();
@@ -3060,6 +3412,12 @@
         }
         const finalGallery = cleanGallery.length > 0 ? cleanGallery : [manualPrimary || "assets/hero.jpg"];
 
+        const rawColorsStr = (document.getElementById("p-form-colors")?.value || "Deep Burgundy:#542C34").trim();
+        const parsedColors = rawColorsStr.split(",").map((pair) => {
+          const [n, sw] = pair.split(":").map((s) => (s || "").trim());
+          return { name: n || "Burgundy", swatch: sw || "#542C34" };
+        }).filter((c) => c.name);
+
         const payload = {
           id: document.getElementById("p-form-id").value.trim() || undefined,
           sku: document.getElementById("p-form-sku").value.trim().toUpperCase(),
@@ -3072,12 +3430,14 @@
           soldOutSizes: soldOut,
           image: finalGallery[0],
           gallery: finalGallery,
+          colors: parsedColors.length ? parsedColors : [{ name: "Deep Burgundy", swatch: "#542C34" }],
           fabric: document.getElementById("p-form-fabric").value.trim(),
           occasion: document.getElementById("p-form-occasion").value.trim(),
           pattern: document.getElementById("p-form-pattern").value.trim(),
           sleeve_length: document.getElementById("p-form-sleeve").value.trim(),
           neck_design: document.getElementById("p-form-neck").value.trim(),
           description: document.getElementById("p-form-desc").value.trim(),
+          is_featured: Boolean(document.getElementById("p-form-featured")?.checked),
           is_bestseller: document.getElementById("p-form-bestseller").checked,
           is_archived: document.getElementById("p-form-archived").checked,
           sizes: ["S", "M", "L", "XL"],
@@ -3090,6 +3450,7 @@
         });
         const data = await res.json().catch(() => ({}));
         if (res.ok) {
+          isProductFormDirty = false;
           productModal.classList.add("hidden");
           await loadProducts();
           await loadStats();
@@ -3511,11 +3872,17 @@
       function renderCouponsTable() {
         const tbody = document.getElementById("admin-coupons-tbody");
         if (!tbody) return;
-        if (!allCoupons.length) {
-          tbody.innerHTML = `<tr><td colspan="6" class="py-6 text-center text-muted-foreground">No coupons configured.</td></tr>`;
+        const searchQ = (document.getElementById("coupon-search-input")?.value || "").trim().toLowerCase();
+        const filteredCoupons = allCoupons.filter((c) => {
+          if (!searchQ) return true;
+          const hay = `${c.code || ""} ${c.description || ""} ${c.discount_type || ""}`.toLowerCase();
+          return hay.includes(searchQ);
+        });
+        if (!filteredCoupons.length) {
+          tbody.innerHTML = `<tr><td colspan="6" class="py-6 text-center text-muted-foreground">No matching coupons found.</td></tr>`;
           return;
         }
-        tbody.innerHTML = allCoupons.map((c) => {
+        tbody.innerHTML = filteredCoupons.map((c) => {
           const valStr = c.discount_type === "percentage" ? `${c.discount_value}% OFF` : `₹${c.discount_value} OFF`;
           const capStr = c.max_discount ? ` (Up to ₹${c.max_discount})` : "";
           const expStr = c.expiry_date ? `Exp: ${escapeHtml(c.expiry_date.slice(0, 10))}` : "No expiry";
@@ -3620,6 +3987,118 @@
       ["new-coupon-code", "new-coupon-type", "new-coupon-value", "new-coupon-min", "new-coupon-desc"].forEach((id) => {
         document.getElementById(id)?.addEventListener("input", updateCouponPromoPreview);
         document.getElementById(id)?.addEventListener("change", updateCouponPromoPreview);
+      });
+      document.getElementById("coupon-search-input")?.addEventListener("input", renderCouponsTable);
+
+      // ==============================================================
+      // 5B. STAFF & ROLE-BASED PERMISSIONS
+      // ==============================================================
+      let allStaff = [];
+
+      async function loadStaff() {
+        try {
+          const res = await fetch("/api/admin/staff", { headers: getAdminHeaders() });
+          if (res.status === 401) return lockWorkspace();
+          if (res.ok) {
+            const data = await res.json();
+            allStaff = data.staff || [];
+            renderStaffTable(allStaff);
+          }
+        } catch (err) {
+          console.error("Failed loading staff:", err);
+        }
+      }
+
+      function renderStaffTable(staffList) {
+        const tbody = document.getElementById("admin-staff-tbody");
+        if (!tbody) return;
+        const list = Array.isArray(staffList) ? staffList : allStaff;
+        allStaff = list;
+        if (!list.length) {
+          tbody.innerHTML = `<tr><td colspan="5" class="py-6 text-center text-muted-foreground">No staff members configured.</td></tr>`;
+          return;
+        }
+        tbody.innerHTML = list.map((st) => `
+          <tr class="hover:bg-primary/5 transition">
+            <td class="py-3 px-3">
+              <div class="font-semibold text-foreground">${escapeHtml(st.name)}</div>
+              <div class="text-xs font-mono text-muted-foreground">${escapeHtml(st.email)}</div>
+            </td>
+            <td class="py-3 px-3">
+              <span class="px-2.5 py-0.5 rounded-full text-xs font-bold ${st.role === 'owner' ? 'bg-primary text-white' : 'bg-primary/10 text-primary'}">
+                ${escapeHtml(st.role_label || st.role)}
+              </span>
+            </td>
+            <td class="py-3 px-3 text-xs text-muted-foreground max-w-xs">
+              ${escapeHtml((st.allowed_tabs || []).join(", "))}
+            </td>
+            <td class="py-3 px-3">
+              <span class="px-2 py-0.5 rounded text-xs font-semibold ${st.is_active ? 'bg-emerald-100 text-emerald-800' : 'bg-gray-200 text-gray-600'}">
+                ${st.is_active ? "Active" : "Suspended"}
+              </span>
+            </td>
+            <td class="py-3 px-3 text-right space-x-2 whitespace-nowrap">
+              <button type="button" data-edit-staff="${escapeHtml(st.email)}" class="edit-staff-btn text-xs text-primary font-semibold hover:underline cursor-pointer">Edit</button>
+              ${!st.is_primary_owner ? `
+                <button type="button" data-del-staff="${escapeHtml(st.id)}" class="del-staff-btn text-xs text-destructive hover:underline cursor-pointer">Remove</button>
+              ` : `<span class="text-[11px] text-muted-foreground">Primary Owner</span>`}
+            </td>
+          </tr>
+        `).join("");
+
+        tbody.querySelectorAll(".edit-staff-btn").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            const em = btn.getAttribute("data-edit-staff");
+            const st = allStaff.find((x) => x.email === em);
+            if (!st) return;
+            document.getElementById("staff-name-input").value = st.name || "";
+            document.getElementById("staff-email-input").value = st.email || "";
+            document.getElementById("staff-role-select").value = st.role || "order_staff";
+            document.getElementById("staff-active-checkbox").checked = Boolean(st.is_active);
+          });
+        });
+
+        tbody.querySelectorAll(".del-staff-btn").forEach((btn) => {
+          btn.addEventListener("click", async () => {
+            const sid = btn.getAttribute("data-del-staff");
+            if (!confirm("Remove this staff member and revoke their active sessions?")) return;
+            const res = await fetch("/api/admin/staff/" + encodeURIComponent(sid), {
+              method: "DELETE",
+              headers: getAdminHeaders(),
+            });
+            const data = await res.json().catch(() => ({}));
+            if (res.ok && data.ok) {
+              renderStaffTable(data.staff || []);
+            } else {
+              alert(data.error || "Failed to remove staff member.");
+            }
+          });
+        });
+      }
+
+      document.getElementById("admin-staff-form")?.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const msg = document.getElementById("staff-form-msg");
+        const payload = {
+          name: document.getElementById("staff-name-input").value.trim(),
+          email: document.getElementById("staff-email-input").value.trim(),
+          role: document.getElementById("staff-role-select").value,
+          is_active: document.getElementById("staff-active-checkbox").checked,
+        };
+        const res = await fetch("/api/admin/staff", {
+          method: "POST",
+          headers: getAdminHeaders({ "Content-Type": "application/json" }),
+          body: JSON.stringify(payload),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (res.ok && data.ok) {
+          msg.textContent = "Staff member saved and permissions updated!";
+          msg.className = "text-xs text-primary block";
+          renderStaffTable(data.staff || []);
+        } else {
+          msg.textContent = data.error || "Failed saving staff member.";
+          msg.className = "text-xs text-destructive block";
+        }
       });
 
       document.getElementById("coupon-form-clear-btn")?.addEventListener("click", () => {

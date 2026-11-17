@@ -1742,6 +1742,7 @@ def init_db():
                 """)
                 admin_sess_migrations = {
                     "admin_email": "TEXT DEFAULT ''",
+                    "admin_role": "TEXT DEFAULT 'owner'",
                     "mfa_method": "TEXT DEFAULT ''",
                     "ip_address": "TEXT DEFAULT ''",
                     "user_agent": "TEXT DEFAULT ''",
@@ -1750,6 +1751,28 @@ def init_db():
                 }
                 for col, definition in admin_sess_migrations.items():
                     _add_column_if_missing(c, "admin_sessions", col, definition)
+
+                # 10B. Admin Staff & Role-Based Permissions table
+                c.execute("""
+                    CREATE TABLE IF NOT EXISTS admin_staff (
+                        id TEXT PRIMARY KEY,
+                        name TEXT NOT NULL,
+                        email TEXT UNIQUE NOT NULL,
+                        role TEXT NOT NULL,
+                        is_active INTEGER DEFAULT 1,
+                        created_at TEXT NOT NULL,
+                        updated_at TEXT NOT NULL
+                    )
+                """)
+                now_seed_iso = datetime.now().isoformat()
+                c.execute(
+                    """
+                    INSERT INTO admin_staff (id, name, email, role, is_active, created_at, updated_at)
+                    VALUES ('staff_owner', 'Matra Naari Store Owner', 'matranaari@gmail.com', 'owner', 1, ?, ?)
+                    ON CONFLICT (email) DO NOTHING
+                    """,
+                    (now_seed_iso, now_seed_iso),
+                )
 
                 # 11. Order Notifications table (Idempotent multi-channel audit & retry log)
                 c.execute("""
@@ -2049,12 +2072,33 @@ def log_security_event(c, event_type: str, actor_type: str, identifier_masked: s
         pass
 
 
-def get_allowed_admin_emails() -> set:
-    """
-    Returns the strict allowlist of verified admin email addresses.
-    Defaults to OWNER_NOTIFICATION_EMAIL / matranaari@gmail.com plus any
-    comma-separated emails in ADMIN_ALLOWED_EMAILS.
-    """
+VALID_STAFF_ROLES = ("owner", "manager", "order_staff", "catalog_staff")
+
+STAFF_ROLE_PERMISSIONS = {
+    "owner": {
+        "label": "Store Owner",
+        "description": "Full administrative control including settings, security keys, MFA, and staff permissions.",
+        "tabs": ["overview", "orders", "products", "inventory", "customers", "banners", "coupons", "analytics", "returns", "staff", "settings"],
+    },
+    "manager": {
+        "label": "Store Manager",
+        "description": "Manage orders, products, inventory, banners, coupons, returns, and analytics (cannot modify owner security or staff roles).",
+        "tabs": ["overview", "orders", "products", "inventory", "customers", "banners", "coupons", "analytics", "returns"],
+    },
+    "order_staff": {
+        "label": "Order & Fulfillment Staff",
+        "description": "View overview/customers/inventory and process orders, shipments, and return/exchange requests.",
+        "tabs": ["overview", "orders", "returns", "customers", "inventory"],
+    },
+    "catalog_staff": {
+        "label": "Catalog & Merchandising Staff",
+        "description": "Manage products, multi-image galleries, size stock quantities, and homepage campaign banners.",
+        "tabs": ["overview", "products", "inventory", "banners"],
+    },
+}
+
+
+def get_primary_owner_emails() -> set:
     allowed = {"matranaari@gmail.com"}
     owner_env = (os.environ.get("OWNER_NOTIFICATION_EMAIL") or "").strip().lower()
     if owner_env and "@" in owner_env:
@@ -2065,6 +2109,56 @@ def get_allowed_admin_emails() -> set:
         if clean and "@" in clean:
             allowed.add(clean)
     return allowed
+
+
+def get_allowed_admin_emails(c=None) -> set:
+    """
+    Returns the strict allowlist of verified admin & active staff email addresses.
+    Includes primary owner email(s) plus active staff members in admin_staff.
+    """
+    allowed = set(get_primary_owner_emails())
+    close_after = False
+    conn = None
+    try:
+        if c is None:
+            conn = get_db()
+            c = conn.cursor()
+            close_after = True
+        c.execute("SELECT email FROM admin_staff WHERE COALESCE(is_active, 1) = 1")
+        for r in c.fetchall():
+            em = str((dict(r).get("email") if hasattr(r, "keys") else r[0]) or "").strip().lower()
+            if em and "@" in em:
+                allowed.add(em)
+    except Exception:
+        pass
+    finally:
+        if close_after and conn is not None:
+            try:
+                conn.close()
+            except Exception:
+                pass
+    return allowed
+
+
+def resolve_admin_role_for_email(c, email: str) -> str:
+    clean_em = str(email or "").strip().lower()
+    if clean_em in get_primary_owner_emails():
+        return "owner"
+    try:
+        c.execute(
+            "SELECT role, is_active FROM admin_staff WHERE LOWER(email) = ? LIMIT 1",
+            (clean_em,),
+        )
+        row = c.fetchone()
+        if row:
+            d = dict(row)
+            if int(d.get("is_active") or 0) == 1:
+                role = str(d.get("role") or "").strip().lower()
+                if role in VALID_STAFF_ROLES:
+                    return role
+    except Exception:
+        pass
+    return "owner" if clean_em in get_primary_owner_emails() else ""
 
 
 def _totp_hotp(secret_b32: str, counter: int, digits: int = 6) -> str:
@@ -3358,6 +3452,8 @@ def check_admin_auth():
         if expected_env_key and hmac.compare_digest(passkey.encode("utf-8"), expected_env_key.encode("utf-8")):
             if has_request_context():
                 g._admin_auth_verified = True
+                g._admin_role = "owner"
+                g._admin_email = "matranaari@gmail.com"
             return True
 
     # 1. Check session tokens (X-Admin-Token, Authorization: Bearer, and HttpOnly cookie)
@@ -3382,13 +3478,17 @@ def check_admin_auth():
             now_iso = datetime.now().isoformat()
             for tok in candidate_tokens:
                 c.execute(
-                    "SELECT token FROM admin_sessions WHERE token = ? AND expires_at > ? AND COALESCE(revoked, 0) = 0",
+                    "SELECT token, admin_email, admin_role FROM admin_sessions WHERE token = ? AND expires_at > ? AND COALESCE(revoked, 0) = 0",
                     (tok, now_iso)
                 )
-                if c.fetchone():
+                s_row = c.fetchone()
+                if s_row:
+                    sd = dict(s_row)
                     conn.close()
                     if has_request_context():
                         g._admin_auth_verified = True
+                        g._admin_role = str(sd.get("admin_role") or "owner").strip().lower() or "owner"
+                        g._admin_email = str(sd.get("admin_email") or "matranaari@gmail.com").strip().lower()
                     return True
             conn.close()
         except Exception:
@@ -3398,7 +3498,24 @@ def check_admin_auth():
     is_valid = verify_admin_passkey_value(passkey)
     if is_valid and has_request_context():
         g._admin_auth_verified = True
+        g._admin_role = "owner"
+        g._admin_email = "matranaari@gmail.com"
     return is_valid
+
+
+def get_current_admin_role() -> str:
+    if not check_admin_auth():
+        return ""
+    if has_request_context():
+        return str(getattr(g, "_admin_role", "owner") or "owner").strip().lower()
+    return "owner"
+
+
+def has_admin_role(allowed_roles) -> bool:
+    role = get_current_admin_role()
+    if not role:
+        return False
+    return role in allowed_roles
 
 # ================= Initialize Flask App =================
 app = Flask(__name__, static_folder=BASE_DIR)
@@ -4123,6 +4240,9 @@ def api_admin_banners():
             "editorial_campaigns": get_configured_editorial_campaigns(settings, include_disabled=True),
         })
 
+    if not has_admin_role(("owner", "manager", "catalog_staff")):
+        return jsonify({"ok": False, "error": "Your staff role does not have permission to modify homepage banners."}), 403
+
     data = request.get_json(silent=True) or {}
     action = str(data.get("action") or "save_all").strip().lower()
     settings = get_site_settings_dict()
@@ -4236,6 +4356,8 @@ def api_admin_banners():
 def api_admin_banner_delete(banner_id):
     if not check_admin_auth():
         return jsonify({"ok": False, "error": "Unauthorized"}), 401
+    if not has_admin_role(("owner", "manager", "catalog_staff")):
+        return jsonify({"ok": False, "error": "Your staff role does not have permission to delete banners."}), 403
     target_id = str(banner_id or "").strip()
     settings = get_site_settings_dict()
     current_banners = get_configured_hero_banners(settings, include_disabled=True)
@@ -6997,6 +7119,7 @@ def api_admin_auth_verify_mfa():
         )
         verified_mfa_label = "email_otp+totp" if totp_ok else "email_otp+security_key"
 
+    resolved_role = resolve_admin_role_for_email(c, email) or "owner"
     token = secrets.token_hex(32)
     exp_dt = now_dt + timedelta(hours=ADMIN_SESSION_TTL_HOURS)
     ip_addr = get_client_ip()
@@ -7006,12 +7129,12 @@ def api_admin_auth_verify_mfa():
     c.execute(
         """
         INSERT INTO admin_sessions (
-            token, created_at, expires_at, admin_email, mfa_method, ip_address, user_agent, last_active_at, revoked
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0)
+            token, created_at, expires_at, admin_email, admin_role, mfa_method, ip_address, user_agent, last_active_at, revoked
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0)
         """,
-        (token, now_iso, exp_dt.isoformat(), email, verified_mfa_label, ip_addr, ua_str, now_iso),
+        (token, now_iso, exp_dt.isoformat(), email, resolved_role, verified_mfa_label, ip_addr, ua_str, now_iso),
     )
-    log_security_event(c, "admin_mfa_verified", "admin", masked_email, "success", f"mfa={verified_mfa_label}")
+    log_security_event(c, "admin_mfa_verified", "admin", masked_email, "success", f"role={resolved_role},mfa={verified_mfa_label}")
     conn.commit()
     conn.close()
 
@@ -7020,6 +7143,8 @@ def api_admin_auth_verify_mfa():
         "authenticated": True,
         "token": token,
         "admin_email": email,
+        "admin_role": resolved_role,
+        "role_permissions": STAFF_ROLE_PERMISSIONS.get(resolved_role, STAFF_ROLE_PERMISSIONS["owner"]),
         "mfa_method": verified_mfa_label,
         "expires_at": exp_dt.isoformat(),
         "message": "Admin MFA verified successfully.",
@@ -7042,7 +7167,7 @@ def api_admin_sessions_list():
     c = conn.cursor()
     c.execute(
         """
-        SELECT token, created_at, expires_at, admin_email, mfa_method, ip_address, user_agent, last_active_at, revoked
+        SELECT token, created_at, expires_at, admin_email, admin_role, mfa_method, ip_address, user_agent, last_active_at, revoked
         FROM admin_sessions
         WHERE expires_at > ? AND COALESCE(revoked, 0) = 0
         ORDER BY created_at DESC
@@ -7056,6 +7181,7 @@ def api_admin_sessions_list():
         sessions.append({
             "session_id": raw_t[:10],
             "admin_email": d.get("admin_email") or "matranaari@gmail.com",
+            "admin_role": d.get("admin_role") or "owner",
             "mfa_method": d.get("mfa_method") or "security_key",
             "ip_address": d.get("ip_address") or "-",
             "user_agent": d.get("user_agent") or "Browser Session",
@@ -7075,6 +7201,7 @@ def api_admin_sessions_list():
     conn.close()
     return jsonify({
         "ok": True,
+        "current_role": get_current_admin_role(),
         "sessions": sessions,
         "audit_logs": audit_logs,
     })
@@ -7084,6 +7211,8 @@ def api_admin_sessions_list():
 def api_admin_sessions_revoke():
     if not check_admin_auth():
         return jsonify({"ok": False, "error": "Unauthorized"}), 401
+    if not has_admin_role(("owner",)):
+        return jsonify({"ok": False, "error": "Only the Store Owner can revoke administrative sessions."}), 403
 
     data = request.get_json(silent=True) or {}
     session_id = str(data.get("session_id") or "").strip()
@@ -7124,6 +7253,8 @@ def api_admin_mfa_totp_setup():
     """
     if not check_admin_auth():
         return jsonify({"ok": False, "error": "Unauthorized"}), 401
+    if not has_admin_role(("owner",)):
+        return jsonify({"ok": False, "error": "Only the Store Owner can access or rotate MFA setup secrets."}), 403
 
     conn = get_db()
     c = conn.cursor()
@@ -7140,7 +7271,7 @@ def api_admin_mfa_totp_setup():
             invalidate_site_settings_cache()
 
     secret = get_or_create_admin_totp_secret(c)
-    allowed_emails = sorted(get_allowed_admin_emails())
+    allowed_emails = sorted(get_primary_owner_emails())
     primary_email = allowed_emails[0] if allowed_emails else "matranaari@gmail.com"
     issuer = "Matra Naari Admin"
     label = urllib.parse.quote(f"{issuer}:{primary_email}")
@@ -7152,6 +7283,127 @@ def api_admin_mfa_totp_setup():
         "totp_secret": secret,
         "otpauth_uri": otpauth_uri,
     })
+
+
+def _fetch_admin_staff_list(c):
+    c.execute("SELECT id, name, email, role, is_active, created_at, updated_at FROM admin_staff ORDER BY created_at ASC")
+    staff_rows = []
+    for r in c.fetchall():
+        d = dict(r)
+        role_key = str(d.get("role") or "order_staff").strip().lower()
+        role_info = STAFF_ROLE_PERMISSIONS.get(role_key, STAFF_ROLE_PERMISSIONS["order_staff"])
+        staff_rows.append({
+            "id": d.get("id") or "",
+            "name": d.get("name") or "",
+            "email": d.get("email") or "",
+            "role": role_key,
+            "role_label": role_info["label"],
+            "permissions_summary": role_info["description"],
+            "allowed_tabs": role_info["tabs"],
+            "is_active": bool(int(d.get("is_active") if d.get("is_active") is not None else 1)),
+            "is_primary_owner": str(d.get("email") or "").strip().lower() in get_primary_owner_emails(),
+            "created_at": d.get("created_at") or "",
+            "updated_at": d.get("updated_at") or "",
+        })
+    return staff_rows
+
+
+@app.route("/api/admin/staff", methods=["GET", "POST"])
+def api_admin_staff():
+    if not check_admin_auth():
+        return jsonify({"ok": False, "error": "Unauthorized"}), 401
+
+    conn = get_db()
+    c = conn.cursor()
+
+    if request.method == "POST":
+        if not has_admin_role(("owner",)):
+            conn.close()
+            return jsonify({"ok": False, "error": "Only the Store Owner can create or modify staff roles and privileges."}), 403
+
+        data = request.get_json(silent=True) or {}
+        name = str(data.get("name") or "").strip()
+        email = str(data.get("email") or "").strip().lower()
+        role = str(data.get("role") or "order_staff").strip().lower()
+        is_active = 0 if data.get("is_active") is False else 1
+
+        if len(name) < 2:
+            conn.close()
+            return jsonify({"ok": False, "error": "Please enter the staff member's full name."}), 400
+        if "@" not in email or "." not in email:
+            conn.close()
+            return jsonify({"ok": False, "error": "Please enter a valid staff email address."}), 400
+        if role not in VALID_STAFF_ROLES:
+            conn.close()
+            return jsonify({"ok": False, "error": f"Role must be one of: {', '.join(VALID_STAFF_ROLES)}."}), 400
+
+        # Protect primary owner account from being demoted or deactivated
+        if email in get_primary_owner_emails() and (role != "owner" or is_active == 0):
+            conn.close()
+            return jsonify({"ok": False, "error": "The primary Store Owner account cannot be demoted or deactivated."}), 400
+
+        now_iso = datetime.now().isoformat()
+        c.execute("SELECT id, created_at FROM admin_staff WHERE LOWER(email) = ?", (email,))
+        existing = c.fetchone()
+        staff_id = dict(existing)["id"] if existing else (str(data.get("id") or "").strip() or f"staff_{secrets.token_hex(4)}")
+        created_at = dict(existing)["created_at"] if existing else now_iso
+
+        c.execute(
+            """
+            INSERT INTO admin_staff (id, name, email, role, is_active, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT (email) DO UPDATE SET
+                name = EXCLUDED.name,
+                role = EXCLUDED.role,
+                is_active = EXCLUDED.is_active,
+                updated_at = EXCLUDED.updated_at
+            """,
+            (staff_id, name, email, role, is_active, created_at, now_iso),
+        )
+        if is_active == 0:
+            c.execute("UPDATE admin_sessions SET revoked = 1 WHERE LOWER(admin_email) = ?", (email,))
+        log_security_event(c, "staff_member_saved", "admin", mask_email(email), "success", f"role={role},active={is_active}")
+        conn.commit()
+
+    staff_list = _fetch_admin_staff_list(c)
+    conn.close()
+    curr_role = get_current_admin_role()
+    return jsonify({
+        "ok": True,
+        "current_role": curr_role,
+        "role_permissions": STAFF_ROLE_PERMISSIONS,
+        "staff": staff_list,
+    })
+
+
+@app.route("/api/admin/staff/<staff_id>", methods=["DELETE"])
+def api_admin_staff_delete(staff_id):
+    if not check_admin_auth():
+        return jsonify({"ok": False, "error": "Unauthorized"}), 401
+    if not has_admin_role(("owner",)):
+        return jsonify({"ok": False, "error": "Only the Store Owner can remove staff accounts."}), 403
+
+    clean_id = str(staff_id or "").strip()
+    conn = get_db()
+    c = conn.cursor()
+    c.execute("SELECT id, email, role FROM admin_staff WHERE id = ?", (clean_id,))
+    row = c.fetchone()
+    if not row:
+        conn.close()
+        return jsonify({"ok": False, "error": "Staff member not found."}), 404
+    d = dict(row)
+    em = str(d.get("email") or "").strip().lower()
+    if em in get_primary_owner_emails() or clean_id == "staff_owner":
+        conn.close()
+        return jsonify({"ok": False, "error": "Cannot delete the primary Store Owner account."}), 400
+
+    c.execute("DELETE FROM admin_staff WHERE id = ?", (clean_id,))
+    c.execute("UPDATE admin_sessions SET revoked = 1 WHERE LOWER(admin_email) = ?", (em,))
+    log_security_event(c, "staff_member_deleted", "admin", mask_email(em), "success", f"id={clean_id}")
+    conn.commit()
+    staff_list = _fetch_admin_staff_list(c)
+    conn.close()
+    return jsonify({"ok": True, "staff": staff_list, "message": "Staff account removed and active sessions revoked."})
 
 
 @app.route("/api/admin/verify", methods=["POST"])
@@ -7505,26 +7757,52 @@ def api_admin_stats():
     totals["total_users"] = int(agg_row.get("total_users") or 0)
     totals["total_customers"] = totals["total_users"]
 
-    # Calculate Today's Sales & 7-Period Real Database Revenue Trend
+    # Calculate Today's Sales, Revenue/Order Trend, Payment Breakdown & Order Status Distribution
+    days_param = (request.args.get("days") or "7").strip().lower()
     today_utc_str = datetime.utcnow().strftime("%Y-%m-%d")
     today_local_str = datetime.now().strftime("%Y-%m-%d")
     c.execute("""
         SELECT SUBSTR(COALESCE(created_at, ''), 1, 10) AS order_date,
-               COALESCE(total_amount, 0) AS total_amount
+               COALESCE(total_amount, 0) AS total_amount,
+               LOWER(COALESCE(order_status, 'confirmed')) AS order_status,
+               LOWER(COALESCE(payment_method, 'cod')) AS payment_method,
+               LOWER(COALESCE(payment_status, 'cod_confirmed')) AS payment_status
         FROM orders
-        WHERE LOWER(COALESCE(order_status, '')) != 'cancelled'
-          AND (
-              (LOWER(COALESCE(payment_method, '')) = 'cod' AND LOWER(COALESCE(payment_status, 'cod_confirmed')) NOT IN ('failed', 'cancelled', 'refunded'))
-              OR (LOWER(COALESCE(payment_method, '')) != 'cod' AND LOWER(COALESCE(payment_status, '')) = 'paid')
-          )
         ORDER BY created_at DESC
     """)
     today_sales_val = 0
     today_orders_cnt = 0
     daily_buckets = {}
+    status_dist = {
+        "confirmed": 0,
+        "packed": 0,
+        "shipped": 0,
+        "out for delivery": 0,
+        "delivered": 0,
+        "cancelled": 0,
+    }
     for srow in c.fetchall():
         odate = str(srow["order_date"] or "").strip()
         amt = int(srow["total_amount"] or 0)
+        ost = str(srow["order_status"] or "confirmed").strip().replace("_", " ")
+        pm = str(srow["payment_method"] or "cod").strip()
+        pst = str(srow["payment_status"] or "cod_confirmed").strip()
+
+        if ost in status_dist:
+            status_dist[ost] += 1
+        elif ost in ("placed", "processing"):
+            status_dist["confirmed"] += 1
+
+        is_valid_rev = (
+            ost != "cancelled"
+            and (
+                (pm == "cod" and pst not in ("failed", "cancelled", "refunded"))
+                or (pm != "cod" and pst == "paid")
+            )
+        )
+        if not is_valid_rev:
+            continue
+
         if odate in (today_utc_str, today_local_str):
             today_sales_val += amt
             today_orders_cnt += 1
@@ -7534,10 +7812,30 @@ def api_admin_stats():
             daily_buckets[odate]["revenue"] += amt
             daily_buckets[odate]["orders"] += 1
 
-    revenue_trend = sorted(daily_buckets.values(), key=lambda x: x["date"])[-7:]
+    sorted_days = sorted(daily_buckets.values(), key=lambda x: x["date"])
+    if days_param == "30":
+        revenue_trend = sorted_days[-30:]
+    elif days_param == "90":
+        revenue_trend = sorted_days[-90:]
+    elif days_param == "all":
+        revenue_trend = sorted_days
+    else:
+        revenue_trend = sorted_days[-7:]
+
     totals["today_sales"] = today_sales_val
     totals["today_orders"] = today_orders_cnt
     totals["revenue_trend"] = revenue_trend
+    totals["payment_method_breakdown"] = {
+        "cod": {
+            "orders": cod_orders_cnt,
+            "revenue": cod_rev,
+        },
+        "razorpay": {
+            "orders": paid_orders_cnt,
+            "revenue": verified_paid_rev,
+        },
+    }
+    totals["order_status_distribution"] = status_dist
 
     all_orders_formatted = None
     if include_all:
@@ -7697,6 +7995,17 @@ def api_admin_stats():
             d["details"] = d.get("notes", "")
             returns_list.append(d)
 
+        staff_list = _fetch_admin_staff_list(c)
+        c.execute(
+            """
+            SELECT id, identifier_masked AS sku, details, created_at
+            FROM security_audit_logs
+            WHERE event_type = 'inventory_stock_updated'
+            ORDER BY created_at DESC LIMIT 20
+            """
+        )
+        inv_history = [dict(r) for r in c.fetchall()]
+
         conn.close()
         cfg = load_config()
         raw_site_settings = get_site_settings_dict()
@@ -7704,7 +8013,7 @@ def api_admin_stats():
             "admin_passkey_hash", "admin_passkey_salt",
             "admin_secret_key", "admin_passkey", "admin_password",
             "razorpay_key_secret", "supabase_service_role_key",
-            "supabase_service_key", "database_url"
+            "supabase_service_key", "database_url", "admin_totp_secret"
         }
         settings_obj = {
             "store_name": cfg.get("store_name", "Matra Naari"),
@@ -7729,12 +8038,16 @@ def api_admin_stats():
         if "shipping_fee" in settings_obj and "standard_shipping_fee" not in settings_obj:
             settings_obj["standard_shipping_fee"] = settings_obj["shipping_fee"]
 
+        payload["current_role"] = get_current_admin_role()
+        payload["role_permissions"] = STAFF_ROLE_PERMISSIONS
         payload["products"] = all_product_rows
         payload["orders"] = all_orders_formatted
         payload["customers"] = customers_list
         payload["total_customers"] = total_cust
         payload["coupons"] = coupons_list
         payload["returns"] = returns_list
+        payload["staff"] = staff_list
+        payload["inventory_history"] = inv_history
         payload["settings"] = settings_obj
         return jsonify(payload)
 
@@ -7791,6 +8104,8 @@ def api_admin_orders():
 def api_admin_order_status():
     if not check_admin_auth():
         return jsonify({"ok": False, "error": "Unauthorized"}), 401
+    if not has_admin_role(("owner", "manager", "order_staff")):
+        return jsonify({"ok": False, "error": "Your staff role does not have permission to update order fulfillment status."}), 403
 
     data = request.get_json(silent=True) or {}
     order_id = str(data.get("order_id", "")).strip()
@@ -7956,6 +8271,9 @@ def api_admin_product_save():
         prods = [format_product_row(r) for r in c.fetchall()]
         conn.close()
         return jsonify({"ok": True, "count": len(prods), "products": prods})
+
+    if not has_admin_role(("owner", "manager", "catalog_staff")):
+        return jsonify({"ok": False, "error": "Your staff role does not have permission to create or edit products."}), 403
 
     p = request.get_json(silent=True) or {}
     pid = str(p.get("id", "")).strip() or f"prod_{secrets.token_hex(4)}"
@@ -8168,6 +8486,8 @@ def api_admin_product_save():
 def api_admin_product_visibility():
     if not check_admin_auth():
         return jsonify({"ok": False, "error": "Unauthorized"}), 401
+    if not has_admin_role(("owner", "manager", "catalog_staff")):
+        return jsonify({"ok": False, "error": "Your staff role does not have permission to change product visibility."}), 403
 
     data = request.get_json(silent=True) or {}
     pid = str(data.get("id", "")).strip()
@@ -8199,10 +8519,31 @@ def api_admin_product_visibility():
         "message": f"'{row['name']}' is now {state_label}."
     })
 
+@app.route("/api/admin/inventory/history", methods=["GET"])
+def api_admin_inventory_history():
+    if not check_admin_auth():
+        return jsonify({"ok": False, "error": "Unauthorized"}), 401
+    conn = get_db()
+    c = conn.cursor()
+    c.execute(
+        """
+        SELECT id, identifier_masked AS sku, details, created_at
+        FROM security_audit_logs
+        WHERE event_type = 'inventory_stock_updated'
+        ORDER BY created_at DESC LIMIT 30
+        """
+    )
+    history = [dict(r) for r in c.fetchall()]
+    conn.close()
+    return jsonify({"ok": True, "history": history})
+
+
 @app.route("/api/admin/inventory/update", methods=["POST"])
 def api_admin_inventory_update():
     if not check_admin_auth():
         return jsonify({"ok": False, "error": "Unauthorized"}), 401
+    if not has_admin_role(("owner", "manager", "catalog_staff")):
+        return jsonify({"ok": False, "error": "Your staff role does not have permission to adjust inventory quantities."}), 403
 
     data = request.get_json(silent=True) or {}
     pid = str(data.get("id", "")).strip()
@@ -8249,6 +8590,7 @@ def api_admin_inventory_update():
 
     sold_out_list = [sz for sz in sizes_list if size_stock_map.get(sz, 0) <= 0]
 
+    prev_stock = int(prod.get("stock") or 0)
     conn = get_db()
     c = conn.cursor()
     c.execute("""
@@ -8259,6 +8601,15 @@ def api_admin_inventory_update():
             sold_out_sizes_json = ?
         WHERE id = ?
     """, (total_stock, json.dumps(sizes_list), json.dumps(size_stock_map), json.dumps(sold_out_list), pid))
+    sz_summary = ", ".join(f"{k}:{v}" for k, v in size_stock_map.items())
+    log_security_event(
+        c,
+        "inventory_stock_updated",
+        "admin",
+        str(prod.get("sku") or pid).upper(),
+        "updated",
+        f"{prod['name']}: {prev_stock} -> {total_stock} pcs ({sz_summary})",
+    )
     conn.commit()
     conn.close()
 
@@ -8275,6 +8626,8 @@ def api_admin_inventory_update():
 def api_admin_upload_image():
     if not check_admin_auth():
         return jsonify({"ok": False, "error": "Unauthorized"}), 401
+    if not has_admin_role(("owner", "manager", "catalog_staff")):
+        return jsonify({"ok": False, "error": "Your staff role does not have permission to upload catalog images."}), 403
 
     allowed_exts = {".jpg", ".jpeg", ".png", ".webp"}
     allowed_mimes = {"image/jpeg", "image/jpg", "image/pjpeg", "image/png", "image/webp"}
@@ -8376,6 +8729,8 @@ def api_admin_upload_image():
 def api_admin_product_delete(pid):
     if not check_admin_auth():
         return jsonify({"ok": False, "error": "Unauthorized"}), 401
+    if not has_admin_role(("owner", "manager", "catalog_staff")):
+        return jsonify({"ok": False, "error": "Your staff role does not have permission to delete products."}), 403
 
     conn = get_db()
     c = conn.cursor()
@@ -8393,6 +8748,9 @@ def api_admin_coupons():
     c = conn.cursor()
 
     if request.method == "POST":
+        if not has_admin_role(("owner", "manager")):
+            conn.close()
+            return jsonify({"ok": False, "error": "Only the Store Owner or Manager can create or edit coupons."}), 403
         data = request.get_json(silent=True) or {}
         code = str(data.get("code", "")).strip().upper()
         dtype = str(data.get("discount_type", "percentage")).strip().lower()
@@ -8484,6 +8842,8 @@ def api_admin_coupons():
 def api_admin_coupon_toggle():
     if not check_admin_auth():
         return jsonify({"ok": False, "error": "Unauthorized"}), 401
+    if not has_admin_role(("owner", "manager")):
+        return jsonify({"ok": False, "error": "Only the Store Owner or Manager can toggle coupons."}), 403
 
     data = request.get_json(silent=True)
     if not isinstance(data, dict):
@@ -8502,6 +8862,8 @@ def api_admin_coupon_toggle():
 def api_admin_coupon_delete(code):
     if not check_admin_auth():
         return jsonify({"ok": False, "error": "Unauthorized"}), 401
+    if not has_admin_role(("owner", "manager")):
+        return jsonify({"ok": False, "error": "Only the Store Owner or Manager can delete coupons."}), 403
 
     clean_code = str(code or "").strip().upper()
     conn = get_db()
@@ -8523,10 +8885,13 @@ def api_admin_settings():
         "admin_passkey_hash", "admin_passkey_salt",
         "admin_secret_key", "admin_passkey", "admin_password",
         "razorpay_key_secret", "supabase_service_role_key",
-        "supabase_service_key", "database_url"
+        "supabase_service_key", "database_url", "admin_totp_secret"
     }
 
     if request.method == "POST":
+        if not has_admin_role(("owner",)):
+            conn.close()
+            return jsonify({"ok": False, "error": "Only the Store Owner can modify store-wide settings and security credentials."}), 403
         data = request.get_json(silent=True)
         if not isinstance(data, dict):
             conn.close()
@@ -8647,6 +9012,8 @@ def api_admin_returns():
 def api_admin_return_status():
     if not check_admin_auth():
         return jsonify({"ok": False, "error": "Unauthorized"}), 401
+    if not has_admin_role(("owner", "manager", "order_staff")):
+        return jsonify({"ok": False, "error": "Your staff role does not have permission to update return requests."}), 403
 
     data = request.get_json(silent=True)
     if not isinstance(data, dict):

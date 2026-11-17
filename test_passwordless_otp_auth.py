@@ -383,6 +383,141 @@ class PasswordlessOtpAndAdminMfaTests(unittest.TestCase):
         after_rev = self.client.get("/api/admin/sessions", headers=admin_hdr)
         self.assertEqual(after_rev.status_code, 401)
 
+    def test_07_ultimate_admin_bento_analytics_inventory_history_and_staff_rbac(self):
+        """Verify 11-section Admin UI, Bento analytics, inventory history log, and server-side Staff RBAC."""
+        owner_hdr = {"X-Admin-Passkey": "naari@admin2026"}
+
+        # 1. Verify admin.html has all 11 navigation tabs, Peach accent (#EF8557), reduced-motion rule, Analytics & Staff panels
+        adm_html = self.client.get("/admin.html").get_data(as_text=True)
+        self.assertIn("#EF8557", adm_html)
+        self.assertIn("prefers-reduced-motion: reduce", adm_html)
+        for tab_name in [
+            "overview",
+            "orders",
+            "products",
+            "inventory",
+            "customers",
+            "banners",
+            "coupons",
+            "analytics",
+            "returns",
+            "staff",
+            "settings",
+        ]:
+            self.assertIn(f'data-tab="{tab_name}"', adm_html, f"Missing sidebar tab {tab_name}")
+        for elem_id in [
+            "tab-analytics",
+            "tab-staff",
+            "analytics-revenue-chart",
+            "analytics-orders-chart",
+            "analytics-payment-bars",
+            "analytics-status-bars",
+            "inventory-history-tbody",
+            "coupon-search-input",
+            "admin-staff-form",
+            "admin-staff-tbody",
+        ]:
+            self.assertIn(f'id="{elem_id}"', adm_html, f"Missing #{elem_id} in admin.html")
+
+        # 2. Verify /api/admin/inventory/update logs stock adjustment history & /api/admin/inventory/history returns it
+        inv_upd = self.client.post(
+            "/api/admin/inventory/update",
+            headers=owner_hdr,
+            json={"id": "straight", "size_stock": {"S": 6, "M": 8, "L": 7, "XL": 5}},
+        )
+        self.assertEqual(inv_upd.status_code, 200)
+        hist_res = self.client.get("/api/admin/inventory/history", headers=owner_hdr).get_json()
+        self.assertTrue(hist_res["ok"])
+        self.assertGreaterEqual(len(hist_res["history"]), 1)
+        self.assertIn("26 pcs", hist_res["history"][0]["details"])
+
+        # 3. Verify /api/admin/stats?include_all=1&days=30 returns payment_method_breakdown, order_status_distribution, staff, and inventory_history
+        st_res = self.client.get("/api/admin/stats?include_all=1&days=30", headers=owner_hdr).get_json()
+        self.assertTrue(st_res["ok"])
+        self.assertIn("payment_method_breakdown", st_res["stats"])
+        self.assertIn("order_status_distribution", st_res["stats"])
+        self.assertIn("staff", st_res)
+        self.assertIn("inventory_history", st_res)
+
+        # 4. Staff Management & Server-Side RBAC Enforcement
+        # Primary owner cannot be demoted or deactivated
+        bad_demote = self.client.post(
+            "/api/admin/staff",
+            headers=owner_hdr,
+            json={"name": "Owner", "email": "matranaari@gmail.com", "role": "order_staff", "is_active": False},
+        )
+        self.assertEqual(bad_demote.status_code, 400)
+
+        # Add an Order Staff member (orders.staff@matranaari.com)
+        add_ord_staff = self.client.post(
+            "/api/admin/staff",
+            headers=owner_hdr,
+            json={
+                "name": "Riya Order Staff",
+                "email": "orders.staff@matranaari.com",
+                "role": "order_staff",
+                "is_active": True,
+            },
+        )
+        self.assertEqual(add_ord_staff.status_code, 200)
+
+        # Order Staff logs in via Passwordless Admin Email OTP + TOTP MFA
+        otp_req = self.client.post("/api/admin/auth/request-otp", json={"email": "orders.staff@matranaari.com"})
+        self.assertEqual(otp_req.status_code, 200)
+        staff_otp = self.captured_emails[-1]["code"]
+        valid_totp = server.compute_totp_code(server.get_or_create_admin_totp_secret())
+        staff_mfa = self.client.post(
+            "/api/admin/auth/verify-mfa",
+            json={
+                "email": "orders.staff@matranaari.com",
+                "email_otp": staff_otp,
+                "mfa_type": "totp",
+                "mfa_code": valid_totp,
+            },
+        )
+        self.assertEqual(staff_mfa.status_code, 200)
+        staff_mfa_data = staff_mfa.get_json()
+        self.assertEqual(staff_mfa_data["admin_role"], "order_staff")
+        ord_staff_hdr = {"X-Admin-Token": staff_mfa_data["token"]}
+
+        # Order Staff is FORBIDDEN (403) from creating products, coupons, modifying settings, or modifying staff
+        self.assertEqual(
+            self.client.post(
+                "/api/admin/products",
+                headers=ord_staff_hdr,
+                json={"name": "Unauthorized Kurti", "price": 1299, "mrp": 1999},
+            ).status_code,
+            403,
+        )
+        self.assertEqual(
+            self.client.post(
+                "/api/admin/coupons",
+                headers=ord_staff_hdr,
+                json={"code": "HACK50", "discount_type": "percentage", "discount_value": 50},
+            ).status_code,
+            403,
+        )
+        self.assertEqual(
+            self.client.post("/api/admin/settings", headers=ord_staff_hdr, json={"shipping_fee": 0}).status_code,
+            403,
+        )
+        self.assertEqual(
+            self.client.post(
+                "/api/admin/staff",
+                headers=ord_staff_hdr,
+                json={"name": "Escalated", "email": "orders.staff@matranaari.com", "role": "owner"},
+            ).status_code,
+            403,
+        )
+
+        # Order Staff CAN update order fulfillment status (200 OK)
+        ord_upd = self.client.post(
+            "/api/admin/orders/status",
+            headers=ord_staff_hdr,
+            json={"order_id": "NAARI-SAMPLE", "order_status": "packed"},
+        )
+        self.assertEqual(ord_upd.status_code, 200)
+
 
 if __name__ == "__main__":
     unittest.main()
