@@ -3438,13 +3438,17 @@ def check_admin_auth():
     if has_request_context() and getattr(g, "_admin_auth_verified", False) is True:
         return True
 
-    passkey = request.headers.get("X-Admin-Passkey", "").strip() or request.args.get("passkey", "").strip()
+    passkey = (
+        request.headers.get("X-Admin-Passkey", "").strip()
+        or request.headers.get("X-Admin-Password", "").strip()
+        or request.args.get("passkey", "").strip()
+    )
     if not passkey:
         body = request.get_json(silent=True) or {}
         if isinstance(body, dict):
-            passkey = str(body.get("passkey", "")).strip()
+            passkey = str(body.get("passkey") or body.get("password") or "").strip()
     if not passkey and request.form:
-        passkey = str(request.form.get("passkey", "")).strip()
+        passkey = str(request.form.get("passkey") or request.form.get("password") or "").strip()
 
     # Fast-path: check environment/config passkey in memory before opening a DB session
     if passkey:
@@ -3457,6 +3461,7 @@ def check_admin_auth():
             return True
 
     # 1. Check session tokens (X-Admin-Token, Authorization: Bearer, and HttpOnly cookie)
+    # Enforce owner-only access on all admin sessions.
     candidate_tokens = []
     hdr_admin_tok = request.headers.get("X-Admin-Token", "").strip()
     if hdr_admin_tok:
@@ -3484,17 +3489,20 @@ def check_admin_auth():
                 s_row = c.fetchone()
                 if s_row:
                     sd = dict(s_row)
+                    sess_role = str(sd.get("admin_role") or "owner").strip().lower() or "owner"
+                    if sess_role != "owner":
+                        continue
                     conn.close()
                     if has_request_context():
                         g._admin_auth_verified = True
-                        g._admin_role = str(sd.get("admin_role") or "owner").strip().lower() or "owner"
+                        g._admin_role = "owner"
                         g._admin_email = str(sd.get("admin_email") or "matranaari@gmail.com").strip().lower()
                     return True
             conn.close()
         except Exception:
             pass
 
-    # 2. Check passkey against site_settings hash if present
+    # 2. Check password/passkey against site_settings PBKDF2 hash if present
     is_valid = verify_admin_passkey_value(passkey)
     if is_valid and has_request_context():
         g._admin_auth_verified = True
@@ -3506,16 +3514,13 @@ def check_admin_auth():
 def get_current_admin_role() -> str:
     if not check_admin_auth():
         return ""
-    if has_request_context():
-        return str(getattr(g, "_admin_role", "owner") or "owner").strip().lower()
     return "owner"
 
 
 def has_admin_role(allowed_roles) -> bool:
-    role = get_current_admin_role()
-    if not role:
+    if not check_admin_auth():
         return False
-    return role in allowed_roles
+    return "owner" in allowed_roles
 
 # ================= Initialize Flask App =================
 app = Flask(__name__, static_folder=BASE_DIR)
@@ -6917,239 +6922,37 @@ def api_order_details():
 
 @app.route("/api/admin/auth/config", methods=["GET"])
 def api_admin_auth_config():
-    allowed_emails = sorted(get_allowed_admin_emails())
-    primary_masked = mask_email(allowed_emails[0]) if allowed_emails else "m***i@gmail.com"
-    notif_cfg = get_notification_config()
     return jsonify({
         "ok": True,
         "is_admin_configured": is_admin_passkey_configured(),
-        "passwordless_mfa_enabled": True,
-        "email_otp_configured": bool(notif_cfg.get("email_configured", True)),
-        "totp_configured": True,
-        "allowed_admin_email_hint": primary_masked,
-        "mfa_methods": ["totp", "security_key"],
-        "session_ttl_hours": ADMIN_SESSION_TTL_HOURS,
+        "auth_mode": "password_only",
+        "password_only": True,
+        "admin_otp_enabled": False,
+        "passwordless_mfa_enabled": False,
+        "email_otp_configured": False,
+        "totp_configured": False,
+        "owner_only": True,
+        "staff_signup_enabled": False,
+        "session_ttl_hours": 24,
     })
 
 
 @app.route("/api/admin/auth/request-otp", methods=["POST"])
 def api_admin_auth_request_otp():
-    """
-    Step 1 of Admin Passwordless MFA:
-    Verifies that the requested email is in the strict ADMIN_ALLOWED_EMAILS allowlist,
-    enforces cooldown & rate limits, and dispatches a single-use 6-digit Admin Email OTP.
-    Never grants admin access on email OTP alone (requires Step 2 MFA verification).
-    """
-    if not is_admin_passkey_configured():
-        return jsonify({
-            "ok": False,
-            "error": "Administrative security credentials are not configured on the server.",
-        }), 401
-
-    data = request.get_json(silent=True) or {}
-    email = str(data.get("email") or "").strip().lower()
-    if "@" not in email or "." not in email:
-        return jsonify({"ok": False, "error": "Please enter your authorized admin email address."}), 400
-
-    allowed_emails = get_allowed_admin_emails()
-    masked_email = mask_email(email)
-    conn = get_db()
-    c = conn.cursor()
-
-    if email not in allowed_emails:
-        log_security_event(c, "admin_otp_unauthorized_email", "admin", masked_email, "blocked", "not_in_allowlist")
-        conn.commit()
-        conn.close()
-        return jsonify({
-            "ok": False,
-            "error": "This email address is not authorized for Matra Naari administrative access.",
-        }), 403
-
-    otp_code, challenge_id, rate_err, status_code = _check_and_issue_otp_challenge(
-        c, "email", email, purpose="admin_mfa_login"
-    )
-    if rate_err:
-        conn.commit()
-        conn.close()
-        return jsonify(rate_err), status_code
-
-    send_res = send_otp_email(email, otp_code, purpose="admin_mfa_login", expires_minutes=OTP_EXPIRY_SECONDS // 60)
-    if not send_res.get("ok"):
-        c.execute("UPDATE auth_otp_challenges SET status = 'delivery_failed' WHERE id = ?", (challenge_id,))
-        log_security_event(c, "admin_otp_delivery_failed", "admin", masked_email, "failed", str(send_res.get("error") or ""))
-        conn.commit()
-        conn.close()
-        return jsonify({
-            "ok": False,
-            "error": "Unable to dispatch admin verification email right now. Use Emergency MFA Recovery if email is unreachable.",
-        }), 502
-
-    log_security_event(c, "admin_otp_requested", "admin", masked_email, "sent", "purpose=admin_mfa_login")
-    conn.commit()
-    conn.close()
     return jsonify({
-        "ok": True,
-        "email_masked": masked_email,
-        "expires_in_seconds": OTP_EXPIRY_SECONDS,
-        "resend_cooldown_seconds": OTP_RESEND_COOLDOWN_SECONDS,
-        "message": f"Admin verification code sent to {masked_email}. Complete Factor 2 MFA to sign in.",
-    })
+        "ok": False,
+        "admin_otp_disabled": True,
+        "error": "Admin OTP authentication is disabled. The Admin Panel uses Store Owner password-only login.",
+    }), 410
 
 
 @app.route("/api/admin/auth/verify-mfa", methods=["POST"])
 def api_admin_auth_verify_mfa():
-    """
-    Step 2 of Admin Passwordless MFA:
-    Requires BOTH:
-      1. Verified Admin Email Identity (6-digit Email OTP sent to an allowlisted admin email)
-      2. Strong Second-Factor MFA (6-digit RFC 6238 TOTP code OR cryptographic Admin Security Key)
-    Also supports Emergency Recovery Mode when email delivery is unavailable by requiring BOTH
-    the valid 6-digit TOTP Authenticator code AND the full cryptographic Admin Security Key.
-    """
-    if not is_admin_passkey_configured():
-        return jsonify({"ok": False, "error": "Admin security is not configured on the server."}), 401
-
-    data = request.get_json(silent=True) or {}
-    email = str(data.get("email") or "").strip().lower()
-    email_otp = re.sub(r"\D", "", str(data.get("email_otp") or data.get("otp") or ""))
-    mfa_type = str(data.get("mfa_type") or "auto").strip().lower()
-    mfa_code = str(data.get("mfa_code") or data.get("totp_code") or data.get("security_key") or "").strip()
-    recovery_totp = re.sub(r"\D", "", str(data.get("recovery_totp") or ""))
-    recovery_key = str(data.get("recovery_security_key") or "").strip()
-
-    allowed_emails = get_allowed_admin_emails()
-    masked_email = mask_email(email) if email else "admin"
-
-    conn = get_db()
-    c = conn.cursor()
-
-    if email not in allowed_emails:
-        log_security_event(c, "admin_mfa_unauthorized_email", "admin", masked_email, "blocked", "not_in_allowlist")
-        conn.commit()
-        conn.close()
-        return jsonify({"ok": False, "error": "Unauthorized admin email identity."}), 403
-
-    now_dt = datetime.now()
-    now_iso = now_dt.isoformat()
-    verified_mfa_label = ""
-
-    # Path A: Emergency Dual-Key Recovery (requires BOTH valid TOTP + valid Admin Security Key, never email-only)
-    if mfa_type == "emergency_recovery":
-        if not (verify_admin_totp_code(recovery_totp) and verify_admin_passkey_value(recovery_key)):
-            log_security_event(c, "admin_emergency_recovery_failed", "admin", masked_email, "failed", "invalid_dual_factors")
-            conn.commit()
-            conn.close()
-            return jsonify({
-                "ok": False,
-                "error": "Emergency recovery requires both a valid 6-digit Authenticator TOTP code AND the Admin Security Key.",
-            }), 401
-        verified_mfa_label = "emergency_totp+security_key"
-    else:
-        # Path B: Standard Passwordless Admin Login (Factor 1: Email OTP + Factor 2: TOTP or Security Key)
-        if len(email_otp) != 6:
-            conn.close()
-            return jsonify({"ok": False, "error": "Please enter the 6-digit Admin Email OTP."}), 400
-        if not mfa_code:
-            conn.close()
-            return jsonify({
-                "ok": False,
-                "error": "Second-factor MFA (TOTP Authenticator code or Admin Security Key) is required.",
-            }), 401
-
-        c.execute(
-            """
-            SELECT * FROM auth_otp_challenges
-            WHERE channel = 'email' AND destination = ? AND purpose = 'admin_mfa_login' AND status = 'pending'
-            ORDER BY created_at DESC LIMIT 1
-            """,
-            (email,),
-        )
-        row = c.fetchone()
-        if not row:
-            log_security_event(c, "admin_mfa_missing_otp", "admin", masked_email, "failed", "")
-            conn.commit()
-            conn.close()
-            return jsonify({"ok": False, "error": "Invalid or expired Admin Email OTP. Please request a new code."}), 401
-
-        ch_row = dict(row)
-        if str(ch_row.get("expires_at") or "") <= now_iso:
-            c.execute("UPDATE auth_otp_challenges SET status = 'expired' WHERE id = ?", (ch_row["id"],))
-            conn.commit()
-            conn.close()
-            return jsonify({"ok": False, "error": "Admin Email OTP has expired. Please request a new code."}), 401
-
-        attempts = int(ch_row.get("attempts") or 0)
-        max_attempts = int(ch_row.get("max_attempts") or OTP_MAX_ATTEMPTS)
-        if attempts >= max_attempts:
-            c.execute("UPDATE auth_otp_challenges SET status = 'locked' WHERE id = ?", (ch_row["id"],))
-            conn.commit()
-            conn.close()
-            return jsonify({"ok": False, "error": "Too many failed attempts. Please request a new Admin Email OTP."}), 429
-
-        if not verify_otp_code_digest(email_otp, ch_row["salt"], email, "admin_mfa_login", ch_row["otp_hash"]):
-            new_attempts = attempts + 1
-            c.execute(
-                "UPDATE auth_otp_challenges SET attempts = ?, status = ? WHERE id = ?",
-                (new_attempts, "locked" if new_attempts >= max_attempts else "pending", ch_row["id"]),
-            )
-            log_security_event(c, "admin_otp_mismatch", "admin", masked_email, "failed", f"attempt={new_attempts}")
-            conn.commit()
-            conn.close()
-            return jsonify({"ok": False, "error": "Incorrect Admin Email OTP code."}), 401
-
-        # Verify Factor 2 (TOTP Authenticator OR Admin Security Key)
-        totp_ok = verify_admin_totp_code(mfa_code) if mfa_type in ("auto", "totp") else False
-        seckey_ok = verify_admin_passkey_value(mfa_code) if mfa_type in ("auto", "security_key") else False
-
-        if not (totp_ok or seckey_ok):
-            new_attempts = attempts + 1
-            c.execute(
-                "UPDATE auth_otp_challenges SET attempts = ?, status = ? WHERE id = ?",
-                (new_attempts, "locked" if new_attempts >= max_attempts else "pending", ch_row["id"]),
-            )
-            log_security_event(c, "admin_mfa_second_factor_failed", "admin", masked_email, "failed", f"mfa_type={mfa_type}")
-            conn.commit()
-            conn.close()
-            return jsonify({"ok": False, "error": "Invalid second-factor MFA credential."}), 401
-
-        # Mark Email OTP single-use verified
-        c.execute(
-            "UPDATE auth_otp_challenges SET status = 'verified', used_at = ?, attempts = ? WHERE id = ?",
-            (now_iso, attempts + 1, ch_row["id"]),
-        )
-        verified_mfa_label = "email_otp+totp" if totp_ok else "email_otp+security_key"
-
-    resolved_role = resolve_admin_role_for_email(c, email) or "owner"
-    token = secrets.token_hex(32)
-    exp_dt = now_dt + timedelta(hours=ADMIN_SESSION_TTL_HOURS)
-    ip_addr = get_client_ip()
-    ua_str = str(request.headers.get("User-Agent") or "Admin Client")[:180]
-
-    c.execute("DELETE FROM admin_sessions WHERE expires_at <= ?", (now_iso,))
-    c.execute(
-        """
-        INSERT INTO admin_sessions (
-            token, created_at, expires_at, admin_email, admin_role, mfa_method, ip_address, user_agent, last_active_at, revoked
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0)
-        """,
-        (token, now_iso, exp_dt.isoformat(), email, resolved_role, verified_mfa_label, ip_addr, ua_str, now_iso),
-    )
-    log_security_event(c, "admin_mfa_verified", "admin", masked_email, "success", f"role={resolved_role},mfa={verified_mfa_label}")
-    conn.commit()
-    conn.close()
-
-    resp = jsonify({
-        "ok": True,
-        "authenticated": True,
-        "token": token,
-        "admin_email": email,
-        "admin_role": resolved_role,
-        "role_permissions": STAFF_ROLE_PERMISSIONS.get(resolved_role, STAFF_ROLE_PERMISSIONS["owner"]),
-        "mfa_method": verified_mfa_label,
-        "expires_at": exp_dt.isoformat(),
-        "message": "Admin MFA verified successfully.",
-    })
-    return set_admin_auth_cookie(resp, token)
+    return jsonify({
+        "ok": False,
+        "admin_otp_disabled": True,
+        "error": "Admin OTP/MFA authentication is disabled. Please sign in with the Store Owner admin password.",
+    }), 410
 
 
 @app.route("/api/admin/sessions", methods=["GET"])
@@ -7181,8 +6984,8 @@ def api_admin_sessions_list():
         sessions.append({
             "session_id": raw_t[:10],
             "admin_email": d.get("admin_email") or "matranaari@gmail.com",
-            "admin_role": d.get("admin_role") or "owner",
-            "mfa_method": d.get("mfa_method") or "security_key",
+            "admin_role": "owner",
+            "mfa_method": d.get("mfa_method") or "password_only",
             "ip_address": d.get("ip_address") or "-",
             "user_agent": d.get("user_agent") or "Browser Session",
             "created_at": d.get("created_at") or "",
@@ -7201,7 +7004,7 @@ def api_admin_sessions_list():
     conn.close()
     return jsonify({
         "ok": True,
-        "current_role": get_current_admin_role(),
+        "current_role": "owner",
         "sessions": sessions,
         "audit_logs": audit_logs,
     })
@@ -7211,8 +7014,6 @@ def api_admin_sessions_list():
 def api_admin_sessions_revoke():
     if not check_admin_auth():
         return jsonify({"ok": False, "error": "Unauthorized"}), 401
-    if not has_admin_role(("owner",)):
-        return jsonify({"ok": False, "error": "Only the Store Owner can revoke administrative sessions."}), 403
 
     data = request.get_json(silent=True) or {}
     session_id = str(data.get("session_id") or "").strip()
@@ -7247,191 +7048,119 @@ def api_admin_sessions_revoke():
 
 @app.route("/api/admin/mfa/totp-setup", methods=["GET", "POST"])
 def api_admin_mfa_totp_setup():
-    """
-    Allows an already-authenticated Store Owner to view or rotate their
-    RFC 6238 TOTP Authenticator enrollment URI. Never accessible without admin auth.
-    """
-    if not check_admin_auth():
-        return jsonify({"ok": False, "error": "Unauthorized"}), 401
-    if not has_admin_role(("owner",)):
-        return jsonify({"ok": False, "error": "Only the Store Owner can access or rotate MFA setup secrets."}), 403
-
-    conn = get_db()
-    c = conn.cursor()
-    if request.method == "POST":
-        data = request.get_json(silent=True) or {}
-        if data.get("rotate"):
-            new_secret = base64.b32encode(secrets.token_bytes(20)).decode("ascii").rstrip("=")
-            c.execute(
-                "INSERT INTO site_settings (key, value) VALUES ('admin_totp_secret', ?) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value",
-                (new_secret,),
-            )
-            log_security_event(c, "admin_totp_secret_rotated", "admin", "totp_secret", "success", "")
-            conn.commit()
-            invalidate_site_settings_cache()
-
-    secret = get_or_create_admin_totp_secret(c)
-    allowed_emails = sorted(get_primary_owner_emails())
-    primary_email = allowed_emails[0] if allowed_emails else "matranaari@gmail.com"
-    issuer = "Matra Naari Admin"
-    label = urllib.parse.quote(f"{issuer}:{primary_email}")
-    otpauth_uri = f"otpauth://totp/{label}?secret={secret}&issuer={urllib.parse.quote(issuer)}&algorithm=SHA1&digits=6&period=30"
-    conn.close()
     return jsonify({
-        "ok": True,
-        "admin_email": primary_email,
-        "totp_secret": secret,
-        "otpauth_uri": otpauth_uri,
-    })
+        "ok": False,
+        "admin_otp_disabled": True,
+        "error": "Admin TOTP MFA is disabled. The Admin Panel uses Store Owner password-only authentication.",
+    }), 410
 
 
-def _fetch_admin_staff_list(c):
-    c.execute("SELECT id, name, email, role, is_active, created_at, updated_at FROM admin_staff ORDER BY created_at ASC")
-    staff_rows = []
-    for r in c.fetchall():
-        d = dict(r)
-        role_key = str(d.get("role") or "order_staff").strip().lower()
-        role_info = STAFF_ROLE_PERMISSIONS.get(role_key, STAFF_ROLE_PERMISSIONS["order_staff"])
-        staff_rows.append({
-            "id": d.get("id") or "",
-            "name": d.get("name") or "",
-            "email": d.get("email") or "",
-            "role": role_key,
-            "role_label": role_info["label"],
-            "permissions_summary": role_info["description"],
-            "allowed_tabs": role_info["tabs"],
-            "is_active": bool(int(d.get("is_active") if d.get("is_active") is not None else 1)),
-            "is_primary_owner": str(d.get("email") or "").strip().lower() in get_primary_owner_emails(),
-            "created_at": d.get("created_at") or "",
-            "updated_at": d.get("updated_at") or "",
-        })
-    return staff_rows
+def _fetch_admin_staff_list(c=None):
+    return [{
+        "id": "staff_owner",
+        "name": "Matra Naari Store Owner",
+        "email": "matranaari@gmail.com",
+        "role": "owner",
+        "role_label": "Store Owner",
+        "permissions_summary": "Full administrative control (Owner-only password access).",
+        "allowed_tabs": ["overview", "orders", "products", "inventory", "customers", "banners", "coupons", "analytics", "returns", "settings"],
+        "is_active": True,
+        "is_primary_owner": True,
+    }]
 
 
 @app.route("/api/admin/staff", methods=["GET", "POST"])
 def api_admin_staff():
-    if not check_admin_auth():
-        return jsonify({"ok": False, "error": "Unauthorized"}), 401
-
-    conn = get_db()
-    c = conn.cursor()
-
-    if request.method == "POST":
-        if not has_admin_role(("owner",)):
-            conn.close()
-            return jsonify({"ok": False, "error": "Only the Store Owner can create or modify staff roles and privileges."}), 403
-
-        data = request.get_json(silent=True) or {}
-        name = str(data.get("name") or "").strip()
-        email = str(data.get("email") or "").strip().lower()
-        role = str(data.get("role") or "order_staff").strip().lower()
-        is_active = 0 if data.get("is_active") is False else 1
-
-        if len(name) < 2:
-            conn.close()
-            return jsonify({"ok": False, "error": "Please enter the staff member's full name."}), 400
-        if "@" not in email or "." not in email:
-            conn.close()
-            return jsonify({"ok": False, "error": "Please enter a valid staff email address."}), 400
-        if role not in VALID_STAFF_ROLES:
-            conn.close()
-            return jsonify({"ok": False, "error": f"Role must be one of: {', '.join(VALID_STAFF_ROLES)}."}), 400
-
-        # Protect primary owner account from being demoted or deactivated
-        if email in get_primary_owner_emails() and (role != "owner" or is_active == 0):
-            conn.close()
-            return jsonify({"ok": False, "error": "The primary Store Owner account cannot be demoted or deactivated."}), 400
-
-        now_iso = datetime.now().isoformat()
-        c.execute("SELECT id, created_at FROM admin_staff WHERE LOWER(email) = ?", (email,))
-        existing = c.fetchone()
-        staff_id = dict(existing)["id"] if existing else (str(data.get("id") or "").strip() or f"staff_{secrets.token_hex(4)}")
-        created_at = dict(existing)["created_at"] if existing else now_iso
-
-        c.execute(
-            """
-            INSERT INTO admin_staff (id, name, email, role, is_active, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-            ON CONFLICT (email) DO UPDATE SET
-                name = EXCLUDED.name,
-                role = EXCLUDED.role,
-                is_active = EXCLUDED.is_active,
-                updated_at = EXCLUDED.updated_at
-            """,
-            (staff_id, name, email, role, is_active, created_at, now_iso),
-        )
-        if is_active == 0:
-            c.execute("UPDATE admin_sessions SET revoked = 1 WHERE LOWER(admin_email) = ?", (email,))
-        log_security_event(c, "staff_member_saved", "admin", mask_email(email), "success", f"role={role},active={is_active}")
-        conn.commit()
-
-    staff_list = _fetch_admin_staff_list(c)
-    conn.close()
-    curr_role = get_current_admin_role()
     return jsonify({
-        "ok": True,
-        "current_role": curr_role,
-        "role_permissions": STAFF_ROLE_PERMISSIONS,
-        "staff": staff_list,
-    })
+        "ok": False,
+        "owner_only": True,
+        "error": "Staff signup and multi-user admin accounts are disabled. Only the Store Owner can access the Admin Panel.",
+    }), 410
 
 
 @app.route("/api/admin/staff/<staff_id>", methods=["DELETE"])
 def api_admin_staff_delete(staff_id):
-    if not check_admin_auth():
-        return jsonify({"ok": False, "error": "Unauthorized"}), 401
-    if not has_admin_role(("owner",)):
-        return jsonify({"ok": False, "error": "Only the Store Owner can remove staff accounts."}), 403
+    return jsonify({
+        "ok": False,
+        "owner_only": True,
+        "error": "Staff account management is disabled. Only the Store Owner can access the Admin Panel.",
+    }), 410
 
-    clean_id = str(staff_id or "").strip()
-    conn = get_db()
-    c = conn.cursor()
-    c.execute("SELECT id, email, role FROM admin_staff WHERE id = ?", (clean_id,))
-    row = c.fetchone()
-    if not row:
-        conn.close()
-        return jsonify({"ok": False, "error": "Staff member not found."}), 404
-    d = dict(row)
-    em = str(d.get("email") or "").strip().lower()
-    if em in get_primary_owner_emails() or clean_id == "staff_owner":
-        conn.close()
-        return jsonify({"ok": False, "error": "Cannot delete the primary Store Owner account."}), 400
 
-    c.execute("DELETE FROM admin_staff WHERE id = ?", (clean_id,))
-    c.execute("UPDATE admin_sessions SET revoked = 1 WHERE LOWER(admin_email) = ?", (em,))
-    log_security_event(c, "staff_member_deleted", "admin", mask_email(em), "success", f"id={clean_id}")
-    conn.commit()
-    staff_list = _fetch_admin_staff_list(c)
-    conn.close()
-    return jsonify({"ok": True, "staff": staff_list, "message": "Staff account removed and active sessions revoked."})
+ADMIN_LOGIN_MAX_FAILED_PER_IP = 8
+ADMIN_LOGIN_RATE_WINDOW_SECONDS = 900
 
 
 @app.route("/api/admin/verify", methods=["POST"])
+@app.route("/api/admin/login", methods=["POST"])
 def api_admin_verify():
     if not is_admin_passkey_configured():
         return jsonify({
             "ok": False,
             "is_admin_configured": False,
-            "error": "Admin secret passkey is not configured on the server (set ADMIN_SECRET_KEY in environment)."
+            "error": "Admin secret password is not configured on the server (set ADMIN_SECRET_KEY in environment)."
         }), 401
+
+    ip_addr = get_client_ip()
+    now_dt = datetime.now()
+    window_cutoff = (now_dt - timedelta(seconds=ADMIN_LOGIN_RATE_WINDOW_SECONDS)).isoformat()
+
+    try:
+        conn = get_db()
+        c = conn.cursor()
+        c.execute(
+            """
+            SELECT COUNT(*) AS cnt FROM security_audit_logs
+            WHERE event_type = 'admin_password_failed' AND ip_address = ? AND created_at > ?
+            """,
+            (ip_addr, window_cutoff),
+        )
+        failed_cnt = int(dict(c.fetchone() or {}).get("cnt") or 0)
+        if failed_cnt >= ADMIN_LOGIN_MAX_FAILED_PER_IP:
+            log_security_event(c, "admin_password_rate_limited", "admin", "owner", "blocked", f"failed_cnt={failed_cnt}", ip_addr)
+            conn.commit()
+            conn.close()
+            return jsonify({
+                "ok": False,
+                "rate_limited": True,
+                "retry_after_seconds": ADMIN_LOGIN_RATE_WINDOW_SECONDS,
+                "error": "Too many failed admin password attempts. Please wait 15 minutes before trying again.",
+            }), 429
+        conn.close()
+    except Exception:
+        pass
+
     if not check_admin_auth():
+        try:
+            conn = get_db()
+            c = conn.cursor()
+            log_security_event(c, "admin_password_failed", "admin", "owner", "failed", "invalid_password", ip_addr)
+            conn.commit()
+            conn.close()
+        except Exception:
+            pass
         return jsonify({
             "ok": False,
             "is_admin_configured": True,
-            "error": "Invalid admin passkey"
+            "error": "Invalid admin password. Only the authorized Store Owner can access this panel."
         }), 401
 
     token = secrets.token_hex(32)
-    now_dt = datetime.now()
     exp_dt = now_dt + timedelta(hours=24)
+    ua_str = str(request.headers.get("User-Agent") or "Admin Browser")[:180]
     try:
         conn = get_db()
         c = conn.cursor()
         c.execute("DELETE FROM admin_sessions WHERE expires_at <= ?", (now_dt.isoformat(),))
         c.execute(
-            "INSERT INTO admin_sessions (token, created_at, expires_at) VALUES (?, ?, ?)",
-            (token, now_dt.isoformat(), exp_dt.isoformat())
+            """
+            INSERT INTO admin_sessions (
+                token, created_at, expires_at, admin_email, admin_role, mfa_method, ip_address, user_agent, last_active_at, revoked
+            ) VALUES (?, ?, ?, 'matranaari@gmail.com', 'owner', 'password_only', ?, ?, ?, 0)
+            """,
+            (token, now_dt.isoformat(), exp_dt.isoformat(), ip_addr, ua_str, now_dt.isoformat())
         )
+        log_security_event(c, "admin_password_login_success", "admin", "owner", "success", "auth=password_only", ip_addr)
         conn.commit()
         conn.close()
     except Exception:
@@ -7440,6 +7169,9 @@ def api_admin_verify():
     resp = jsonify({
         "ok": True,
         "authenticated": True,
+        "auth_mode": "password_only",
+        "admin_role": "owner",
+        "owner_only": True,
         "token": token,
         "expires_at": exp_dt.isoformat(),
         "message": "Admin authenticated successfully."

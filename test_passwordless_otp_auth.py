@@ -322,50 +322,39 @@ class PasswordlessOtpAndAdminMfaTests(unittest.TestCase):
         self.assertIn("auth-otp-request-form", app_js)
         self.assertIn("auth-otp-verify-form", app_js)
 
-    def test_06_admin_passwordless_mfa_totp_and_session_revocation(self):
-        """Admin login requires allowlisted email OTP + second-factor MFA (TOTP or Security Key) and supports session revocation."""
-        # 1. Unauthorized email is rejected with 403
-        unauth_res = self.client.post("/api/admin/auth/request-otp", json={"email": "intruder@example.com"})
-        self.assertEqual(unauth_res.status_code, 403)
+    def test_06_admin_password_only_login_otp_removed_and_rate_limiting(self):
+        """Admin login uses PASSWORD-ONLY owner authentication; Admin OTP/MFA & staff signup are disabled."""
+        # 1. Verify /api/admin/auth/config reports password_only and admin_otp_enabled=False
+        cfg_res = self.client.get("/api/admin/auth/config")
+        self.assertEqual(cfg_res.status_code, 200)
+        cfg_data = cfg_res.get_json()
+        self.assertEqual(cfg_data["auth_mode"], "password_only")
+        self.assertFalse(cfg_data["admin_otp_enabled"])
+        self.assertTrue(cfg_data["owner_only"])
 
-        # 2. Authorized admin email (matranaari@gmail.com) receives Admin Email OTP
-        otp_req = self.client.post("/api/admin/auth/request-otp", json={"email": "matranaari@gmail.com"})
-        self.assertEqual(otp_req.status_code, 200)
-        admin_email_otp = self.captured_emails[-1]["code"]
+        # 2. Admin OTP / MFA / TOTP / Staff endpoints are disabled (410 Gone)
+        self.assertEqual(self.client.post("/api/admin/auth/request-otp", json={"email": "matranaari@gmail.com"}).status_code, 410)
+        self.assertEqual(self.client.post("/api/admin/auth/verify-mfa", json={"email": "matranaari@gmail.com"}).status_code, 410)
+        self.assertEqual(self.client.get("/api/admin/mfa/totp-setup").status_code, 410)
+        self.assertEqual(self.client.get("/api/admin/staff").status_code, 410)
+        self.assertEqual(self.client.post("/api/admin/staff", json={"name": "Staff"}).status_code, 410)
 
-        # 3. Email OTP alone (missing or wrong Factor 2 MFA) is rejected with 401
-        no_mfa = self.client.post(
-            "/api/admin/auth/verify-mfa",
-            json={"email": "matranaari@gmail.com", "email_otp": admin_email_otp, "mfa_code": ""},
-        )
-        self.assertEqual(no_mfa.status_code, 401)
+        # 3. Wrong admin password returns 401
+        wrong_pw = self.client.post("/api/admin/verify", json={"password": "wrong-password-123"})
+        self.assertEqual(wrong_pw.status_code, 401)
 
-        wrong_mfa = self.client.post(
-            "/api/admin/auth/verify-mfa",
-            json={"email": "matranaari@gmail.com", "email_otp": admin_email_otp, "mfa_code": "000000"},
-        )
-        self.assertEqual(wrong_mfa.status_code, 401)
-
-        # 4. Valid Email OTP + valid RFC 6238 TOTP code succeeds and creates an admin session
-        totp_secret = server.get_or_create_admin_totp_secret()
-        valid_totp = server.compute_totp_code(totp_secret)
-        mfa_ok = self.client.post(
-            "/api/admin/auth/verify-mfa",
-            json={
-                "email": "matranaari@gmail.com",
-                "email_otp": admin_email_otp,
-                "mfa_type": "totp",
-                "mfa_code": valid_totp,
-            },
-        )
-        self.assertEqual(mfa_ok.status_code, 200)
-        mfa_data = mfa_ok.get_json()
-        self.assertTrue(mfa_data["ok"])
-        self.assertEqual(mfa_data["mfa_method"], "email_otp+totp")
-        admin_tok = mfa_data["token"]
+        # 4. Valid Store Owner password logs in via /api/admin/verify and creates an owner session
+        ok_login = self.client.post("/api/admin/verify", json={"password": "naari@admin2026"})
+        self.assertEqual(ok_login.status_code, 200)
+        login_data = ok_login.get_json()
+        self.assertTrue(login_data["ok"])
+        self.assertTrue(login_data["authenticated"])
+        self.assertEqual(login_data["auth_mode"], "password_only")
+        self.assertEqual(login_data["admin_role"], "owner")
+        admin_tok = login_data["token"]
         admin_hdr = {"X-Admin-Token": admin_tok}
 
-        # 5. Verify admin session works on /api/admin/sessions and can be revoked
+        # 5. Verify owner session works on /api/admin/sessions and can be revoked
         sess_res = self.client.get("/api/admin/sessions", headers=admin_hdr)
         self.assertEqual(sess_res.status_code, 200)
         sess_data = sess_res.get_json()
@@ -380,17 +369,32 @@ class PasswordlessOtpAndAdminMfaTests(unittest.TestCase):
         self.assertEqual(rev_res.status_code, 200)
 
         # Revoked session token is immediately rejected with 401
+        self.client.CookieJar.clear() if hasattr(self.client, "CookieJar") else None
         after_rev = self.client.get("/api/admin/sessions", headers=admin_hdr)
         self.assertEqual(after_rev.status_code, 401)
 
-    def test_07_ultimate_admin_bento_analytics_inventory_history_and_staff_rbac(self):
-        """Verify 11-section Admin UI, Bento analytics, inventory history log, and server-side Staff RBAC."""
+        # 6. Brute-force password rate limiting (8 failed attempts per 15 min -> 429)
+        for _ in range(7):
+            self.client.post("/api/admin/verify", json={"password": "bad-attempt-password"})
+        rate_blocked = self.client.post("/api/admin/verify", json={"password": "bad-attempt-password"})
+        self.assertEqual(rate_blocked.status_code, 429)
+        self.assertTrue(rate_blocked.get_json().get("rate_limited"))
+
+    def test_07_ultimate_admin_bento_analytics_inventory_history_and_owner_only_ui(self):
+        """Verify 10-section Owner-Only Admin UI, zero Admin OTP inputs, Bento analytics, and inventory history."""
         owner_hdr = {"X-Admin-Passkey": "naari@admin2026"}
 
-        # 1. Verify admin.html has all 11 navigation tabs, Peach accent (#EF8557), reduced-motion rule, Analytics & Staff panels
+        # 1. Verify admin.html has zero Admin OTP forms and has visible Store Owner password login
         adm_html = self.client.get("/admin.html").get_data(as_text=True)
         self.assertIn("#EF8557", adm_html)
         self.assertIn("prefers-reduced-motion: reduce", adm_html)
+        self.assertNotIn("admin-mfa-step1-form", adm_html)
+        self.assertNotIn("admin-mfa-step2-form", adm_html)
+        self.assertNotIn("admin-email-otp-input", adm_html)
+        self.assertNotIn('data-tab="staff"', adm_html)
+        self.assertIn('id="admin-login-form"', adm_html)
+        self.assertIn('id="admin-passkey-input"', adm_html)
+
         for tab_name in [
             "overview",
             "orders",
@@ -401,21 +405,17 @@ class PasswordlessOtpAndAdminMfaTests(unittest.TestCase):
             "coupons",
             "analytics",
             "returns",
-            "staff",
             "settings",
         ]:
             self.assertIn(f'data-tab="{tab_name}"', adm_html, f"Missing sidebar tab {tab_name}")
         for elem_id in [
             "tab-analytics",
-            "tab-staff",
             "analytics-revenue-chart",
             "analytics-orders-chart",
             "analytics-payment-bars",
             "analytics-status-bars",
             "inventory-history-tbody",
             "coupon-search-input",
-            "admin-staff-form",
-            "admin-staff-tbody",
         ]:
             self.assertIn(f'id="{elem_id}"', adm_html, f"Missing #{elem_id} in admin.html")
 
@@ -431,92 +431,17 @@ class PasswordlessOtpAndAdminMfaTests(unittest.TestCase):
         self.assertGreaterEqual(len(hist_res["history"]), 1)
         self.assertIn("26 pcs", hist_res["history"][0]["details"])
 
-        # 3. Verify /api/admin/stats?include_all=1&days=30 returns payment_method_breakdown, order_status_distribution, staff, and inventory_history
+        # 3. Verify /api/admin/stats?include_all=1&days=30 returns payment_method_breakdown, order_status_distribution, and inventory_history
         st_res = self.client.get("/api/admin/stats?include_all=1&days=30", headers=owner_hdr).get_json()
         self.assertTrue(st_res["ok"])
         self.assertIn("payment_method_breakdown", st_res["stats"])
         self.assertIn("order_status_distribution", st_res["stats"])
-        self.assertIn("staff", st_res)
         self.assertIn("inventory_history", st_res)
 
-        # 4. Staff Management & Server-Side RBAC Enforcement
-        # Primary owner cannot be demoted or deactivated
-        bad_demote = self.client.post(
-            "/api/admin/staff",
-            headers=owner_hdr,
-            json={"name": "Owner", "email": "matranaari@gmail.com", "role": "order_staff", "is_active": False},
-        )
-        self.assertEqual(bad_demote.status_code, 400)
-
-        # Add an Order Staff member (orders.staff@matranaari.com)
-        add_ord_staff = self.client.post(
-            "/api/admin/staff",
-            headers=owner_hdr,
-            json={
-                "name": "Riya Order Staff",
-                "email": "orders.staff@matranaari.com",
-                "role": "order_staff",
-                "is_active": True,
-            },
-        )
-        self.assertEqual(add_ord_staff.status_code, 200)
-
-        # Order Staff logs in via Passwordless Admin Email OTP + TOTP MFA
-        otp_req = self.client.post("/api/admin/auth/request-otp", json={"email": "orders.staff@matranaari.com"})
-        self.assertEqual(otp_req.status_code, 200)
-        staff_otp = self.captured_emails[-1]["code"]
-        valid_totp = server.compute_totp_code(server.get_or_create_admin_totp_secret())
-        staff_mfa = self.client.post(
-            "/api/admin/auth/verify-mfa",
-            json={
-                "email": "orders.staff@matranaari.com",
-                "email_otp": staff_otp,
-                "mfa_type": "totp",
-                "mfa_code": valid_totp,
-            },
-        )
-        self.assertEqual(staff_mfa.status_code, 200)
-        staff_mfa_data = staff_mfa.get_json()
-        self.assertEqual(staff_mfa_data["admin_role"], "order_staff")
-        ord_staff_hdr = {"X-Admin-Token": staff_mfa_data["token"]}
-
-        # Order Staff is FORBIDDEN (403) from creating products, coupons, modifying settings, or modifying staff
-        self.assertEqual(
-            self.client.post(
-                "/api/admin/products",
-                headers=ord_staff_hdr,
-                json={"name": "Unauthorized Kurti", "price": 1299, "mrp": 1999},
-            ).status_code,
-            403,
-        )
-        self.assertEqual(
-            self.client.post(
-                "/api/admin/coupons",
-                headers=ord_staff_hdr,
-                json={"code": "HACK50", "discount_type": "percentage", "discount_value": 50},
-            ).status_code,
-            403,
-        )
-        self.assertEqual(
-            self.client.post("/api/admin/settings", headers=ord_staff_hdr, json={"shipping_fee": 0}).status_code,
-            403,
-        )
-        self.assertEqual(
-            self.client.post(
-                "/api/admin/staff",
-                headers=ord_staff_hdr,
-                json={"name": "Escalated", "email": "orders.staff@matranaari.com", "role": "owner"},
-            ).status_code,
-            403,
-        )
-
-        # Order Staff CAN update order fulfillment status (200 OK)
-        ord_upd = self.client.post(
-            "/api/admin/orders/status",
-            headers=ord_staff_hdr,
-            json={"order_id": "NAARI-SAMPLE", "order_status": "packed"},
-        )
-        self.assertEqual(ord_upd.status_code, 200)
+        # 4. Verify unauthorized access to any /api/admin/* endpoint returns 401
+        unauth_client = server.app.test_client()
+        for ep in ["/api/admin/stats", "/api/admin/orders", "/api/admin/products", "/api/admin/customers", "/api/admin/settings"]:
+            self.assertEqual(unauth_client.get(ep).status_code, 401, f"Endpoint {ep} did not enforce 401")
 
 
 if __name__ == "__main__":
