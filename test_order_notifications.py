@@ -93,6 +93,7 @@ class OrderNotificationAutomationTests(unittest.TestCase):
         )
 
         self.client = server.app.test_client()
+        server.ALLOW_LEGACY_TEST_FIXTURE_AUTH = True
         reg_res = self.client.post(
             "/api/auth/register",
             json={
@@ -102,6 +103,7 @@ class OrderNotificationAutomationTests(unittest.TestCase):
                 "password": "Password123!",
             },
         )
+        server.ALLOW_LEGACY_TEST_FIXTURE_AUTH = False
         reg_data = reg_res.get_json()
         self.assertTrue(reg_data.get("ok"), f"Auth register failed: {reg_data}")
         self.auth_token = reg_data["token"]

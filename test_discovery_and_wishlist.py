@@ -21,19 +21,34 @@ class DiscoveryAndWishlistTests(unittest.TestCase):
         self.tmp_dir.cleanup()
 
     def _register_user(self, email, name="Ananya Sharma", phone="9876543210"):
-        res = self.client.post(
-            "/api/auth/register",
-            json={
-                "name": name,
-                "email": email,
-                "phone": phone,
-                "password": "Password123!",
-            },
-        )
-        self.assertEqual(res.status_code, 200)
-        data = res.get_json()
-        self.assertTrue(data["ok"])
-        return data["token"], data["user"]
+        import re
+        import notifications
+        captured_otp = []
+
+        def _capture_email(to_email, subject, html_body, text_body, **kwargs):
+            m = re.search(r"\b(\d{6})\b", text_body)
+            if m:
+                captured_otp.append(m.group(1))
+            return True, "otp_msg_1", ""
+
+        notifications.set_test_transports(email_fn=_capture_email)
+        try:
+            req_res = self.client.post(
+                "/api/auth/otp/request",
+                json={"channel": "email", "destination": email, "name": name},
+            )
+            self.assertEqual(req_res.status_code, 200)
+            self.assertTrue(captured_otp, "Expected 6-digit OTP to be sent")
+            ver_res = self.client.post(
+                "/api/auth/otp/verify",
+                json={"channel": "email", "destination": email, "otp": captured_otp[-1], "name": name},
+            )
+            self.assertEqual(ver_res.status_code, 200)
+            data = ver_res.get_json()
+            self.assertTrue(data["ok"])
+            return data["token"], data["user"]
+        finally:
+            notifications.set_test_transports(None, None)
 
     def _get_admin_headers(self):
         os.environ["ADMIN_PASSKEY"] = "naari@admin2026"

@@ -89,64 +89,132 @@
   <!-- Main Content -->
   <main class="mx-auto max-w-6xl px-4 py-12 sm:px-6">
     
-    <!-- State 1: Logged Out View -->
-    <div id="account-logged-out" class="max-w-md mx-auto bg-card border border-border/80 p-6 sm:p-8 text-center space-y-6">
-      <div id="checkout-redirect-banner" class="hidden bg-primary/10 border border-primary/30 p-3.5 text-xs text-primary font-medium text-left">
-        <strong>Sign In Required for Checkout:</strong> Please sign in or create an account to place your order. Your shopping bag is preserved.
+    <!-- State 1: Logged Out View (Passwordless OTP Sign-In) -->
+    <div id="account-logged-out" class="max-w-md mx-auto bg-card border border-border/80 rounded-xl p-6 sm:p-8 text-center space-y-6 shadow-xs">
+      <div id="checkout-redirect-banner" class="hidden bg-primary/10 border border-primary/30 p-3.5 rounded-lg text-xs text-primary font-medium text-left">
+        <strong>Sign In Required for Checkout:</strong> Enter your email to receive an instant 6-digit verification code. Your shopping bag is preserved.
       </div>
       <div>
-        <span class="mn-eyebrow block mb-2">Client Account</span>
-        <h1 class="font-display text-3xl sm:text-4xl font-medium">Sign In to Matra Naari</h1>
-        <p class="text-xs text-muted-foreground mt-2">Track orders, manage saved delivery addresses, and request exchanges.</p>
+        <span class="mn-eyebrow block mb-2">Passwordless Client Access</span>
+        <h1 class="font-display text-2xl sm:text-3xl font-bold text-foreground">Sign In to Matra Naari</h1>
+        <p class="text-xs text-muted-foreground mt-1.5">Instant, secure verification with a one-time code — no password to remember.</p>
       </div>
 
-      <div class="grid grid-cols-2 border-b border-border">
-        <button type="button" id="tab-login-btn" class="pb-2 text-sm font-semibold border-b-2 border-primary text-primary cursor-pointer">Sign In</button>
-        <button type="button" id="tab-register-btn" class="pb-2 text-sm font-semibold border-b-2 border-transparent text-muted-foreground hover:text-foreground cursor-pointer">Create Account</button>
+      <!-- Channel Selector: Email OTP vs Mobile OTP -->
+      <div class="grid grid-cols-2 gap-1.5 bg-background p-1 border border-border rounded-lg" role="tablist" aria-label="Verification Method">
+        <button type="button" id="page-channel-email-btn" class="py-2 px-3 text-xs font-semibold rounded-md bg-primary text-primary-foreground transition cursor-pointer">
+          Email OTP
+        </button>
+        <button type="button" id="page-channel-phone-btn" class="py-2 px-3 text-xs font-semibold rounded-md text-muted-foreground hover:text-foreground transition cursor-pointer">
+          Mobile OTP
+        </button>
       </div>
 
-      <!-- Sign In Form -->
-      <form id="page-login-form" class="space-y-4 text-left">
-        <div>
-          <label class="block text-xs uppercase tracking-wider text-muted-foreground mb-1">Email Address</label>
-          <input type="email" id="p-login-email" required placeholder="you@example.com" class="w-full border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"/>
+      <!-- Step 1: Request OTP Form -->
+      <form id="page-otp-request-form" class="space-y-4 text-left">
+        <div id="page-email-input-group">
+          <label for="p-otp-email" class="block text-xs font-semibold text-foreground mb-1.5">Email Address</label>
+          <input
+            type="email"
+            id="p-otp-email"
+            autocomplete="email"
+            placeholder="you@example.com"
+            class="w-full border border-border bg-background rounded-lg px-3.5 py-2.5 text-sm outline-none focus:border-primary"
+          />
         </div>
-        <div>
-          <label class="block text-xs uppercase tracking-wider text-muted-foreground mb-1">Password</label>
-          <input type="password" id="p-login-password" required placeholder="••••••••" class="w-full border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"/>
+
+        <div id="page-phone-input-group" class="hidden space-y-2.5">
+          <div>
+            <label for="p-otp-phone" class="block text-xs font-semibold text-foreground mb-1.5">Indian Mobile Number</label>
+            <div class="flex items-center border border-border bg-background rounded-lg overflow-hidden focus-within:border-primary">
+              <span class="px-3 py-2.5 text-xs font-semibold text-muted-foreground bg-muted/40 border-r border-border">+91</span>
+              <input
+                type="tel"
+                id="p-otp-phone"
+                maxlength="10"
+                inputmode="numeric"
+                placeholder="98765 43210"
+                class="w-full bg-transparent px-3.5 py-2.5 text-sm outline-none"
+              />
+            </div>
+          </div>
+          <div id="page-sms-unavailable-notice" class="bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-900 leading-relaxed">
+            <strong>SMS OTP Provider Notice:</strong> Mobile SMS verification is currently unavailable until DLT SMS gateway activation. Please use <strong>Email OTP</strong> for instant sign-in.
+          </div>
         </div>
-        <div id="p-login-error" class="text-xs text-destructive hidden"></div>
-        <button type="submit" class="w-full bg-primary py-3 text-xs uppercase tracking-[0.2em] text-primary-foreground font-semibold hover:opacity-90 transition cursor-pointer">
-          Sign In
+
+        <div>
+          <label for="p-otp-name" class="block text-xs font-medium text-muted-foreground mb-1">Your Name <span class="text-[11px] opacity-75">(Optional — for new clients)</span></label>
+          <input
+            type="text"
+            id="p-otp-name"
+            autocomplete="name"
+            placeholder="e.g. Ananya Sharma"
+            class="w-full border border-border bg-background rounded-lg px-3.5 py-2 text-sm outline-none focus:border-primary"
+          />
+        </div>
+
+        <div id="p-otp-request-error" class="text-xs text-destructive font-medium hidden"></div>
+
+        <button
+          type="submit"
+          id="page-send-otp-btn"
+          class="w-full bg-primary py-3 rounded-lg text-xs uppercase tracking-[0.16em] text-primary-foreground font-semibold hover:opacity-90 transition cursor-pointer"
+        >
+          Send 6-Digit Verification Code
         </button>
       </form>
 
-      <!-- Register Form -->
-      <form id="page-reg-form" class="space-y-4 text-left hidden">
-        <div>
-          <label class="block text-xs uppercase tracking-wider text-muted-foreground mb-1">Full Name</label>
-          <input type="text" id="p-reg-name" required placeholder="Ananya Sharma" class="w-full border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"/>
+      <!-- Step 2: Enter 6-Digit OTP Verification Form -->
+      <form id="page-otp-verify-form" class="space-y-5 text-left hidden">
+        <div class="bg-background border border-border rounded-lg p-3.5 flex items-center justify-between gap-2">
+          <div class="min-w-0">
+            <div class="text-[11px] text-muted-foreground">Verification code sent to</div>
+            <div id="page-otp-dest-display" class="text-xs font-semibold text-foreground truncate">—</div>
+          </div>
+          <button type="button" id="page-otp-change-dest-btn" class="text-xs text-primary font-semibold hover:underline shrink-0 cursor-pointer">
+            Change
+          </button>
         </div>
+
         <div>
-          <label class="block text-xs uppercase tracking-wider text-muted-foreground mb-1">Email Address</label>
-          <input type="email" id="p-reg-email" required placeholder="ananya@example.com" class="w-full border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"/>
+          <label for="p-otp-code-input" class="block text-xs font-semibold text-foreground mb-2 text-center">Enter 6-Digit Verification Code</label>
+          <div class="grid grid-cols-6 gap-2" id="page-otp-boxes">
+            <input type="text" inputmode="numeric" maxlength="1" data-otp-idx="0" aria-label="Digit 1" class="page-otp-digit w-full h-12 text-center font-mono text-lg font-bold border border-border bg-background rounded-lg outline-none focus:border-primary"/>
+            <input type="text" inputmode="numeric" maxlength="1" data-otp-idx="1" aria-label="Digit 2" class="page-otp-digit w-full h-12 text-center font-mono text-lg font-bold border border-border bg-background rounded-lg outline-none focus:border-primary"/>
+            <input type="text" inputmode="numeric" maxlength="1" data-otp-idx="2" aria-label="Digit 3" class="page-otp-digit w-full h-12 text-center font-mono text-lg font-bold border border-border bg-background rounded-lg outline-none focus:border-primary"/>
+            <input type="text" inputmode="numeric" maxlength="1" data-otp-idx="3" aria-label="Digit 4" class="page-otp-digit w-full h-12 text-center font-mono text-lg font-bold border border-border bg-background rounded-lg outline-none focus:border-primary"/>
+            <input type="text" inputmode="numeric" maxlength="1" data-otp-idx="4" aria-label="Digit 5" class="page-otp-digit w-full h-12 text-center font-mono text-lg font-bold border border-border bg-background rounded-lg outline-none focus:border-primary"/>
+            <input type="text" inputmode="numeric" maxlength="1" data-otp-idx="5" aria-label="Digit 6" class="page-otp-digit w-full h-12 text-center font-mono text-lg font-bold border border-border bg-background rounded-lg outline-none focus:border-primary"/>
+          </div>
+          <input type="hidden" id="p-otp-code-input" value=""/>
+          <p class="text-[11px] text-muted-foreground text-center mt-2">Tip: You can paste the full 6-digit code directly.</p>
         </div>
-        <div>
-          <label class="block text-xs uppercase tracking-wider text-muted-foreground mb-1">Mobile Phone (Optional, 10 digits)</label>
-          <input type="tel" id="p-reg-phone" maxlength="10" placeholder="9876543210" class="w-full border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"/>
-        </div>
-        <div>
-          <label class="block text-xs uppercase tracking-wider text-muted-foreground mb-1">Password (min 6 chars)</label>
-          <input type="password" id="p-reg-password" minlength="6" required placeholder="••••••••" class="w-full border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"/>
-        </div>
-        <div id="p-reg-error" class="text-xs text-destructive hidden"></div>
-        <button type="submit" class="w-full bg-primary py-3 text-xs uppercase tracking-[0.2em] text-primary-foreground font-semibold hover:opacity-90 transition cursor-pointer">
-          Create Account
+
+        <div id="p-otp-verify-error" class="text-xs text-destructive font-medium text-center hidden"></div>
+
+        <button
+          type="submit"
+          id="page-verify-otp-btn"
+          class="w-full bg-primary py-3 rounded-lg text-xs uppercase tracking-[0.16em] text-primary-foreground font-semibold hover:opacity-90 transition cursor-pointer"
+        >
+          Verify &amp; Sign In
         </button>
+
+        <div class="text-center pt-1">
+          <button
+            type="button"
+            id="page-resend-otp-btn"
+            disabled
+            class="text-xs font-semibold text-muted-foreground disabled:opacity-60 disabled:cursor-not-allowed hover:text-primary transition cursor-pointer"
+          >
+            Resend code in <span id="page-resend-timer">30</span>s
+          </button>
+        </div>
       </form>
 
       <div class="pt-4 border-t border-border/60 text-[11px] uppercase tracking-[0.14em] text-muted-foreground font-sans">
-        100% Secure &amp; Confidential · Matra Naari Atelier
+        Passwordless OTP Security · Matra Naari Atelier
       </div>
     </div>
 
@@ -827,100 +895,248 @@
         }
       });
 
-      const tabLoginBtn = document.getElementById('tab-login-btn');
-      const tabRegBtn = document.getElementById('tab-register-btn');
-      const loginForm = document.getElementById('page-login-form');
-      const regForm = document.getElementById('page-reg-form');
+      // Passwordless OTP Login & Verification Controller (account.html)
+      let activeOtpChannel = 'email';
+      let activeOtpDestination = '';
+      let activeOtpName = '';
+      let smsOtpEnabledOnServer = false;
+      let pageResendInterval = null;
 
-      tabLoginBtn.addEventListener('click', () => {
-        tabLoginBtn.className = 'pb-2 text-sm font-semibold border-b-2 border-primary text-primary cursor-pointer';
-        tabRegBtn.className = 'pb-2 text-sm font-semibold border-b-2 border-transparent text-muted-foreground hover:text-foreground cursor-pointer';
-        loginForm.classList.remove('hidden');
-        regForm.classList.add('hidden');
+      const chEmailBtn = document.getElementById('page-channel-email-btn');
+      const chPhoneBtn = document.getElementById('page-channel-phone-btn');
+      const emailGroup = document.getElementById('page-email-input-group');
+      const phoneGroup = document.getElementById('page-phone-input-group');
+      const smsNotice = document.getElementById('page-sms-unavailable-notice');
+      const reqForm = document.getElementById('page-otp-request-form');
+      const verForm = document.getElementById('page-otp-verify-form');
+      const sendOtpBtn = document.getElementById('page-send-otp-btn');
+      const reqErrEl = document.getElementById('p-otp-request-error');
+      const verErrEl = document.getElementById('p-otp-verify-error');
+      const destDisplay = document.getElementById('page-otp-dest-display');
+      const changeDestBtn = document.getElementById('page-otp-change-dest-btn');
+      const resendBtn = document.getElementById('page-resend-otp-btn');
+      const digitInputs = Array.from(document.querySelectorAll('.page-otp-digit'));
+      const hiddenCodeInput = document.getElementById('p-otp-code-input');
+
+      fetch(`${API_BASE}/api/auth/otp/config`)
+        .then(r => r.json())
+        .then(cfg => {
+          if (cfg && cfg.ok) {
+            smsOtpEnabledOnServer = Boolean(cfg.sms_otp_enabled);
+            if (smsNotice) {
+              smsNotice.classList.toggle('hidden', smsOtpEnabledOnServer);
+            }
+          }
+        })
+        .catch(() => {});
+
+      function setPageOtpChannel(ch) {
+        activeOtpChannel = ch === 'phone' ? 'phone' : 'email';
+        reqErrEl.classList.add('hidden');
+        if (activeOtpChannel === 'email') {
+          chEmailBtn.className = 'py-2 px-3 text-xs font-semibold rounded-md bg-primary text-primary-foreground transition cursor-pointer';
+          chPhoneBtn.className = 'py-2 px-3 text-xs font-semibold rounded-md text-muted-foreground hover:text-foreground transition cursor-pointer';
+          emailGroup.classList.remove('hidden');
+          phoneGroup.classList.add('hidden');
+          sendOtpBtn.disabled = false;
+          sendOtpBtn.textContent = 'Send 6-Digit Verification Code';
+        } else {
+          chPhoneBtn.className = 'py-2 px-3 text-xs font-semibold rounded-md bg-primary text-primary-foreground transition cursor-pointer';
+          chEmailBtn.className = 'py-2 px-3 text-xs font-semibold rounded-md text-muted-foreground hover:text-foreground transition cursor-pointer';
+          emailGroup.classList.add('hidden');
+          phoneGroup.classList.remove('hidden');
+          if (!smsOtpEnabledOnServer) {
+            sendOtpBtn.disabled = true;
+            sendOtpBtn.textContent = 'SMS OTP Unavailable — Use Email OTP';
+          } else {
+            sendOtpBtn.disabled = false;
+            sendOtpBtn.textContent = 'Send SMS Verification Code';
+          }
+        }
+      }
+
+      if (chEmailBtn) chEmailBtn.addEventListener('click', () => setPageOtpChannel('email'));
+      if (chPhoneBtn) chPhoneBtn.addEventListener('click', () => setPageOtpChannel('phone'));
+
+      function syncHiddenOtpValue() {
+        const val = digitInputs.map(inp => (inp.value || '').replace(/\D/g, '')).join('');
+        if (hiddenCodeInput) hiddenCodeInput.value = val;
+        return val;
+      }
+
+      digitInputs.forEach((inp, idx) => {
+        inp.addEventListener('input', (e) => {
+          const clean = (e.target.value || '').replace(/\D/g, '');
+          e.target.value = clean.slice(-1);
+          syncHiddenOtpValue();
+          if (clean && idx < digitInputs.length - 1) {
+            digitInputs[idx + 1].focus();
+          }
+        });
+        inp.addEventListener('keydown', (e) => {
+          if (e.key === 'Backspace' && !inp.value && idx > 0) {
+            digitInputs[idx - 1].focus();
+          }
+        });
+        inp.addEventListener('paste', (e) => {
+          e.preventDefault();
+          const pasted = ((e.clipboardData || window.clipboardData).getData('text') || '').replace(/\D/g, '').slice(0, 6);
+          if (!pasted) return;
+          for (let i = 0; i < digitInputs.length; i++) {
+            digitInputs[i].value = pasted[i] || '';
+          }
+          syncHiddenOtpValue();
+          const focusIdx = Math.min(pasted.length, digitInputs.length - 1);
+          digitInputs[focusIdx].focus();
+        });
       });
 
-      tabRegBtn.addEventListener('click', () => {
-        tabRegBtn.className = 'pb-2 text-sm font-semibold border-b-2 border-primary text-primary cursor-pointer';
-        tabLoginBtn.className = 'pb-2 text-sm font-semibold border-b-2 border-transparent text-muted-foreground hover:text-foreground cursor-pointer';
-        regForm.classList.remove('hidden');
-        loginForm.classList.add('hidden');
-      });
+      function startPageResendCountdown(seconds = 30) {
+        if (pageResendInterval) clearInterval(pageResendInterval);
+        let rem = Number(seconds) || 30;
+        resendBtn.disabled = true;
+        resendBtn.innerHTML = `Resend code in <span id="page-resend-timer">${rem}</span>s`;
+        pageResendInterval = setInterval(() => {
+          rem -= 1;
+          if (rem <= 0) {
+            clearInterval(pageResendInterval);
+            resendBtn.disabled = false;
+            resendBtn.textContent = 'Resend Verification Code';
+          } else {
+            resendBtn.innerHTML = `Resend code in <span id="page-resend-timer">${rem}</span>s`;
+          }
+        }, 1000);
+      }
 
-      // Login Submission
-      loginForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const errEl = document.getElementById('p-login-error');
-        errEl.classList.add('hidden');
-        const email = document.getElementById('p-login-email').value.trim();
-        const password = document.getElementById('p-login-password').value;
+      async function requestPageOtp() {
+        reqErrEl.classList.add('hidden');
+        verErrEl.classList.add('hidden');
+        const dest = activeOtpChannel === 'phone'
+          ? (document.getElementById('p-otp-phone')?.value || '').trim()
+          : (document.getElementById('p-otp-email')?.value || '').trim();
+        activeOtpName = (document.getElementById('p-otp-name')?.value || '').trim();
+
+        if (!dest) {
+          reqErrEl.textContent = activeOtpChannel === 'phone'
+            ? 'Please enter your 10-digit mobile number.'
+            : 'Please enter your email address.';
+          reqErrEl.classList.remove('hidden');
+          return;
+        }
+
+        const origLabel = sendOtpBtn.textContent;
+        sendOtpBtn.disabled = true;
+        sendOtpBtn.textContent = 'Sending Verification Code...';
 
         try {
-          const resp = await fetch(`${API_BASE}/api/auth/login`, {
+          const resp = await fetch(`${API_BASE}/api/auth/otp/request`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             credentials: 'same-origin',
-            body: JSON.stringify({ email, password })
+            body: JSON.stringify({
+              channel: activeOtpChannel,
+              destination: dest,
+              name: activeOtpName
+            })
           });
           const data = await resp.json();
-          if (data.ok && data.user) {
-            setUserSession(data.token, data.user);
-            currentUser = data.user;
-            const redirectTarget = getSafeRedirectTarget();
-            if (redirectTarget) {
-              getToast().success(`Welcome back, ${data.user.name}! Redirecting...`);
-              window.location.href = redirectTarget;
-              return;
-            }
-            showLoggedInView();
-            getToast().success(`Welcome, ${data.user.name}!`);
+          if (resp.ok && data.ok) {
+            activeOtpDestination = dest;
+            if (destDisplay) destDisplay.textContent = data.destination_masked || dest;
+            reqForm.classList.add('hidden');
+            verForm.classList.remove('hidden');
+            digitInputs.forEach(i => { i.value = ''; });
+            syncHiddenOtpValue();
+            if (digitInputs[0]) digitInputs[0].focus();
+            startPageResendCountdown(data.resend_cooldown_seconds || 30);
+            getToast().success('6-digit verification code sent!');
           } else {
-            errEl.textContent = data.error || 'Login failed.';
-            errEl.classList.remove('hidden');
+            reqErrEl.textContent = data.error || 'Could not send verification code.';
+            reqErrEl.classList.remove('hidden');
           }
         } catch (err) {
-          errEl.textContent = 'Server connection error.';
-          errEl.classList.remove('hidden');
+          reqErrEl.textContent = 'Server connection error. Please try again.';
+          reqErrEl.classList.remove('hidden');
+        } finally {
+          sendOtpBtn.disabled = (activeOtpChannel === 'phone' && !smsOtpEnabledOnServer);
+          sendOtpBtn.textContent = origLabel;
         }
-      });
+      }
 
-      // Register Submission
-      regForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const errEl = document.getElementById('p-reg-error');
-        errEl.classList.add('hidden');
-        const name = document.getElementById('p-reg-name').value.trim();
-        const email = document.getElementById('p-reg-email').value.trim();
-        const phone = document.getElementById('p-reg-phone').value.trim();
-        const password = document.getElementById('p-reg-password').value;
+      if (reqForm) {
+        reqForm.addEventListener('submit', (e) => {
+          e.preventDefault();
+          requestPageOtp();
+        });
+      }
 
-        try {
-          const resp = await fetch(`${API_BASE}/api/auth/register`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'same-origin',
-            body: JSON.stringify({ name, email, phone, password })
-          });
-          const data = await resp.json();
-          if (data.ok && data.user) {
-            setUserSession(data.token, data.user);
-            currentUser = data.user;
-            const redirectTarget = getSafeRedirectTarget();
-            if (redirectTarget) {
-              getToast().success(`Account created for ${data.user.name}! Redirecting...`);
-              window.location.href = redirectTarget;
-              return;
-            }
-            showLoggedInView();
-            getToast().success(`Account created for ${data.user.name}!`);
-          } else {
-            errEl.textContent = data.error || 'Registration failed.';
-            errEl.classList.remove('hidden');
+      if (changeDestBtn) {
+        changeDestBtn.addEventListener('click', () => {
+          verForm.classList.add('hidden');
+          reqForm.classList.remove('hidden');
+          verErrEl.classList.add('hidden');
+        });
+      }
+
+      if (resendBtn) {
+        resendBtn.addEventListener('click', () => {
+          if (!resendBtn.disabled) requestPageOtp();
+        });
+      }
+
+      if (verForm) {
+        verForm.addEventListener('submit', async (e) => {
+          e.preventDefault();
+          verErrEl.classList.add('hidden');
+          const code = syncHiddenOtpValue() || (hiddenCodeInput?.value || '').trim();
+          if (code.length !== 6) {
+            verErrEl.textContent = 'Please enter all 6 digits of your verification code.';
+            verErrEl.classList.remove('hidden');
+            return;
           }
-        } catch (err) {
-          errEl.textContent = 'Server connection error.';
-          errEl.classList.remove('hidden');
-        }
-      });
+
+          const verBtn = document.getElementById('page-verify-otp-btn');
+          const origText = verBtn.textContent;
+          verBtn.disabled = true;
+          verBtn.textContent = 'Verifying...';
+
+          try {
+            const resp = await fetch(`${API_BASE}/api/auth/otp/verify`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              credentials: 'same-origin',
+              body: JSON.stringify({
+                channel: activeOtpChannel,
+                destination: activeOtpDestination,
+                otp: code,
+                name: activeOtpName
+              })
+            });
+            const data = await resp.json();
+            if (resp.ok && data.ok && data.user) {
+              setUserSession(data.token, data.user);
+              currentUser = data.user;
+              const redirectTarget = getSafeRedirectTarget();
+              if (redirectTarget) {
+                getToast().success(`Welcome, ${data.user.name}! Redirecting...`);
+                window.location.href = redirectTarget;
+                return;
+              }
+              showLoggedInView();
+              getToast().success(`Welcome, ${data.user.name}!`);
+            } else {
+              verErrEl.textContent = data.error || 'Verification failed. Please check your code.';
+              verErrEl.classList.remove('hidden');
+            }
+          } catch (err) {
+            verErrEl.textContent = 'Server connection error.';
+            verErrEl.classList.remove('hidden');
+          } finally {
+            verBtn.disabled = false;
+            verBtn.textContent = origText;
+          }
+        });
+      }
 
       // Logout Button
       document.getElementById('account-logout-btn').addEventListener('click', async () => {

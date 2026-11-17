@@ -303,6 +303,7 @@ def run_all_tests():
         conn.close()
 
         client = server.app.test_client()
+        server.ALLOW_LEGACY_TEST_FIXTURE_AUTH = True
 
         # Register customer in PostgreSQL mode
         reg_resp = client.post(
@@ -332,6 +333,7 @@ def run_all_tests():
                 "password": "Password123!",
             },
         )
+        server.ALLOW_LEGACY_TEST_FIXTURE_AUTH = False
         check(
             "Duplicate email registration returns HTTP 400 in PostgreSQL mode",
             dup_resp.status_code == 400 and dup_resp.get_json().get("ok") is False,

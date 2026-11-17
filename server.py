@@ -36,6 +36,11 @@ from notifications import (
     enqueue_order_confirmation_notifications,
     recover_pending_and_failed_notifications,
     get_notification_config,
+    send_otp_email,
+    send_otp_sms,
+    get_sms_otp_config,
+    mask_email,
+    mask_phone,
 )
 
 try:
@@ -1641,6 +1646,14 @@ def init_db():
                         created_at TEXT NOT NULL
                     )
                 """)
+                user_migrations = {
+                    "email_verified": "INTEGER DEFAULT 0",
+                    "phone_verified": "INTEGER DEFAULT 0",
+                    "passwordless_enabled": "INTEGER DEFAULT 0",
+                    "last_login_at": "TEXT DEFAULT ''"
+                }
+                for col, definition in user_migrations.items():
+                    _add_column_if_missing(c, "users", col, definition)
 
                 # 5. User Sessions table
                 c.execute("""
@@ -1727,6 +1740,16 @@ def init_db():
                         expires_at TEXT NOT NULL
                     )
                 """)
+                admin_sess_migrations = {
+                    "admin_email": "TEXT DEFAULT ''",
+                    "mfa_method": "TEXT DEFAULT ''",
+                    "ip_address": "TEXT DEFAULT ''",
+                    "user_agent": "TEXT DEFAULT ''",
+                    "last_active_at": "TEXT DEFAULT ''",
+                    "revoked": "INTEGER DEFAULT 0"
+                }
+                for col, definition in admin_sess_migrations.items():
+                    _add_column_if_missing(c, "admin_sessions", col, definition)
 
                 # 11. Order Notifications table (Idempotent multi-channel audit & retry log)
                 c.execute("""
@@ -1748,6 +1771,40 @@ def init_db():
                     )
                 """)
 
+                # 12. Passwordless OTP Challenges table (Hashed OTPs, Single-Use, Attempt & Rate Limits)
+                c.execute("""
+                    CREATE TABLE IF NOT EXISTS auth_otp_challenges (
+                        id TEXT PRIMARY KEY,
+                        channel TEXT NOT NULL,
+                        destination TEXT NOT NULL,
+                        purpose TEXT NOT NULL,
+                        otp_hash TEXT NOT NULL,
+                        salt TEXT NOT NULL,
+                        attempts INTEGER DEFAULT 0,
+                        max_attempts INTEGER DEFAULT 5,
+                        status TEXT DEFAULT 'pending',
+                        requester_ip TEXT DEFAULT '',
+                        user_id TEXT DEFAULT '',
+                        created_at TEXT NOT NULL,
+                        expires_at TEXT NOT NULL,
+                        used_at TEXT DEFAULT ''
+                    )
+                """)
+
+                # 13. Security Audit Logs table (Never stores plaintext OTPs or tokens)
+                c.execute("""
+                    CREATE TABLE IF NOT EXISTS security_audit_logs (
+                        id TEXT PRIMARY KEY,
+                        event_type TEXT NOT NULL,
+                        actor_type TEXT NOT NULL,
+                        identifier_masked TEXT NOT NULL,
+                        ip_address TEXT DEFAULT '',
+                        status TEXT NOT NULL,
+                        details TEXT DEFAULT '',
+                        created_at TEXT NOT NULL
+                    )
+                """)
+
                 # Secondary indexes for fast lookups on both SQLite and PostgreSQL
                 c.execute("CREATE INDEX IF NOT EXISTS idx_orders_user_id ON orders (user_id)")
                 c.execute("CREATE INDEX IF NOT EXISTS idx_orders_razorpay_order_id ON orders (razorpay_order_id)")
@@ -1756,6 +1813,9 @@ def init_db():
                 c.execute("CREATE INDEX IF NOT EXISTS idx_user_addresses_user_id ON user_addresses (user_id)")
                 c.execute("CREATE INDEX IF NOT EXISTS idx_return_requests_order_id ON return_requests (order_id)")
                 c.execute("CREATE INDEX IF NOT EXISTS idx_users_email_lower ON users (LOWER(email))")
+                c.execute("CREATE INDEX IF NOT EXISTS idx_otp_dest_purpose ON auth_otp_challenges (destination, purpose, created_at)")
+                c.execute("CREATE INDEX IF NOT EXISTS idx_otp_ip_created ON auth_otp_challenges (requester_ip, created_at)")
+                c.execute("CREATE INDEX IF NOT EXISTS idx_sec_audit_created ON security_audit_logs (created_at)")
 
                 # Seed Default Products if empty, and backfill/repair default product attributes & broken image paths
                 c.execute("SELECT COUNT(*) AS cnt FROM products")
@@ -1903,6 +1963,165 @@ def hash_password(password, salt=None):
 def verify_password(password, salt, hashed):
     key = hashlib.pbkdf2_hmac('sha256', password.encode('utf-8'), salt.encode('utf-8'), 100000)
     return hmac.compare_digest(key.hex(), hashed)
+
+
+# ================= Passwordless OTP & Admin MFA Primitives =================
+OTP_EXPIRY_SECONDS = 300          # 5 minutes
+OTP_RESEND_COOLDOWN_SECONDS = 30  # 30 seconds cooldown between resends
+OTP_MAX_ATTEMPTS = 5              # Max 5 verification attempts per OTP
+OTP_RATE_WINDOW_SECONDS = 900     # 15-minute sliding window
+OTP_MAX_REQ_PER_DEST = 5          # Max 5 OTP requests per destination per 15 min
+OTP_MAX_REQ_PER_IP = 10           # Max 10 OTP requests per IP per 15 min
+ADMIN_SESSION_TTL_HOURS = 12      # 12-hour admin session expiry
+
+# Legacy password auth is retired in production by default; can be re-enabled via env for instant rollback
+LEGACY_PASSWORD_AUTH_ENABLED = (
+    (os.environ.get("LEGACY_PASSWORD_AUTH_ENABLED") or "false").strip().lower() in ("1", "true", "yes", "on")
+)
+ALLOW_LEGACY_TEST_FIXTURE_AUTH = False
+
+
+def is_legacy_password_auth_allowed() -> bool:
+    if ALLOW_LEGACY_TEST_FIXTURE_AUTH:
+        return True
+    env_val = (os.environ.get("LEGACY_PASSWORD_AUTH_ENABLED") or "").strip().lower()
+    if env_val in ("1", "true", "yes", "on"):
+        return True
+    return bool(LEGACY_PASSWORD_AUTH_ENABLED)
+
+
+def generate_secure_otp_code() -> str:
+    """Generates a cryptographically unpredictable 6-digit numeric OTP."""
+    return f"{secrets.randbelow(900000) + 100000:06d}"
+
+
+def hash_otp_code(otp_code: str, salt: str, destination: str, purpose: str) -> str:
+    """
+    Computes a salted, context-bound HMAC-SHA256 digest of an OTP code.
+    Plaintext OTPs are never stored in the database or logs.
+    """
+    clean_otp = str(otp_code or "").strip()
+    clean_dest = str(destination or "").strip().lower()
+    clean_purpose = str(purpose or "").strip().lower()
+    msg = f"{clean_purpose}:{clean_dest}:{clean_otp}".encode("utf-8")
+    key = f"naari-otp-v1:{salt}".encode("utf-8")
+    return hmac.new(key, msg, hashlib.sha256).hexdigest()
+
+
+def verify_otp_code_digest(otp_code: str, salt: str, destination: str, purpose: str, expected_hash: str) -> bool:
+    computed = hash_otp_code(otp_code, salt, destination, purpose)
+    return hmac.compare_digest(computed.encode("utf-8"), str(expected_hash or "").encode("utf-8"))
+
+
+def get_client_ip() -> str:
+    if not has_request_context():
+        return "0.0.0.0"
+    xf = (request.headers.get("X-Forwarded-For") or "").strip()
+    if xf:
+        first_ip = xf.split(",")[0].strip()
+        if first_ip:
+            return first_ip[:64]
+    return str(request.remote_addr or "0.0.0.0")[:64]
+
+
+def log_security_event(c, event_type: str, actor_type: str, identifier_masked: str, status: str, details: str = "", ip_address: str = ""):
+    """Records a security event in security_audit_logs without ever storing OTP values or tokens."""
+    try:
+        ev_id = f"sec_{secrets.token_hex(6)}"
+        ip_val = ip_address or get_client_ip()
+        c.execute(
+            """
+            INSERT INTO security_audit_logs (id, event_type, actor_type, identifier_masked, ip_address, status, details, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                ev_id,
+                str(event_type or "")[:64],
+                str(actor_type or "customer")[:32],
+                str(identifier_masked or "***")[:120],
+                str(ip_val or "")[:64],
+                str(status or "info")[:32],
+                str(details or "")[:255],
+                datetime.now().isoformat(),
+            ),
+        )
+    except Exception:
+        pass
+
+
+def get_allowed_admin_emails() -> set:
+    """
+    Returns the strict allowlist of verified admin email addresses.
+    Defaults to OWNER_NOTIFICATION_EMAIL / matranaari@gmail.com plus any
+    comma-separated emails in ADMIN_ALLOWED_EMAILS.
+    """
+    allowed = {"matranaari@gmail.com"}
+    owner_env = (os.environ.get("OWNER_NOTIFICATION_EMAIL") or "").strip().lower()
+    if owner_env and "@" in owner_env:
+        allowed.add(owner_env)
+    raw_list = (os.environ.get("ADMIN_ALLOWED_EMAILS") or "").strip()
+    for item in raw_list.split(","):
+        clean = item.strip().lower()
+        if clean and "@" in clean:
+            allowed.add(clean)
+    return allowed
+
+
+def _totp_hotp(secret_b32: str, counter: int, digits: int = 6) -> str:
+    clean_b32 = re.sub(r"[^A-Z2-7]", "", str(secret_b32 or "").upper())
+    padding = (8 - (len(clean_b32) % 8)) % 8
+    key = base64.b32decode(clean_b32 + ("=" * padding), casefold=True)
+    counter_bytes = int(counter).to_bytes(8, byteorder="big")
+    mac = hmac.new(key, counter_bytes, hashlib.sha1).digest()
+    offset = mac[-1] & 0x0F
+    binary = (
+        ((mac[offset] & 0x7F) << 24)
+        | ((mac[offset + 1] & 0xFF) << 16)
+        | ((mac[offset + 2] & 0xFF) << 8)
+        | (mac[offset + 3] & 0xFF)
+    )
+    return f"{binary % (10 ** digits):0{digits}d}"
+
+
+def compute_totp_code(secret_b32: str, for_time: float = None, step: int = 30, digits: int = 6) -> str:
+    ts = float(for_time if for_time is not None else time.time())
+    counter = int(ts // step)
+    return _totp_hotp(secret_b32, counter, digits=digits)
+
+
+def get_or_create_admin_totp_secret(c=None) -> str:
+    """
+    Retrieves the Admin TOTP secret from ADMIN_TOTP_SECRET env or site_settings,
+    or derives a deterministic high-entropy Base32 secret from the server's admin key
+    so TOTP is always ready without exposing any secret publicly.
+    """
+    env_totp = re.sub(r"[^A-Z2-7]", "", (os.environ.get("ADMIN_TOTP_SECRET") or "").upper())
+    if len(env_totp) >= 16:
+        return env_totp
+
+    settings = get_site_settings_dict()
+    stored_totp = re.sub(r"[^A-Z2-7]", "", str(settings.get("admin_totp_secret") or "").upper())
+    if len(stored_totp) >= 16:
+        return stored_totp
+
+    seed_key = get_expected_admin_passkey() or str(settings.get("admin_passkey_hash") or "matra-naari-admin-seed")
+    digest = hmac.new(b"naari-admin-totp-v1", seed_key.encode("utf-8"), hashlib.sha256).digest()[:20]
+    return base64.b32encode(digest).decode("ascii").rstrip("=")
+
+
+def verify_admin_totp_code(candidate_code: str, for_time: float = None) -> bool:
+    clean = re.sub(r"\D", "", str(candidate_code or ""))
+    if len(clean) != 6:
+        return False
+    secret = get_or_create_admin_totp_secret()
+    ts = float(for_time if for_time is not None else time.time())
+    base_counter = int(ts // 30)
+    for drift in (-1, 0, 1):
+        expected = _totp_hotp(secret, base_counter + drift, digits=6)
+        if hmac.compare_digest(clean.encode("utf-8"), expected.encode("utf-8")):
+            return True
+    return False
+
 
 def generate_order_id():
     now_str = datetime.now().strftime("%Y%m%d%H%M%S")
@@ -3162,7 +3381,10 @@ def check_admin_auth():
             c = conn.cursor()
             now_iso = datetime.now().isoformat()
             for tok in candidate_tokens:
-                c.execute("SELECT token FROM admin_sessions WHERE token = ? AND expires_at > ?", (tok, now_iso))
+                c.execute(
+                    "SELECT token FROM admin_sessions WHERE token = ? AND expires_at > ? AND COALESCE(revoked, 0) = 0",
+                    (tok, now_iso)
+                )
                 if c.fetchone():
                     conn.close()
                     if has_request_context():
@@ -4398,8 +4620,610 @@ def api_newsletter():
 
 # ================= Customer Authentication & Account APIs =================
 
+
+def _normalize_otp_destination(channel: str, raw_dest: str):
+    """
+    Validates and normalizes an email address or 10-digit Indian mobile number.
+    Returns (normalized_dest, masked_dest, error_message).
+    """
+    ch = str(channel or "email").strip().lower()
+    val = str(raw_dest or "").strip()
+    if ch == "phone":
+        clean_phone, err = validate_indian_phone(val)
+        if err or not clean_phone:
+            return None, None, err or "Please enter a valid 10-digit Indian mobile number."
+        return clean_phone, mask_phone(clean_phone), None
+
+    clean_email = val.lower()
+    if "@" not in clean_email or "." not in clean_email or len(clean_email) < 5 or " " in clean_email:
+        return None, None, "Please enter a valid email address."
+    return clean_email, mask_email(clean_email), None
+
+
+def _check_and_issue_otp_challenge(c, channel: str, destination: str, purpose: str, user_id: str = ""):
+    """
+    Enforces resend cooldown (30s), destination rate limit (5 / 15m), and IP rate limit (10 / 15m).
+    Creates a hashed OTP challenge in auth_otp_challenges and returns (otp_code, challenge_id, err_dict, status_code).
+    """
+    now_dt = datetime.now()
+    now_iso = now_dt.isoformat()
+    ip_addr = get_client_ip()
+    masked = mask_phone(destination) if channel == "phone" else mask_email(destination)
+
+    # 1. Check 30-second resend cooldown for this destination + purpose
+    cooldown_cutoff = (now_dt - timedelta(seconds=OTP_RESEND_COOLDOWN_SECONDS)).isoformat()
+    c.execute(
+        """
+        SELECT created_at FROM auth_otp_challenges
+        WHERE destination = ? AND purpose = ? AND created_at > ? AND status = 'pending'
+        ORDER BY created_at DESC LIMIT 1
+        """,
+        (destination, purpose, cooldown_cutoff),
+    )
+    recent_row = c.fetchone()
+    if recent_row:
+        try:
+            created_dt = datetime.fromisoformat(str(recent_row["created_at"]))
+            elapsed = max(0, int((now_dt - created_dt).total_seconds()))
+            rem = max(1, OTP_RESEND_COOLDOWN_SECONDS - elapsed)
+        except Exception:
+            rem = OTP_RESEND_COOLDOWN_SECONDS
+        log_security_event(c, "otp_cooldown_blocked", "customer", masked, "blocked", f"purpose={purpose}", ip_addr)
+        return None, None, {
+            "ok": False,
+            "cooldown_remaining": rem,
+            "retry_after_seconds": rem,
+            "error": f"Please wait {rem} seconds before requesting another verification code.",
+        }, 429
+
+    # 2. Check 15-minute destination rate limit (max 5 requests)
+    window_cutoff = (now_dt - timedelta(seconds=OTP_RATE_WINDOW_SECONDS)).isoformat()
+    c.execute(
+        """
+        SELECT COUNT(*) AS cnt FROM auth_otp_challenges
+        WHERE destination = ? AND created_at > ?
+        """,
+        (destination, window_cutoff),
+    )
+    dest_cnt = int(dict(c.fetchone() or {}).get("cnt") or 0)
+    if dest_cnt >= OTP_MAX_REQ_PER_DEST:
+        log_security_event(c, "otp_rate_limited_destination", "customer", masked, "blocked", f"cnt={dest_cnt}", ip_addr)
+        return None, None, {
+            "ok": False,
+            "rate_limited": True,
+            "retry_after_seconds": OTP_RATE_WINDOW_SECONDS,
+            "error": "Too many verification codes requested for this contact. Please wait 15 minutes and try again.",
+        }, 429
+
+    # 3. Check 15-minute IP rate limit (max 10 requests)
+    if ip_addr and ip_addr not in ("0.0.0.0", "127.0.0.1", "::1"):
+        c.execute(
+            """
+            SELECT COUNT(*) AS cnt FROM auth_otp_challenges
+            WHERE requester_ip = ? AND created_at > ?
+            """,
+            (ip_addr, window_cutoff),
+        )
+        ip_cnt = int(dict(c.fetchone() or {}).get("cnt") or 0)
+        if ip_cnt >= OTP_MAX_REQ_PER_IP:
+            log_security_event(c, "otp_rate_limited_ip", "customer", masked, "blocked", f"ip_cnt={ip_cnt}", ip_addr)
+            return None, None, {
+                "ok": False,
+                "rate_limited": True,
+                "retry_after_seconds": OTP_RATE_WINDOW_SECONDS,
+                "error": "Too many OTP requests from your network. Please wait a few minutes before trying again.",
+            }, 429
+
+    # 4. Invalidate any earlier pending challenges for this destination + purpose
+    c.execute(
+        """
+        UPDATE auth_otp_challenges
+        SET status = 'superseded'
+        WHERE destination = ? AND purpose = ? AND status = 'pending'
+        """,
+        (destination, purpose),
+    )
+
+    otp_code = generate_secure_otp_code()
+    salt = secrets.token_hex(16)
+    otp_hash = hash_otp_code(otp_code, salt, destination, purpose)
+    challenge_id = f"otp_{secrets.token_hex(8)}"
+    expires_iso = (now_dt + timedelta(seconds=OTP_EXPIRY_SECONDS)).isoformat()
+
+    c.execute(
+        """
+        INSERT INTO auth_otp_challenges (
+            id, channel, destination, purpose, otp_hash, salt,
+            attempts, max_attempts, status, requester_ip, user_id,
+            created_at, expires_at, used_at
+        ) VALUES (?, ?, ?, ?, ?, ?, 0, ?, 'pending', ?, ?, ?, ?, '')
+        """,
+        (
+            challenge_id,
+            channel,
+            destination,
+            purpose,
+            otp_hash,
+            salt,
+            OTP_MAX_ATTEMPTS,
+            ip_addr,
+            user_id or "",
+            now_iso,
+            expires_iso,
+        ),
+    )
+    return otp_code, challenge_id, None, 200
+
+
+@app.route("/api/auth/otp/config", methods=["GET"])
+def api_auth_otp_config():
+    notif_cfg = get_notification_config()
+    sms_cfg = get_sms_otp_config()
+    return jsonify({
+        "ok": True,
+        "email_otp_enabled": bool(notif_cfg.get("email_configured", True)),
+        "sms_otp_enabled": bool(sms_cfg.get("sms_otp_enabled", False)),
+        "sms_status_message": (
+            "Enter your 10-digit Indian mobile number to receive an SMS verification code."
+            if sms_cfg.get("sms_otp_enabled")
+            else "Mobile SMS OTP is currently unavailable until the DLT SMS provider is activated. Please sign in with your Email Address."
+        ),
+        "otp_length": 6,
+        "expiry_seconds": OTP_EXPIRY_SECONDS,
+        "resend_cooldown_seconds": OTP_RESEND_COOLDOWN_SECONDS,
+        "legacy_password_login_enabled": is_legacy_password_auth_allowed(),
+    })
+
+
+@app.route("/api/auth/otp/request", methods=["POST"])
+def api_auth_otp_request():
+    data = request.get_json(silent=True) or {}
+    channel = str(data.get("channel") or ("phone" if data.get("phone") and not data.get("email") else "email")).strip().lower()
+    if channel not in ("email", "phone"):
+        return jsonify({"ok": False, "error": "Unsupported verification channel."}), 400
+
+    raw_dest = data.get("destination") or (data.get("phone") if channel == "phone" else data.get("email")) or ""
+    dest, masked_dest, err = _normalize_otp_destination(channel, raw_dest)
+    if err:
+        return jsonify({"ok": False, "error": err}), 400
+
+    if channel == "phone":
+        sms_cfg = get_sms_otp_config()
+        if not sms_cfg.get("sms_otp_enabled"):
+            return jsonify({
+                "ok": False,
+                "phone_otp_unavailable": True,
+                "error": "Mobile SMS OTP is currently unavailable until the SMS provider is activated. Please sign in with your Email Address.",
+            }), 503
+
+    conn = get_db()
+    c = conn.cursor()
+    otp_code, challenge_id, rate_err, status_code = _check_and_issue_otp_challenge(
+        c, channel, dest, purpose="customer_login"
+    )
+    if rate_err:
+        conn.commit()
+        conn.close()
+        return jsonify(rate_err), status_code
+
+    if channel == "email":
+        send_res = send_otp_email(dest, otp_code, purpose="customer_login", expires_minutes=OTP_EXPIRY_SECONDS // 60)
+    else:
+        send_res = send_otp_sms(dest, otp_code, purpose="customer_login", expires_minutes=OTP_EXPIRY_SECONDS // 60)
+
+    if not send_res.get("ok"):
+        c.execute("UPDATE auth_otp_challenges SET status = 'delivery_failed' WHERE id = ?", (challenge_id,))
+        log_security_event(
+            c, "otp_delivery_failed", "customer", masked_dest, "failed",
+            str(send_res.get("error") or "provider_error")
+        )
+        conn.commit()
+        conn.close()
+        return jsonify({
+            "ok": False,
+            "error": "Unable to send verification code right now. Please check your address or try again in a moment.",
+        }), 502
+
+    log_security_event(c, "otp_requested", "customer", masked_dest, "sent", f"channel={channel}")
+    conn.commit()
+    conn.close()
+
+    # Uniform generic response to prevent account enumeration
+    return jsonify({
+        "ok": True,
+        "channel": channel,
+        "destination_masked": masked_dest,
+        "expires_in_seconds": OTP_EXPIRY_SECONDS,
+        "resend_cooldown_seconds": OTP_RESEND_COOLDOWN_SECONDS,
+        "message": f"If {masked_dest} is valid, a 6-digit verification code has been sent.",
+    })
+
+
+@app.route("/api/auth/otp/verify", methods=["POST"])
+def api_auth_otp_verify():
+    data = request.get_json(silent=True) or {}
+    channel = str(data.get("channel") or ("phone" if data.get("phone") and not data.get("email") else "email")).strip().lower()
+    if channel not in ("email", "phone"):
+        return jsonify({"ok": False, "error": "Unsupported verification channel."}), 400
+
+    raw_dest = data.get("destination") or (data.get("phone") if channel == "phone" else data.get("email")) or ""
+    dest, masked_dest, err = _normalize_otp_destination(channel, raw_dest)
+    if err:
+        return jsonify({"ok": False, "error": err}), 400
+
+    otp_input = re.sub(r"\D", "", str(data.get("otp") or data.get("code") or ""))
+    if len(otp_input) != 6:
+        return jsonify({"ok": False, "error": "Please enter the 6-digit verification code."}), 400
+
+    provided_name = str(data.get("name") or "").strip()
+    now_dt = datetime.now()
+    now_iso = now_dt.isoformat()
+
+    conn = get_db()
+    c = conn.cursor()
+    c.execute(
+        """
+        SELECT * FROM auth_otp_challenges
+        WHERE channel = ? AND destination = ? AND purpose = 'customer_login' AND status = 'pending'
+        ORDER BY created_at DESC LIMIT 1
+        """,
+        (channel, dest),
+    )
+    row = c.fetchone()
+    if not row:
+        log_security_event(c, "otp_verify_missing", "customer", masked_dest, "failed", f"channel={channel}")
+        conn.commit()
+        conn.close()
+        return jsonify({"ok": False, "error": "Invalid or expired verification code. Please request a new code."}), 401
+
+    ch_row = dict(row)
+    if str(ch_row.get("expires_at") or "") <= now_iso:
+        c.execute("UPDATE auth_otp_challenges SET status = 'expired' WHERE id = ?", (ch_row["id"],))
+        log_security_event(c, "otp_verify_expired", "customer", masked_dest, "failed", f"channel={channel}")
+        conn.commit()
+        conn.close()
+        return jsonify({"ok": False, "error": "This verification code has expired. Please request a new code."}), 401
+
+    attempts = int(ch_row.get("attempts") or 0)
+    max_attempts = int(ch_row.get("max_attempts") or OTP_MAX_ATTEMPTS)
+    if attempts >= max_attempts:
+        c.execute("UPDATE auth_otp_challenges SET status = 'locked' WHERE id = ?", (ch_row["id"],))
+        log_security_event(c, "otp_verify_locked", "customer", masked_dest, "blocked", f"attempts={attempts}")
+        conn.commit()
+        conn.close()
+        return jsonify({
+            "ok": False,
+            "locked": True,
+            "error": "Too many incorrect attempts. This code has been invalidated; please request a new code.",
+        }), 429
+
+    if not verify_otp_code_digest(otp_input, ch_row["salt"], dest, "customer_login", ch_row["otp_hash"]):
+        new_attempts = attempts + 1
+        new_status = "locked" if new_attempts >= max_attempts else "pending"
+        c.execute(
+            "UPDATE auth_otp_challenges SET attempts = ?, status = ? WHERE id = ?",
+            (new_attempts, new_status, ch_row["id"]),
+        )
+        log_security_event(c, "otp_verify_mismatch", "customer", masked_dest, "failed", f"attempt={new_attempts}/{max_attempts}")
+        conn.commit()
+        conn.close()
+        rem = max(0, max_attempts - new_attempts)
+        if rem == 0:
+            return jsonify({
+                "ok": False,
+                "locked": True,
+                "error": "Too many incorrect attempts. Please request a new verification code.",
+            }), 429
+        return jsonify({
+            "ok": False,
+            "attempts_remaining": rem,
+            "error": f"Incorrect verification code ({rem} attempt{'s' if rem != 1 else ''} remaining).",
+        }), 401
+
+    # Single-use: immediately mark challenge verified
+    c.execute(
+        "UPDATE auth_otp_challenges SET status = 'verified', used_at = ?, attempts = ? WHERE id = ?",
+        (now_iso, attempts + 1, ch_row["id"]),
+    )
+
+    is_new_user = False
+    user_dict = None
+
+    if channel == "email":
+        c.execute("SELECT * FROM users WHERE LOWER(email) = ?", (dest,))
+        u_row = c.fetchone()
+        if u_row:
+            user_dict = dict(u_row)
+            updated_name = user_dict.get("name") or ""
+            if provided_name and len(provided_name) >= 2 and (not updated_name or updated_name.lower() == dest.split("@")[0].lower()):
+                updated_name = provided_name
+            c.execute(
+                """
+                UPDATE users
+                SET email_verified = 1, passwordless_enabled = 1, last_login_at = ?, name = ?
+                WHERE id = ?
+                """,
+                (now_iso, updated_name, user_dict["id"]),
+            )
+            user_dict["name"] = updated_name
+        else:
+            is_new_user = True
+            user_id = f"usr_{secrets.token_hex(6)}"
+            default_name = provided_name if len(provided_name) >= 2 else dest.split("@")[0].replace(".", " ").replace("_", " ").title()
+            if len(default_name) < 2:
+                default_name = "Matra Naari Client"
+            pw_placeholder_salt = secrets.token_hex(16)
+            c.execute(
+                """
+                INSERT INTO users (
+                    id, name, email, phone, password_hash, salt, created_at,
+                    email_verified, phone_verified, passwordless_enabled, last_login_at
+                ) VALUES (?, ?, ?, '', '!passwordless_otp_only', ?, ?, 1, 0, 1, ?)
+                """,
+                (user_id, default_name, dest, pw_placeholder_salt, now_iso, now_iso),
+            )
+            user_dict = {
+                "id": user_id,
+                "name": default_name,
+                "email": dest,
+                "phone": "",
+            }
+
+        # Safely link any pre-existing guest orders placed with this verified email address
+        c.execute(
+            """
+            UPDATE orders
+            SET user_id = ?
+            WHERE (user_id IS NULL OR user_id = '') AND LOWER(customer_email) = ?
+            """,
+            (user_dict["id"], dest),
+        )
+    else:
+        # Phone OTP channel: match ONLY accounts where phone is already verified (never auto-merge unverified phone)
+        c.execute(
+            "SELECT * FROM users WHERE phone = ? AND COALESCE(phone_verified, 0) = 1 LIMIT 1",
+            (dest,),
+        )
+        u_row = c.fetchone()
+        if u_row:
+            user_dict = dict(u_row)
+            c.execute(
+                "UPDATE users SET phone_verified = 1, passwordless_enabled = 1, last_login_at = ? WHERE id = ?",
+                (now_iso, user_dict["id"]),
+            )
+        else:
+            is_new_user = True
+            user_id = f"usr_{secrets.token_hex(6)}"
+            default_name = provided_name if len(provided_name) >= 2 else f"Client {dest[-4:]}"
+            synth_email = f"mobile.{dest}@phone.matranaari.local"
+            pw_placeholder_salt = secrets.token_hex(16)
+            c.execute(
+                """
+                INSERT INTO users (
+                    id, name, email, phone, password_hash, salt, created_at,
+                    email_verified, phone_verified, passwordless_enabled, last_login_at
+                ) VALUES (?, ?, ?, ?, '!passwordless_otp_only', ?, ?, 0, 1, 1, ?)
+                """,
+                (user_id, default_name, synth_email, dest, pw_placeholder_salt, now_iso, now_iso),
+            )
+            user_dict = {
+                "id": user_id,
+                "name": default_name,
+                "email": synth_email,
+                "phone": dest,
+            }
+
+    token = secrets.token_hex(32)
+    expires_iso = (now_dt + timedelta(days=30)).isoformat()
+    c.execute("DELETE FROM user_sessions WHERE expires_at <= ?", (now_iso,))
+    c.execute(
+        "INSERT INTO user_sessions (token, user_id, created_at, expires_at) VALUES (?, ?, ?, ?)",
+        (token, user_dict["id"], now_iso, expires_iso),
+    )
+    log_security_event(
+        c,
+        "otp_verified_new_account" if is_new_user else "otp_verified_login",
+        "customer",
+        masked_dest,
+        "success",
+        f"user_id={user_dict['id']}",
+    )
+    conn.commit()
+    conn.close()
+
+    resp = jsonify({
+        "ok": True,
+        "token": token,
+        "is_new_user": is_new_user,
+        "user": {
+            "id": user_dict["id"],
+            "name": user_dict["name"],
+            "email": user_dict["email"],
+            "phone": user_dict.get("phone") or "",
+        },
+    })
+    return set_customer_auth_cookie(resp, token)
+
+
+@app.route("/api/auth/link/request", methods=["POST"])
+def api_auth_link_request():
+    """
+    Allows an authenticated customer to request an OTP to verify and link
+    a mobile number or new email address to their existing account.
+    """
+    user = get_current_user()
+    if not user:
+        return jsonify({"ok": False, "error": "Authentication required."}), 401
+
+    data = request.get_json(silent=True) or {}
+    channel = str(data.get("channel") or ("phone" if data.get("phone") else "email")).strip().lower()
+    if channel not in ("email", "phone"):
+        return jsonify({"ok": False, "error": "Unsupported verification channel."}), 400
+
+    raw_dest = data.get("destination") or (data.get("phone") if channel == "phone" else data.get("email")) or ""
+    dest, masked_dest, err = _normalize_otp_destination(channel, raw_dest)
+    if err:
+        return jsonify({"ok": False, "error": err}), 400
+
+    if channel == "phone":
+        sms_cfg = get_sms_otp_config()
+        if not sms_cfg.get("sms_otp_enabled"):
+            return jsonify({
+                "ok": False,
+                "phone_otp_unavailable": True,
+                "error": "Mobile SMS OTP is currently unavailable until the SMS provider is activated.",
+            }), 503
+
+    conn = get_db()
+    c = conn.cursor()
+
+    # Ensure destination is not already verified on a different account
+    if channel == "email":
+        c.execute("SELECT id FROM users WHERE LOWER(email) = ? AND id != ?", (dest, user["id"]))
+        if c.fetchone():
+            conn.close()
+            return jsonify({"ok": False, "error": "This email address is already linked to another account."}), 409
+    else:
+        c.execute(
+            "SELECT id FROM users WHERE phone = ? AND COALESCE(phone_verified, 0) = 1 AND id != ?",
+            (dest, user["id"]),
+        )
+        if c.fetchone():
+            conn.close()
+            return jsonify({"ok": False, "error": "This mobile number is already verified on another account."}), 409
+
+    otp_code, challenge_id, rate_err, status_code = _check_and_issue_otp_challenge(
+        c, channel, dest, purpose="link_contact", user_id=user["id"]
+    )
+    if rate_err:
+        conn.commit()
+        conn.close()
+        return jsonify(rate_err), status_code
+
+    if channel == "email":
+        send_res = send_otp_email(dest, otp_code, purpose="link_contact", expires_minutes=OTP_EXPIRY_SECONDS // 60)
+    else:
+        send_res = send_otp_sms(dest, otp_code, purpose="link_contact", expires_minutes=OTP_EXPIRY_SECONDS // 60)
+
+    if not send_res.get("ok"):
+        c.execute("UPDATE auth_otp_challenges SET status = 'delivery_failed' WHERE id = ?", (challenge_id,))
+        conn.commit()
+        conn.close()
+        return jsonify({"ok": False, "error": "Unable to send verification code right now."}), 502
+
+    log_security_event(c, "account_link_otp_requested", "customer", masked_dest, "sent", f"user_id={user['id']}")
+    conn.commit()
+    conn.close()
+    return jsonify({
+        "ok": True,
+        "channel": channel,
+        "destination_masked": masked_dest,
+        "expires_in_seconds": OTP_EXPIRY_SECONDS,
+        "message": f"Verification code sent to {masked_dest}.",
+    })
+
+
+@app.route("/api/auth/link/verify", methods=["POST"])
+def api_auth_link_verify():
+    """
+    Verifies the OTP for linking a phone number or email address to the currently
+    authenticated customer account. Never merges accounts on unverified contacts.
+    """
+    user = get_current_user()
+    if not user:
+        return jsonify({"ok": False, "error": "Authentication required."}), 401
+
+    data = request.get_json(silent=True) or {}
+    channel = str(data.get("channel") or ("phone" if data.get("phone") else "email")).strip().lower()
+    raw_dest = data.get("destination") or (data.get("phone") if channel == "phone" else data.get("email")) or ""
+    dest, masked_dest, err = _normalize_otp_destination(channel, raw_dest)
+    if err:
+        return jsonify({"ok": False, "error": err}), 400
+
+    otp_input = re.sub(r"\D", "", str(data.get("otp") or data.get("code") or ""))
+    if len(otp_input) != 6:
+        return jsonify({"ok": False, "error": "Please enter the 6-digit verification code."}), 400
+
+    now_iso = datetime.now().isoformat()
+    conn = get_db()
+    c = conn.cursor()
+    c.execute(
+        """
+        SELECT * FROM auth_otp_challenges
+        WHERE channel = ? AND destination = ? AND purpose = 'link_contact'
+          AND user_id = ? AND status = 'pending'
+        ORDER BY created_at DESC LIMIT 1
+        """,
+        (channel, dest, user["id"]),
+    )
+    row = c.fetchone()
+    if not row:
+        conn.close()
+        return jsonify({"ok": False, "error": "Invalid or expired verification code."}), 401
+
+    ch_row = dict(row)
+    if str(ch_row.get("expires_at") or "") <= now_iso:
+        c.execute("UPDATE auth_otp_challenges SET status = 'expired' WHERE id = ?", (ch_row["id"],))
+        conn.commit()
+        conn.close()
+        return jsonify({"ok": False, "error": "Verification code has expired."}), 401
+
+    attempts = int(ch_row.get("attempts") or 0)
+    max_attempts = int(ch_row.get("max_attempts") or OTP_MAX_ATTEMPTS)
+    if attempts >= max_attempts:
+        c.execute("UPDATE auth_otp_challenges SET status = 'locked' WHERE id = ?", (ch_row["id"],))
+        conn.commit()
+        conn.close()
+        return jsonify({"ok": False, "error": "Too many incorrect attempts."}), 429
+
+    if not verify_otp_code_digest(otp_input, ch_row["salt"], dest, "link_contact", ch_row["otp_hash"]):
+        new_attempts = attempts + 1
+        c.execute(
+            "UPDATE auth_otp_challenges SET attempts = ?, status = ? WHERE id = ?",
+            (new_attempts, "locked" if new_attempts >= max_attempts else "pending", ch_row["id"]),
+        )
+        conn.commit()
+        conn.close()
+        return jsonify({"ok": False, "error": "Incorrect verification code."}), 401
+
+    c.execute(
+        "UPDATE auth_otp_challenges SET status = 'verified', used_at = ?, attempts = ? WHERE id = ?",
+        (now_iso, attempts + 1, ch_row["id"]),
+    )
+    if channel == "email":
+        c.execute("SELECT id FROM users WHERE LOWER(email) = ? AND id != ?", (dest, user["id"]))
+        if c.fetchone():
+            conn.commit()
+            conn.close()
+            return jsonify({"ok": False, "error": "This email is already linked to another account."}), 409
+        c.execute("UPDATE users SET email = ?, email_verified = 1 WHERE id = ?", (dest, user["id"]))
+        user["email"] = dest
+    else:
+        c.execute(
+            "SELECT id FROM users WHERE phone = ? AND COALESCE(phone_verified, 0) = 1 AND id != ?",
+            (dest, user["id"]),
+        )
+        if c.fetchone():
+            conn.commit()
+            conn.close()
+            return jsonify({"ok": False, "error": "This mobile number is already verified on another account."}), 409
+        c.execute("UPDATE users SET phone = ?, phone_verified = 1 WHERE id = ?", (dest, user["id"]))
+        user["phone"] = dest
+
+    log_security_event(c, "account_contact_linked", "customer", masked_dest, "success", f"user_id={user['id']}")
+    conn.commit()
+    conn.close()
+    return jsonify({"ok": True, "user": user, "message": "Contact verified and linked to your account."})
+
+
 @app.route("/api/auth/register", methods=["POST"])
 def api_auth_register():
+    if not is_legacy_password_auth_allowed():
+        return jsonify({
+            "ok": False,
+            "passwordless_only": True,
+            "error": "Password registration has been retired. Please sign in using a 6-digit verification code (OTP).",
+        }), 410
     data = request.get_json(silent=True) or {}
     name = str(data.get("name", "")).strip()
     email = str(data.get("email", "")).strip().lower()
@@ -4476,6 +5300,12 @@ def api_auth_register():
 
 @app.route("/api/auth/login", methods=["POST"])
 def api_auth_login():
+    if not is_legacy_password_auth_allowed():
+        return jsonify({
+            "ok": False,
+            "passwordless_only": True,
+            "error": "Password login has been retired. Please sign in using a 6-digit verification code (OTP).",
+        }), 410
     data = request.get_json(silent=True) or {}
     email = str(data.get("email", "")).strip().lower()
     password = str(data.get("password", "")).strip()
@@ -5961,6 +6791,368 @@ def api_order_details():
     return jsonify({"ok": True, "order": order_dict})
 
 # ================= Protected Administrative APIs =================
+
+
+@app.route("/api/admin/auth/config", methods=["GET"])
+def api_admin_auth_config():
+    allowed_emails = sorted(get_allowed_admin_emails())
+    primary_masked = mask_email(allowed_emails[0]) if allowed_emails else "m***i@gmail.com"
+    notif_cfg = get_notification_config()
+    return jsonify({
+        "ok": True,
+        "is_admin_configured": is_admin_passkey_configured(),
+        "passwordless_mfa_enabled": True,
+        "email_otp_configured": bool(notif_cfg.get("email_configured", True)),
+        "totp_configured": True,
+        "allowed_admin_email_hint": primary_masked,
+        "mfa_methods": ["totp", "security_key"],
+        "session_ttl_hours": ADMIN_SESSION_TTL_HOURS,
+    })
+
+
+@app.route("/api/admin/auth/request-otp", methods=["POST"])
+def api_admin_auth_request_otp():
+    """
+    Step 1 of Admin Passwordless MFA:
+    Verifies that the requested email is in the strict ADMIN_ALLOWED_EMAILS allowlist,
+    enforces cooldown & rate limits, and dispatches a single-use 6-digit Admin Email OTP.
+    Never grants admin access on email OTP alone (requires Step 2 MFA verification).
+    """
+    if not is_admin_passkey_configured():
+        return jsonify({
+            "ok": False,
+            "error": "Administrative security credentials are not configured on the server.",
+        }), 401
+
+    data = request.get_json(silent=True) or {}
+    email = str(data.get("email") or "").strip().lower()
+    if "@" not in email or "." not in email:
+        return jsonify({"ok": False, "error": "Please enter your authorized admin email address."}), 400
+
+    allowed_emails = get_allowed_admin_emails()
+    masked_email = mask_email(email)
+    conn = get_db()
+    c = conn.cursor()
+
+    if email not in allowed_emails:
+        log_security_event(c, "admin_otp_unauthorized_email", "admin", masked_email, "blocked", "not_in_allowlist")
+        conn.commit()
+        conn.close()
+        return jsonify({
+            "ok": False,
+            "error": "This email address is not authorized for Matra Naari administrative access.",
+        }), 403
+
+    otp_code, challenge_id, rate_err, status_code = _check_and_issue_otp_challenge(
+        c, "email", email, purpose="admin_mfa_login"
+    )
+    if rate_err:
+        conn.commit()
+        conn.close()
+        return jsonify(rate_err), status_code
+
+    send_res = send_otp_email(email, otp_code, purpose="admin_mfa_login", expires_minutes=OTP_EXPIRY_SECONDS // 60)
+    if not send_res.get("ok"):
+        c.execute("UPDATE auth_otp_challenges SET status = 'delivery_failed' WHERE id = ?", (challenge_id,))
+        log_security_event(c, "admin_otp_delivery_failed", "admin", masked_email, "failed", str(send_res.get("error") or ""))
+        conn.commit()
+        conn.close()
+        return jsonify({
+            "ok": False,
+            "error": "Unable to dispatch admin verification email right now. Use Emergency MFA Recovery if email is unreachable.",
+        }), 502
+
+    log_security_event(c, "admin_otp_requested", "admin", masked_email, "sent", "purpose=admin_mfa_login")
+    conn.commit()
+    conn.close()
+    return jsonify({
+        "ok": True,
+        "email_masked": masked_email,
+        "expires_in_seconds": OTP_EXPIRY_SECONDS,
+        "resend_cooldown_seconds": OTP_RESEND_COOLDOWN_SECONDS,
+        "message": f"Admin verification code sent to {masked_email}. Complete Factor 2 MFA to sign in.",
+    })
+
+
+@app.route("/api/admin/auth/verify-mfa", methods=["POST"])
+def api_admin_auth_verify_mfa():
+    """
+    Step 2 of Admin Passwordless MFA:
+    Requires BOTH:
+      1. Verified Admin Email Identity (6-digit Email OTP sent to an allowlisted admin email)
+      2. Strong Second-Factor MFA (6-digit RFC 6238 TOTP code OR cryptographic Admin Security Key)
+    Also supports Emergency Recovery Mode when email delivery is unavailable by requiring BOTH
+    the valid 6-digit TOTP Authenticator code AND the full cryptographic Admin Security Key.
+    """
+    if not is_admin_passkey_configured():
+        return jsonify({"ok": False, "error": "Admin security is not configured on the server."}), 401
+
+    data = request.get_json(silent=True) or {}
+    email = str(data.get("email") or "").strip().lower()
+    email_otp = re.sub(r"\D", "", str(data.get("email_otp") or data.get("otp") or ""))
+    mfa_type = str(data.get("mfa_type") or "auto").strip().lower()
+    mfa_code = str(data.get("mfa_code") or data.get("totp_code") or data.get("security_key") or "").strip()
+    recovery_totp = re.sub(r"\D", "", str(data.get("recovery_totp") or ""))
+    recovery_key = str(data.get("recovery_security_key") or "").strip()
+
+    allowed_emails = get_allowed_admin_emails()
+    masked_email = mask_email(email) if email else "admin"
+
+    conn = get_db()
+    c = conn.cursor()
+
+    if email not in allowed_emails:
+        log_security_event(c, "admin_mfa_unauthorized_email", "admin", masked_email, "blocked", "not_in_allowlist")
+        conn.commit()
+        conn.close()
+        return jsonify({"ok": False, "error": "Unauthorized admin email identity."}), 403
+
+    now_dt = datetime.now()
+    now_iso = now_dt.isoformat()
+    verified_mfa_label = ""
+
+    # Path A: Emergency Dual-Key Recovery (requires BOTH valid TOTP + valid Admin Security Key, never email-only)
+    if mfa_type == "emergency_recovery":
+        if not (verify_admin_totp_code(recovery_totp) and verify_admin_passkey_value(recovery_key)):
+            log_security_event(c, "admin_emergency_recovery_failed", "admin", masked_email, "failed", "invalid_dual_factors")
+            conn.commit()
+            conn.close()
+            return jsonify({
+                "ok": False,
+                "error": "Emergency recovery requires both a valid 6-digit Authenticator TOTP code AND the Admin Security Key.",
+            }), 401
+        verified_mfa_label = "emergency_totp+security_key"
+    else:
+        # Path B: Standard Passwordless Admin Login (Factor 1: Email OTP + Factor 2: TOTP or Security Key)
+        if len(email_otp) != 6:
+            conn.close()
+            return jsonify({"ok": False, "error": "Please enter the 6-digit Admin Email OTP."}), 400
+        if not mfa_code:
+            conn.close()
+            return jsonify({
+                "ok": False,
+                "error": "Second-factor MFA (TOTP Authenticator code or Admin Security Key) is required.",
+            }), 401
+
+        c.execute(
+            """
+            SELECT * FROM auth_otp_challenges
+            WHERE channel = 'email' AND destination = ? AND purpose = 'admin_mfa_login' AND status = 'pending'
+            ORDER BY created_at DESC LIMIT 1
+            """,
+            (email,),
+        )
+        row = c.fetchone()
+        if not row:
+            log_security_event(c, "admin_mfa_missing_otp", "admin", masked_email, "failed", "")
+            conn.commit()
+            conn.close()
+            return jsonify({"ok": False, "error": "Invalid or expired Admin Email OTP. Please request a new code."}), 401
+
+        ch_row = dict(row)
+        if str(ch_row.get("expires_at") or "") <= now_iso:
+            c.execute("UPDATE auth_otp_challenges SET status = 'expired' WHERE id = ?", (ch_row["id"],))
+            conn.commit()
+            conn.close()
+            return jsonify({"ok": False, "error": "Admin Email OTP has expired. Please request a new code."}), 401
+
+        attempts = int(ch_row.get("attempts") or 0)
+        max_attempts = int(ch_row.get("max_attempts") or OTP_MAX_ATTEMPTS)
+        if attempts >= max_attempts:
+            c.execute("UPDATE auth_otp_challenges SET status = 'locked' WHERE id = ?", (ch_row["id"],))
+            conn.commit()
+            conn.close()
+            return jsonify({"ok": False, "error": "Too many failed attempts. Please request a new Admin Email OTP."}), 429
+
+        if not verify_otp_code_digest(email_otp, ch_row["salt"], email, "admin_mfa_login", ch_row["otp_hash"]):
+            new_attempts = attempts + 1
+            c.execute(
+                "UPDATE auth_otp_challenges SET attempts = ?, status = ? WHERE id = ?",
+                (new_attempts, "locked" if new_attempts >= max_attempts else "pending", ch_row["id"]),
+            )
+            log_security_event(c, "admin_otp_mismatch", "admin", masked_email, "failed", f"attempt={new_attempts}")
+            conn.commit()
+            conn.close()
+            return jsonify({"ok": False, "error": "Incorrect Admin Email OTP code."}), 401
+
+        # Verify Factor 2 (TOTP Authenticator OR Admin Security Key)
+        totp_ok = verify_admin_totp_code(mfa_code) if mfa_type in ("auto", "totp") else False
+        seckey_ok = verify_admin_passkey_value(mfa_code) if mfa_type in ("auto", "security_key") else False
+
+        if not (totp_ok or seckey_ok):
+            new_attempts = attempts + 1
+            c.execute(
+                "UPDATE auth_otp_challenges SET attempts = ?, status = ? WHERE id = ?",
+                (new_attempts, "locked" if new_attempts >= max_attempts else "pending", ch_row["id"]),
+            )
+            log_security_event(c, "admin_mfa_second_factor_failed", "admin", masked_email, "failed", f"mfa_type={mfa_type}")
+            conn.commit()
+            conn.close()
+            return jsonify({"ok": False, "error": "Invalid second-factor MFA credential."}), 401
+
+        # Mark Email OTP single-use verified
+        c.execute(
+            "UPDATE auth_otp_challenges SET status = 'verified', used_at = ?, attempts = ? WHERE id = ?",
+            (now_iso, attempts + 1, ch_row["id"]),
+        )
+        verified_mfa_label = "email_otp+totp" if totp_ok else "email_otp+security_key"
+
+    token = secrets.token_hex(32)
+    exp_dt = now_dt + timedelta(hours=ADMIN_SESSION_TTL_HOURS)
+    ip_addr = get_client_ip()
+    ua_str = str(request.headers.get("User-Agent") or "Admin Client")[:180]
+
+    c.execute("DELETE FROM admin_sessions WHERE expires_at <= ?", (now_iso,))
+    c.execute(
+        """
+        INSERT INTO admin_sessions (
+            token, created_at, expires_at, admin_email, mfa_method, ip_address, user_agent, last_active_at, revoked
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0)
+        """,
+        (token, now_iso, exp_dt.isoformat(), email, verified_mfa_label, ip_addr, ua_str, now_iso),
+    )
+    log_security_event(c, "admin_mfa_verified", "admin", masked_email, "success", f"mfa={verified_mfa_label}")
+    conn.commit()
+    conn.close()
+
+    resp = jsonify({
+        "ok": True,
+        "authenticated": True,
+        "token": token,
+        "admin_email": email,
+        "mfa_method": verified_mfa_label,
+        "expires_at": exp_dt.isoformat(),
+        "message": "Admin MFA verified successfully.",
+    })
+    return set_admin_auth_cookie(resp, token)
+
+
+@app.route("/api/admin/sessions", methods=["GET"])
+def api_admin_sessions_list():
+    if not check_admin_auth():
+        return jsonify({"ok": False, "error": "Unauthorized"}), 401
+
+    curr_tok = (
+        request.headers.get("X-Admin-Token", "").strip()
+        or (request.headers.get("Authorization", "")[7:].strip() if request.headers.get("Authorization", "").startswith("Bearer ") else "")
+        or request.cookies.get("naari_admin_token", "").strip()
+    )
+    now_iso = datetime.now().isoformat()
+    conn = get_db()
+    c = conn.cursor()
+    c.execute(
+        """
+        SELECT token, created_at, expires_at, admin_email, mfa_method, ip_address, user_agent, last_active_at, revoked
+        FROM admin_sessions
+        WHERE expires_at > ? AND COALESCE(revoked, 0) = 0
+        ORDER BY created_at DESC
+        """,
+        (now_iso,),
+    )
+    sessions = []
+    for r in c.fetchall():
+        d = dict(r)
+        raw_t = str(d.get("token") or "")
+        sessions.append({
+            "session_id": raw_t[:10],
+            "admin_email": d.get("admin_email") or "matranaari@gmail.com",
+            "mfa_method": d.get("mfa_method") or "security_key",
+            "ip_address": d.get("ip_address") or "-",
+            "user_agent": d.get("user_agent") or "Browser Session",
+            "created_at": d.get("created_at") or "",
+            "expires_at": d.get("expires_at") or "",
+            "is_current": bool(curr_tok and raw_t == curr_tok),
+        })
+
+    c.execute(
+        """
+        SELECT id, event_type, actor_type, identifier_masked, ip_address, status, details, created_at
+        FROM security_audit_logs
+        ORDER BY created_at DESC LIMIT 25
+        """
+    )
+    audit_logs = [dict(r) for r in c.fetchall()]
+    conn.close()
+    return jsonify({
+        "ok": True,
+        "sessions": sessions,
+        "audit_logs": audit_logs,
+    })
+
+
+@app.route("/api/admin/sessions/revoke", methods=["POST"])
+def api_admin_sessions_revoke():
+    if not check_admin_auth():
+        return jsonify({"ok": False, "error": "Unauthorized"}), 401
+
+    data = request.get_json(silent=True) or {}
+    session_id = str(data.get("session_id") or "").strip()
+    revoke_all_others = bool(data.get("revoke_all_others"))
+    revoke_all = bool(data.get("revoke_all"))
+
+    curr_tok = (
+        request.headers.get("X-Admin-Token", "").strip()
+        or (request.headers.get("Authorization", "")[7:].strip() if request.headers.get("Authorization", "").startswith("Bearer ") else "")
+        or request.cookies.get("naari_admin_token", "").strip()
+    )
+
+    conn = get_db()
+    c = conn.cursor()
+    if revoke_all:
+        c.execute("UPDATE admin_sessions SET revoked = 1 WHERE COALESCE(revoked, 0) = 0")
+        log_security_event(c, "admin_sessions_revoked_all", "admin", "all_sessions", "success", "")
+    elif revoke_all_others and curr_tok:
+        c.execute("UPDATE admin_sessions SET revoked = 1 WHERE token != ? AND COALESCE(revoked, 0) = 0", (curr_tok,))
+        log_security_event(c, "admin_sessions_revoked_others", "admin", "other_sessions", "success", "")
+    elif session_id and len(session_id) >= 6:
+        c.execute("UPDATE admin_sessions SET revoked = 1 WHERE SUBSTR(token, 1, ?) = ?", (len(session_id), session_id))
+        log_security_event(c, "admin_session_revoked", "admin", session_id, "success", "")
+    else:
+        conn.close()
+        return jsonify({"ok": False, "error": "Specify session_id, revoke_all_others, or revoke_all."}), 400
+
+    conn.commit()
+    conn.close()
+    return jsonify({"ok": True, "message": "Selected admin session(s) revoked immediately."})
+
+
+@app.route("/api/admin/mfa/totp-setup", methods=["GET", "POST"])
+def api_admin_mfa_totp_setup():
+    """
+    Allows an already-authenticated Store Owner to view or rotate their
+    RFC 6238 TOTP Authenticator enrollment URI. Never accessible without admin auth.
+    """
+    if not check_admin_auth():
+        return jsonify({"ok": False, "error": "Unauthorized"}), 401
+
+    conn = get_db()
+    c = conn.cursor()
+    if request.method == "POST":
+        data = request.get_json(silent=True) or {}
+        if data.get("rotate"):
+            new_secret = base64.b32encode(secrets.token_bytes(20)).decode("ascii").rstrip("=")
+            c.execute(
+                "INSERT INTO site_settings (key, value) VALUES ('admin_totp_secret', ?) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value",
+                (new_secret,),
+            )
+            log_security_event(c, "admin_totp_secret_rotated", "admin", "totp_secret", "success", "")
+            conn.commit()
+            invalidate_site_settings_cache()
+
+    secret = get_or_create_admin_totp_secret(c)
+    allowed_emails = sorted(get_allowed_admin_emails())
+    primary_email = allowed_emails[0] if allowed_emails else "matranaari@gmail.com"
+    issuer = "Matra Naari Admin"
+    label = urllib.parse.quote(f"{issuer}:{primary_email}")
+    otpauth_uri = f"otpauth://totp/{label}?secret={secret}&issuer={urllib.parse.quote(issuer)}&algorithm=SHA1&digits=6&period=30"
+    conn.close()
+    return jsonify({
+        "ok": True,
+        "admin_email": primary_email,
+        "totp_secret": secret,
+        "otpauth_uri": otpauth_uri,
+    })
+
 
 @app.route("/api/admin/verify", methods=["POST"])
 def api_admin_verify():

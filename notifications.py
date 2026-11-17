@@ -1317,3 +1317,247 @@ def recover_pending_and_failed_notifications(
         "recovered_orders": recovered_orders,
         "skipped_historical_orders": skipped_historical_orders,
     }
+
+
+# ======================================================================
+# PASSWORDLESS OTP EMAIL & INDIA DLT SMS DELIVERY
+# ======================================================================
+
+_TEST_SMS_TRANSPORT = None
+
+
+def set_test_sms_transport(sms_fn=None):
+    global _TEST_SMS_TRANSPORT
+    _TEST_SMS_TRANSPORT = sms_fn
+
+
+def get_sms_otp_config() -> dict:
+    """
+    Loads India-compatible SMS OTP configuration from environment variables.
+    IMPORTANT: Remains disabled by default until an approved SMS provider,
+    DLT Sender ID, and DLT Template ID are explicitly configured.
+    Never simulates OTP verification in production.
+    """
+    sms_enabled_raw = (os.environ.get("SMS_OTP_ENABLED") or "false").strip().lower()
+    sms_provider = (os.environ.get("SMS_PROVIDER") or "msg91").strip().lower()
+    sms_api_key = (os.environ.get("SMS_API_KEY") or "").strip()
+    sms_sender_id = (os.environ.get("SMS_SENDER_ID") or "MTRNRI").strip()
+    sms_dlt_template_id = (os.environ.get("SMS_DLT_TEMPLATE_ID") or "").strip()
+
+    is_configured = bool(
+        _TEST_SMS_TRANSPORT is not None
+        or (
+            sms_enabled_raw in ("1", "true", "yes", "on")
+            and sms_api_key
+            and sms_dlt_template_id
+        )
+    )
+    return {
+        "sms_otp_enabled": is_configured,
+        "sms_provider": sms_provider,
+        "sms_sender_id": sms_sender_id,
+        "sms_dlt_template_configured": bool(sms_dlt_template_id or _TEST_SMS_TRANSPORT is not None),
+        "sms_api_key": sms_api_key,
+        "sms_dlt_template_id": sms_dlt_template_id,
+    }
+
+
+def send_otp_email(
+    to_email: str,
+    otp_code: str,
+    purpose: str = "customer_login",
+    expires_minutes: int = 5,
+) -> dict:
+    """
+    Sends a branded Quiet Luxury Matra Naari verification code email via Resend.
+    Never logs or returns the OTP value.
+    """
+    cfg = get_notification_config()
+    clean_email = str(to_email or "").strip().lower()
+    if "@" not in clean_email or "." not in clean_email:
+        return {"ok": False, "error": "Invalid recipient email address"}
+
+    if purpose == "admin_mfa_login":
+        subject = "Matra Naari Admin — Security Verification Code"
+        heading = "Admin Security Verification"
+        intro = "Use the one-time verification code below along with your second-factor MFA credential to sign in to the Matra Naari Store Manager."
+    elif purpose == "link_contact":
+        subject = "Matra Naari — Verify Your Contact Details"
+        heading = "Verify Contact Update"
+        intro = "Enter the 6-digit verification code below to confirm and link this email address to your Matra Naari account."
+    else:
+        subject = "Your Matra Naari Sign-In Verification Code"
+        heading = "Sign In to Matra Naari"
+        intro = "Enter the 6-digit verification code below to securely access your Matra Naari account. No password is required."
+
+    safe_code = html.escape(str(otp_code or "").strip())
+    html_body = f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>{html.escape(subject)}</title>
+</head>
+<body style="margin:0;padding:0;background-color:#F7F4EE;font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:#292725;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color:#F7F4EE;padding:32px 16px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:520px;background-color:#FFFFFF;border:1px solid #E6DED5;border-radius:12px;overflow:hidden;">
+          <tr>
+            <td style="background-color:#542C34;padding:24px 32px;text-align:center;">
+              <div style="font-size:11px;letter-spacing:0.22em;text-transform:uppercase;color:#F7F4EE;opacity:0.85;margin-bottom:4px;">MATRA NAARI</div>
+              <div style="font-size:20px;font-weight:700;color:#FFFFFF;letter-spacing:0.02em;">{html.escape(heading)}</div>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:32px;">
+              <p style="margin:0 0 20px;font-size:14px;line-height:1.6;color:#292725;">
+                {html.escape(intro)}
+              </p>
+              <div style="background-color:#F7F4EE;border:1px solid #E6DED5;border-radius:10px;padding:22px 16px;text-align:center;margin:24px 0;">
+                <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.16em;color:#706963;margin-bottom:8px;">One-Time Verification Code</div>
+                <div style="font-family:'SFMono-Regular',Consolas,'Liberation Mono',Menlo,monospace;font-size:32px;font-weight:700;letter-spacing:0.28em;color:#542C34;padding-left:0.28em;">
+                  {safe_code}
+                </div>
+                <div style="font-size:12px;color:#706963;margin-top:10px;">
+                  Valid for <strong>{int(expires_minutes)} minutes</strong> &middot; Single-use only
+                </div>
+              </div>
+              <p style="margin:0;font-size:12px;line-height:1.5;color:#706963;">
+                For your security, never share this code with anyone. Matra Naari staff will never ask for your verification code over phone, SMS, or WhatsApp. If you did not request this code, you can safely ignore this email.
+              </p>
+            </td>
+          </tr>
+          <tr>
+            <td style="background-color:#FAF8F4;border-top:1px solid #E6DED5;padding:16px 32px;text-align:center;font-size:11px;color:#706963;">
+              &copy; 2026 Matra Naari &middot; <a href="https://matranaari.com" style="color:#542C34;text-decoration:none;">matranaari.com</a>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>"""
+
+    text_body = (
+        f"MATRA NAARI — {heading}\n\n"
+        f"{intro}\n\n"
+        f"Your 6-digit verification code is: {otp_code}\n\n"
+        f"Valid for {int(expires_minutes)} minutes (single-use only).\n"
+        f"Never share this code with anyone. If you did not request this code, please ignore this email.\n"
+    )
+
+    ok, msg_id, err = _send_email_once(clean_email, subject, html_body, text_body, cfg)
+    return {
+        "ok": bool(ok),
+        "provider_message_id": msg_id,
+        "error": err,
+        "recipient_masked": mask_email(clean_email),
+    }
+
+
+def send_otp_sms(
+    phone_str: str,
+    otp_code: str,
+    purpose: str = "customer_login",
+    expires_minutes: int = 5,
+) -> dict:
+    """
+    Dispatches a 6-digit SMS OTP to a 10-digit Indian mobile number via an
+    India DLT-compliant SMS gateway (MSG91 / Fast2SMS) or isolated test transport.
+    Never sends or simulates SMS when SMS_OTP_ENABLED is false.
+    """
+    wa_id = normalize_indian_whatsapp_recipient(phone_str)
+    if not wa_id:
+        return {"ok": False, "error": "Please enter a valid 10-digit Indian mobile number."}
+    phone_10 = wa_id[2:]
+    sms_cfg = get_sms_otp_config()
+
+    if _TEST_SMS_TRANSPORT is not None:
+        try:
+            res = _TEST_SMS_TRANSPORT(
+                phone=phone_10,
+                e164=f"+91{phone_10}",
+                otp_code=otp_code,
+                purpose=purpose,
+                sender_id=sms_cfg["sms_sender_id"],
+                dlt_template_id=sms_cfg["sms_dlt_template_id"],
+            )
+            ok, msg_id, err = _normalize_transport_result(res)
+            return {
+                "ok": bool(ok),
+                "provider_message_id": msg_id,
+                "error": err,
+                "recipient_masked": mask_phone(phone_10),
+            }
+        except Exception as exc:
+            return {"ok": False, "error": f"SMS test transport error: {type(exc).__name__}"}
+
+    if not sms_cfg["sms_otp_enabled"]:
+        return {
+            "ok": False,
+            "phone_otp_unavailable": True,
+            "error": "Mobile SMS OTP is not enabled yet. Please sign in using Email OTP.",
+        }
+
+    provider = sms_cfg["sms_provider"]
+    try:
+        if provider == "msg91":
+            resp = requests.post(
+                "https://control.msg91.com/api/v5/otp",
+                headers={
+                    "authkey": sms_cfg["sms_api_key"],
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "template_id": sms_cfg["sms_dlt_template_id"],
+                    "mobile": f"91{phone_10}",
+                    "otp": str(otp_code),
+                    "otp_expiry": int(expires_minutes),
+                },
+                timeout=10,
+            )
+            if resp.status_code in (200, 201, 202):
+                data = resp.json() if resp.content else {}
+                if str(data.get("type", "")).lower() == "success" or resp.status_code == 200:
+                    return {
+                        "ok": True,
+                        "provider_message_id": str(data.get("request_id") or "msg91-ok"),
+                        "error": "",
+                        "recipient_masked": mask_phone(phone_10),
+                    }
+            return {"ok": False, "error": f"SMS gateway returned HTTP {resp.status_code}"}
+
+        if provider == "fast2sms":
+            resp = requests.post(
+                "https://www.fast2sms.com/dev/bulkV2",
+                headers={
+                    "authorization": sms_cfg["sms_api_key"],
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "route": "dlt",
+                    "sender_id": sms_cfg["sms_sender_id"],
+                    "message": sms_cfg["sms_dlt_template_id"],
+                    "variables_values": f"{otp_code}|{expires_minutes} mins",
+                    "flash": 0,
+                    "numbers": phone_10,
+                },
+                timeout=10,
+            )
+            if resp.status_code in (200, 201, 202):
+                data = resp.json() if resp.content else {}
+                if data.get("return") is True:
+                    return {
+                        "ok": True,
+                        "provider_message_id": str(data.get("request_id") or "fast2sms-ok"),
+                        "error": "",
+                        "recipient_masked": mask_phone(phone_10),
+                    }
+            return {"ok": False, "error": f"SMS gateway returned HTTP {resp.status_code}"}
+
+        return {"ok": False, "error": f"Unsupported SMS provider: {provider}"}
+    except Exception as exc:
+        return {"ok": False, "error": f"SMS transport error: {type(exc).__name__}"}
+
