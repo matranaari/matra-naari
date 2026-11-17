@@ -3528,6 +3528,11 @@ DEFAULT_HERO_BANNERS = [
         "text_align": "left",
         "text_position": "bottom-left",
         "overlay_theme": "dark",
+        "image_fit": "editorial",
+        "focal_x": 50,
+        "focal_y": 6,
+        "mobile_focal_x": 50,
+        "mobile_focal_y": 6,
         "enabled": True,
     },
     {
@@ -3543,6 +3548,11 @@ DEFAULT_HERO_BANNERS = [
         "text_align": "left",
         "text_position": "bottom-left",
         "overlay_theme": "dark",
+        "image_fit": "editorial",
+        "focal_x": 50,
+        "focal_y": 6,
+        "mobile_focal_x": 50,
+        "mobile_focal_y": 6,
         "enabled": True,
     },
     {
@@ -3555,9 +3565,14 @@ DEFAULT_HERO_BANNERS = [
         "desktop_image": "assets/k-coord.jpg",
         "mobile_image": "assets/k-coord.jpg",
         "alt_text": "Matra Naari Co-ord Sets and Kaftan Campaign",
-        "text_align": "center",
-        "text_position": "bottom-center",
+        "text_align": "left",
+        "text_position": "bottom-left",
         "overlay_theme": "dark",
+        "image_fit": "editorial",
+        "focal_x": 50,
+        "focal_y": 6,
+        "mobile_focal_x": 50,
+        "mobile_focal_y": 6,
         "enabled": True,
     },
 ]
@@ -3603,6 +3618,19 @@ ALLOWED_BANNER_POSITIONS = {
     "center-right",
 }
 ALLOWED_OVERLAY_THEMES = {"dark", "light", "none"}
+ALLOWED_IMAGE_FIT_MODES = {"editorial", "cover", "contain"}
+
+
+def _clamp_focal_percent(raw_val, default_val=50):
+    if raw_val is None or raw_val == "":
+        return default_val
+    try:
+        s = str(raw_val).strip().rstrip("%")
+        num = float(s)
+        clamped = max(0.0, min(100.0, num))
+        return int(round(clamped)) if clamped.is_integer() else round(clamped, 1)
+    except Exception:
+        return default_val
 
 
 def _sanitize_banner_image_url(raw_url):
@@ -3656,6 +3684,27 @@ def _normalize_hero_banner_item(raw_item, index=0):
     if overlay_theme not in ALLOWED_OVERLAY_THEMES:
         overlay_theme = "dark"
 
+    image_fit = str(raw_item.get("image_fit") or raw_item.get("desktop_fit") or "editorial").strip().lower()
+    if image_fit not in ALLOWED_IMAGE_FIT_MODES:
+        image_fit = "editorial"
+
+    focal_x = _clamp_focal_percent(
+        raw_item.get("focal_x", raw_item.get("desktop_focal_x")),
+        default_val=50,
+    )
+    focal_y = _clamp_focal_percent(
+        raw_item.get("focal_y", raw_item.get("desktop_focal_y")),
+        default_val=6,
+    )
+    mobile_focal_x = _clamp_focal_percent(
+        raw_item.get("mobile_focal_x", focal_x),
+        default_val=focal_x,
+    )
+    mobile_focal_y = _clamp_focal_percent(
+        raw_item.get("mobile_focal_y", focal_y),
+        default_val=focal_y,
+    )
+
     raw_en = raw_item.get("enabled", True)
     enabled = bool(raw_en) if isinstance(raw_en, bool) else str(raw_en).strip().lower() not in ("false", "0", "no")
 
@@ -3672,6 +3721,16 @@ def _normalize_hero_banner_item(raw_item, index=0):
         "text_align": align,
         "text_position": pos,
         "overlay_theme": overlay_theme,
+        "image_fit": image_fit,
+        "desktop_fit": image_fit,
+        "focal_x": focal_x,
+        "focal_y": focal_y,
+        "desktop_focal_x": focal_x,
+        "desktop_focal_y": focal_y,
+        "mobile_focal_x": mobile_focal_x,
+        "mobile_focal_y": mobile_focal_y,
+        "object_position_desktop": f"{focal_x}% {focal_y}%",
+        "object_position_mobile": f"{mobile_focal_x}% {mobile_focal_y}%",
         "enabled": enabled,
         # Backwards-compatible aliases
         "title": headline,

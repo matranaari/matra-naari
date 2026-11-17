@@ -372,6 +372,101 @@ class DiscoveryAndWishlistTests(unittest.TestCase):
         self.assertTrue(cp_res["ok"])
         self.assertGreater(cp_res["discount_amount"], 0)
 
+    def test_09_hero_banner_cropping_and_admin_focal_point_control(self):
+        """Verify hero banner cropping fix, atmospheric backdrop, and admin focal-point & fit-mode persistence."""
+        pub = self.client.get("/api/banners").get_json()
+        self.assertTrue(pub["ok"])
+        self.assertGreaterEqual(len(pub["hero_banners"]), 3)
+        first_bnr = pub["hero_banners"][0]
+        self.assertEqual(first_bnr["image_fit"], "editorial")
+        self.assertEqual(first_bnr["focal_x"], 50)
+        self.assertEqual(first_bnr["focal_y"], 6)
+        self.assertEqual(first_bnr["mobile_focal_x"], 50)
+        self.assertEqual(first_bnr["mobile_focal_y"], 6)
+        self.assertEqual(first_bnr["object_position_desktop"], "50% 6%")
+        self.assertEqual(first_bnr["object_position_mobile"], "50% 6%")
+
+        # Upsert banner with custom focal points & fit mode via Admin API
+        admin_headers = self._get_admin_headers()
+        up_res = self.client.post(
+            "/api/admin/banners",
+            headers=admin_headers,
+            json={
+                "action": "upsert_banner",
+                "hero_slide_duration_ms": 3500,
+                "banner": {
+                    "id": "bnr_1",
+                    "desktop_image": "assets/hero.jpg",
+                    "mobile_image": "assets/k-short.jpg",
+                    "eyebrow": "MATRA NAARI · SIGNATURE CAMPAIGN",
+                    "headline": "Modern Kurtis, Rooted in Craft",
+                    "subtitle": "Sizes XS to XXL · Ready to Ship",
+                    "cta_text": "Explore Collection",
+                    "cta_link": "shop.html",
+                    "image_fit": "editorial",
+                    "focal_x": 46,
+                    "focal_y": 8,
+                    "mobile_focal_x": 52,
+                    "mobile_focal_y": 10,
+                    "enabled": True,
+                },
+            },
+        ).get_json()
+        self.assertTrue(up_res["ok"])
+        b1 = next(b for b in up_res["hero_banners"] if b["id"] == "bnr_1")
+        self.assertEqual(b1["image_fit"], "editorial")
+        self.assertEqual(b1["focal_x"], 46)
+        self.assertEqual(b1["focal_y"], 8)
+        self.assertEqual(b1["mobile_focal_x"], 52)
+        self.assertEqual(b1["mobile_focal_y"], 10)
+        self.assertEqual(b1["mobile_image"], "assets/k-short.jpg")
+        self.assertEqual(b1["object_position_desktop"], "46% 8%")
+        self.assertEqual(b1["object_position_mobile"], "52% 10%")
+
+        # Verify out-of-range focal values are safely clamped to [0, 100]
+        clamp_res = self.client.post(
+            "/api/admin/banners",
+            headers=admin_headers,
+            json={
+                "action": "upsert_banner",
+                "banner": {
+                    "id": "bnr_2",
+                    "desktop_image": "assets/k-anarkali.jpg",
+                    "image_fit": "cover",
+                    "focal_x": -20,
+                    "focal_y": 140,
+                    "enabled": True,
+                },
+            },
+        ).get_json()
+        self.assertTrue(clamp_res["ok"])
+        b2 = next(b for b in clamp_res["hero_banners"] if b["id"] == "bnr_2")
+        self.assertEqual(b2["image_fit"], "cover")
+        self.assertEqual(b2["focal_x"], 0)
+        self.assertEqual(b2["focal_y"], 100)
+
+        # Verify index.html, admin.html, and assets/styles.css contain the hero crop & focal controls
+        idx_html = self.client.get("/").get_data(as_text=True)
+        self.assertIn("mn-cinematic-backdrop", idx_html)
+        self.assertIn("mn-fit-editorial", idx_html)
+        self.assertIn("--desk-focal-x", idx_html)
+
+        adm_html = self.client.get("/admin.html").get_data(as_text=True)
+        for admin_id in [
+            "bnr-image-fit",
+            "bnr-focal-x",
+            "bnr-focal-y",
+            "bnr-mobile-focal-x",
+            "bnr-mobile-focal-y",
+            "bnr-preview-focal-pin",
+            "bnr-preview-backdrop",
+        ]:
+            self.assertIn(f'id="{admin_id}"', adm_html, f"Missing #{admin_id} in admin.html")
+
+        css_text = self.client.get("/assets/styles.css").get_data(as_text=True)
+        self.assertIn(".mn-cinematic-backdrop", css_text)
+        self.assertIn("aspect-ratio: 0.85;", css_text)
+
 
 if __name__ == "__main__":
     unittest.main()

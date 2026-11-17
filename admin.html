@@ -800,6 +800,68 @@
                 </div>
               </div>
 
+              <!-- Image Crop, Framing & Focal Point Controls -->
+              <div class="border border-border bg-card/70 p-3.5 space-y-3">
+                <div class="flex flex-wrap items-center justify-between gap-2 border-b border-border/70 pb-2">
+                  <div>
+                    <span class="block text-xs font-bold uppercase tracking-wider text-primary">Image Crop &amp; Focal Point Control</span>
+                    <span class="text-[11px] text-muted-foreground">Adjust horizontal &amp; vertical focal points or click directly on the Live Preview to frame faces and outfits.</span>
+                  </div>
+                  <div class="flex flex-wrap items-center gap-1.5">
+                    <button type="button" data-focal-preset="50,6" class="border border-border bg-background px-2 py-1 text-[10px] font-semibold uppercase tracking-wider hover:border-primary cursor-pointer">Head Safe (50%, 6%)</button>
+                    <button type="button" data-focal-preset="50,18" class="border border-border bg-background px-2 py-1 text-[10px] font-semibold uppercase tracking-wider hover:border-primary cursor-pointer">Upper Third (50%, 18%)</button>
+                    <button type="button" data-focal-preset="50,50" class="border border-border bg-background px-2 py-1 text-[10px] font-semibold uppercase tracking-wider hover:border-primary cursor-pointer">Center (50%, 50%)</button>
+                  </div>
+                </div>
+
+                <div>
+                  <label for="bnr-image-fit" class="block text-xs uppercase tracking-wider text-muted-foreground mb-1">Desktop Banner Framing Mode</label>
+                  <select id="bnr-image-fit" class="w-full bg-background border border-border px-2.5 py-2 text-xs">
+                    <option value="editorial">Smart Editorial Frame (Recommended for Portrait Photos — Never Crops Head)</option>
+                    <option value="cover">Full-Width Widescreen Cover (Uses Focal Point X / Y)</option>
+                    <option value="contain">Full Height Uncropped (Contain over Atmospheric Backdrop)</option>
+                  </select>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div class="bg-background border border-border/80 p-2.5 space-y-2">
+                    <span class="block text-[10px] font-bold uppercase tracking-wider text-foreground">Desktop Focal Point</span>
+                    <div>
+                      <div class="flex justify-between text-[11px] text-muted-foreground mb-0.5">
+                        <label for="bnr-focal-x">Horizontal (Left ↔ Right)</label>
+                        <span id="bnr-focal-x-val" class="font-mono font-bold text-primary">50%</span>
+                      </div>
+                      <input type="range" id="bnr-focal-x" min="0" max="100" step="1" value="50" class="w-full accent-primary cursor-pointer" />
+                    </div>
+                    <div>
+                      <div class="flex justify-between text-[11px] text-muted-foreground mb-0.5">
+                        <label for="bnr-focal-y">Vertical (Top ↕ Bottom)</label>
+                        <span id="bnr-focal-y-val" class="font-mono font-bold text-primary">6%</span>
+                      </div>
+                      <input type="range" id="bnr-focal-y" min="0" max="100" step="1" value="6" class="w-full accent-primary cursor-pointer" />
+                    </div>
+                  </div>
+
+                  <div class="bg-background border border-border/80 p-2.5 space-y-2">
+                    <span class="block text-[10px] font-bold uppercase tracking-wider text-foreground">Mobile Focal Point</span>
+                    <div>
+                      <div class="flex justify-between text-[11px] text-muted-foreground mb-0.5">
+                        <label for="bnr-mobile-focal-x">Horizontal (Left ↔ Right)</label>
+                        <span id="bnr-mobile-focal-x-val" class="font-mono font-bold text-primary">50%</span>
+                      </div>
+                      <input type="range" id="bnr-mobile-focal-x" min="0" max="100" step="1" value="50" class="w-full accent-primary cursor-pointer" />
+                    </div>
+                    <div>
+                      <div class="flex justify-between text-[11px] text-muted-foreground mb-0.5">
+                        <label for="bnr-mobile-focal-y">Vertical (Top ↕ Bottom)</label>
+                        <span id="bnr-mobile-focal-y-val" class="font-mono font-bold text-primary">6%</span>
+                      </div>
+                      <input type="range" id="bnr-mobile-focal-y" min="0" max="100" step="1" value="6" class="w-full accent-primary cursor-pointer" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               <div class="flex items-center justify-between pt-2">
                 <label class="inline-flex items-center gap-2 text-xs font-semibold cursor-pointer">
                   <input type="checkbox" id="bnr-enabled" checked class="accent-primary h-4 w-4" />
@@ -815,17 +877,24 @@
             <!-- Right: Live Interactive Banner Preview -->
             <div class="space-y-3">
               <div class="flex items-center justify-between">
-                <h3 class="font-display text-lg font-bold">Live Banner Preview</h3>
+                <div>
+                  <h3 class="font-display text-lg font-bold">Live Banner Crop &amp; Focal Preview</h3>
+                  <p id="bnr-preview-crop-readout" class="text-[11px] font-mono text-muted-foreground">Mode: editorial · Desktop Focal: 50% 6%</p>
+                </div>
                 <div class="inline-flex border border-border bg-background text-xs">
                   <button type="button" id="bnr-preview-mode-desktop" class="px-3 py-1 bg-primary text-primary-foreground font-semibold cursor-pointer">Desktop</button>
                   <button type="button" id="bnr-preview-mode-mobile" class="px-3 py-1 text-foreground cursor-pointer">Mobile</button>
                 </div>
               </div>
 
-              <div id="admin-banner-live-preview-frame" class="relative w-full overflow-hidden border border-border bg-[#292725]" style="height: 320px;">
-                <img id="bnr-preview-img" src="assets/hero.jpg" alt="Banner Preview" class="w-full h-full object-cover object-top" onerror="this.onerror=null;this.src='assets/hero.jpg';" />
-                <div id="bnr-preview-scrim" class="absolute inset-0" style="background: linear-gradient(180deg, rgba(25,18,19,0.15) 0%, rgba(25,18,19,0.75) 100%);"></div>
-                <div id="bnr-preview-pos-wrap" class="absolute inset-0 p-6 flex items-end justify-start">
+              <div id="admin-banner-live-preview-frame" class="relative w-full overflow-hidden border border-border bg-[#292725] cursor-crosshair select-none" style="height: 360px;" title="Click or drag to set the focal point for the current view mode">
+                <div id="bnr-preview-backdrop" class="absolute -inset-6 bg-cover bg-center pointer-events-none" style="background-image: url('assets/hero.jpg'); filter: blur(22px) saturate(1.06) brightness(0.58); transform: scale(1.08);"></div>
+                <div id="bnr-preview-media-stage" class="relative z-10 w-full h-full flex items-stretch justify-end pr-4">
+                  <img id="bnr-preview-img" src="assets/hero.jpg" alt="Banner Preview" class="h-full object-cover" style="width: auto; aspect-ratio: 0.85; object-position: 50% 6%;" onerror="this.onerror=null;this.src='assets/hero.jpg';" />
+                </div>
+                <div id="bnr-preview-scrim" class="absolute inset-0 z-20 pointer-events-none" style="background: linear-gradient(180deg, rgba(25,18,19,0.15) 0%, rgba(25,18,19,0.75) 100%);"></div>
+                <div id="bnr-preview-focal-pin" class="absolute z-30 w-5 h-5 -ml-2.5 -mt-2.5 rounded-full border-2 border-[#FFFCF8] bg-primary/80 shadow-md pointer-events-none flex items-center justify-center text-[9px] text-white font-bold" style="left: 50%; top: 6%;">+</div>
+                <div id="bnr-preview-pos-wrap" class="absolute inset-0 z-20 p-6 flex items-end justify-start pointer-events-none">
                   <div id="bnr-preview-copy-box" class="max-w-md flex flex-col items-start text-left">
                     <span id="bnr-preview-eyebrow" class="text-[10px] uppercase tracking-[0.2em] font-semibold text-[#E6DED5] mb-1">MATRA NAARI · SIGNATURE CAMPAIGN</span>
                     <h4 id="bnr-preview-headline" class="font-display text-2xl sm:text-3xl font-medium text-[#FFFCF8] leading-tight">Modern Kurtis, Rooted in Craft</h4>
@@ -834,7 +903,7 @@
                   </div>
                 </div>
               </div>
-              <p class="text-[11px] text-muted-foreground">Preview updates automatically as you edit text, alignment, position, or upload new banner images.</p>
+              <p class="text-[11px] text-muted-foreground">Tip: Click anywhere on the preview image (or drag the sliders) to adjust the focal point and verify the exact Desktop and Mobile crop before publishing.</p>
             </div>
           </div>
 
@@ -2868,12 +2937,13 @@
           <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 bg-background border ${b.enabled ? "border-border" : "border-dashed border-border opacity-65"}">
             <div class="flex items-center gap-3 min-w-0">
               <span class="font-mono text-xs font-bold text-primary px-2 py-1 bg-primary/10">#${idx + 1}</span>
-              <img src="${escapeHtml(b.desktop_image)}" alt="${escapeHtml(b.headline || "Banner")}" class="h-14 w-24 object-cover object-top border border-border shrink-0" onerror="this.onerror=null;this.src='assets/hero.jpg';" />
+              <img src="${escapeHtml(b.desktop_image)}" alt="${escapeHtml(b.headline || "Banner")}" class="h-14 w-24 object-cover border border-border shrink-0" style="object-position: ${Number(b.focal_x ?? 50)}% ${Number(b.focal_y ?? 6)}%;" onerror="this.onerror=null;this.src='assets/hero.jpg';" />
               <div class="min-w-0">
                 <div class="flex items-center gap-2 flex-wrap">
                   <span class="font-display font-bold text-base truncate">${escapeHtml(b.headline || "(Image-Only Banner)")}</span>
                   <span class="px-1.5 py-0.5 text-[10px] uppercase font-bold ${b.enabled ? "bg-emerald-100 text-emerald-800" : "bg-gray-200 text-gray-700"}">${b.enabled ? "Enabled" : "Disabled"}</span>
                   <span class="px-1.5 py-0.5 text-[10px] font-mono bg-card border border-border text-muted-foreground">${escapeHtml(b.text_position)} · ${escapeHtml(b.text_align)}</span>
+                  <span class="px-1.5 py-0.5 text-[10px] font-mono bg-primary/10 text-primary">${escapeHtml(b.image_fit || "editorial")} · Focal ${Number(b.focal_x ?? 50)}%/${Number(b.focal_y ?? 6)}%</span>
                 </div>
                 <p class="text-xs text-muted-foreground truncate mt-0.5">${escapeHtml(b.subtitle || b.eyebrow || b.desktop_image)}</p>
               </div>
@@ -2985,6 +3055,20 @@
         document.getElementById("bnr-text-align").value = b?.text_align || "left";
         document.getElementById("bnr-text-position").value = b?.text_position || "bottom-left";
         document.getElementById("bnr-overlay-theme").value = b?.overlay_theme || "dark";
+        const fitEl = document.getElementById("bnr-image-fit");
+        if (fitEl) fitEl.value = b?.image_fit || b?.desktop_fit || "editorial";
+        const fx = Number.isFinite(Number(b?.focal_x)) ? Number(b.focal_x) : 50;
+        const fy = Number.isFinite(Number(b?.focal_y)) ? Number(b.focal_y) : 6;
+        const mfx = Number.isFinite(Number(b?.mobile_focal_x)) ? Number(b.mobile_focal_x) : fx;
+        const mfy = Number.isFinite(Number(b?.mobile_focal_y)) ? Number(b.mobile_focal_y) : fy;
+        const fxEl = document.getElementById("bnr-focal-x");
+        const fyEl = document.getElementById("bnr-focal-y");
+        const mfxEl = document.getElementById("bnr-mobile-focal-x");
+        const mfyEl = document.getElementById("bnr-mobile-focal-y");
+        if (fxEl) fxEl.value = String(fx);
+        if (fyEl) fyEl.value = String(fy);
+        if (mfxEl) mfxEl.value = String(mfx);
+        if (mfyEl) mfyEl.value = String(mfy);
         document.getElementById("bnr-enabled").checked = b?.enabled !== false;
         updateLiveBannerPreview();
       }
@@ -2999,9 +3083,28 @@
         const align = document.getElementById("bnr-text-align")?.value || "left";
         const pos = document.getElementById("bnr-text-position")?.value || "bottom-left";
         const theme = document.getElementById("bnr-overlay-theme")?.value || "dark";
+        const fitMode = document.getElementById("bnr-image-fit")?.value || "editorial";
+
+        const deskFx = Number(document.getElementById("bnr-focal-x")?.value ?? 50);
+        const deskFy = Number(document.getElementById("bnr-focal-y")?.value ?? 6);
+        const mobFx = Number(document.getElementById("bnr-mobile-focal-x")?.value ?? deskFx);
+        const mobFy = Number(document.getElementById("bnr-mobile-focal-y")?.value ?? deskFy);
+
+        const fxValEl = document.getElementById("bnr-focal-x-val");
+        const fyValEl = document.getElementById("bnr-focal-y-val");
+        const mfxValEl = document.getElementById("bnr-mobile-focal-x-val");
+        const mfyValEl = document.getElementById("bnr-mobile-focal-y-val");
+        if (fxValEl) fxValEl.textContent = `${deskFx}%`;
+        if (fyValEl) fyValEl.textContent = `${deskFy}%`;
+        if (mfxValEl) mfxValEl.textContent = `${mobFx}%`;
+        if (mfyValEl) mfyValEl.textContent = `${mobFy}%`;
 
         const frame = document.getElementById("admin-banner-live-preview-frame");
+        const backdropEl = document.getElementById("bnr-preview-backdrop");
+        const mediaStage = document.getElementById("bnr-preview-media-stage");
         const imgEl = document.getElementById("bnr-preview-img");
+        const pinEl = document.getElementById("bnr-preview-focal-pin");
+        const readoutEl = document.getElementById("bnr-preview-crop-readout");
         const scrimEl = document.getElementById("bnr-preview-scrim");
         const posWrap = document.getElementById("bnr-preview-pos-wrap");
         const copyBox = document.getElementById("bnr-preview-copy-box");
@@ -3011,9 +3114,59 @@
         const ctaEl = document.getElementById("bnr-preview-cta");
         if (!frame || !imgEl) return;
 
-        frame.style.maxWidth = adminPreviewMode === "mobile" ? "280px" : "100%";
-        frame.style.margin = adminPreviewMode === "mobile" ? "0 auto" : "0";
-        imgEl.src = adminPreviewMode === "mobile" ? mobImg : deskImg;
+        const isMobile = adminPreviewMode === "mobile";
+        const activeImg = isMobile ? mobImg : deskImg;
+        const activeFx = isMobile ? mobFx : deskFx;
+        const activeFy = isMobile ? mobFy : deskFy;
+
+        frame.style.maxWidth = isMobile ? "280px" : "100%";
+        frame.style.height = isMobile ? "360px" : "340px";
+        frame.style.margin = isMobile ? "0 auto" : "0";
+        imgEl.src = activeImg;
+        imgEl.style.objectPosition = `${activeFx}% ${activeFy}%`;
+
+        if (backdropEl) {
+          backdropEl.style.backgroundImage = `url('${activeImg}')`;
+          backdropEl.style.backgroundPosition = `${activeFx}% ${activeFy}%`;
+        }
+
+        if (mediaStage) {
+          if (isMobile || fitMode === "cover") {
+            mediaStage.className = "relative z-10 w-full h-full block";
+            imgEl.style.width = "100%";
+            imgEl.style.height = "100%";
+            imgEl.style.aspectRatio = "auto";
+            imgEl.style.objectFit = "cover";
+            imgEl.style.webkitMaskImage = "none";
+            imgEl.style.maskImage = "none";
+          } else if (fitMode === "contain") {
+            mediaStage.className = "relative z-10 w-full h-full flex items-stretch justify-end pr-4";
+            imgEl.style.width = "100%";
+            imgEl.style.height = "100%";
+            imgEl.style.aspectRatio = "auto";
+            imgEl.style.objectFit = "contain";
+            imgEl.style.webkitMaskImage = "none";
+            imgEl.style.maskImage = "none";
+          } else {
+            const isRight = pos.endsWith("right");
+            mediaStage.className = `relative z-10 w-full h-full flex items-stretch ${isRight ? "justify-start pl-4" : "justify-end pr-4"}`;
+            imgEl.style.width = "auto";
+            imgEl.style.height = "100%";
+            imgEl.style.aspectRatio = "0.85";
+            imgEl.style.objectFit = "cover";
+            const maskGrad = "linear-gradient(90deg, transparent 0%, rgba(0,0,0,0.65) 5%, #000 13%, #000 88%, rgba(0,0,0,0.7) 96%, transparent 100%)";
+            imgEl.style.webkitMaskImage = maskGrad;
+            imgEl.style.maskImage = maskGrad;
+          }
+        }
+
+        if (pinEl) {
+          pinEl.style.left = `${activeFx}%`;
+          pinEl.style.top = `${activeFy}%`;
+        }
+        if (readoutEl) {
+          readoutEl.textContent = `Mode: ${fitMode} · ${isMobile ? "Mobile" : "Desktop"} Focal: ${activeFx}% ${activeFy}%`;
+        }
 
         const hasCopy = Boolean(eyebrow || headline || subtitle || ctaText);
         if (!hasCopy || theme === "none") {
@@ -3032,7 +3185,7 @@
           "bottom-right": "items-end justify-end",
           "center-right": "items-center justify-end",
         };
-        posWrap.className = `absolute inset-0 p-5 flex ${posMap[pos] || "items-end justify-start"}`;
+        posWrap.className = `absolute inset-0 z-20 p-5 flex pointer-events-none ${posMap[pos] || "items-end justify-start"}`;
 
         const alignMap = {
           left: "items-start text-left",
@@ -3069,10 +3222,76 @@
         "bnr-text-align",
         "bnr-text-position",
         "bnr-overlay-theme",
+        "bnr-image-fit",
+        "bnr-focal-x",
+        "bnr-focal-y",
+        "bnr-mobile-focal-x",
+        "bnr-mobile-focal-y",
       ].forEach((id) => {
         document.getElementById(id)?.addEventListener("input", updateLiveBannerPreview);
         document.getElementById(id)?.addEventListener("change", updateLiveBannerPreview);
       });
+
+      document.querySelectorAll("[data-focal-preset]").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const parts = (btn.getAttribute("data-focal-preset") || "50,6").split(",");
+          const px = Number(parts[0] ?? 50);
+          const py = Number(parts[1] ?? 6);
+          if (adminPreviewMode === "mobile") {
+            const mfxEl = document.getElementById("bnr-mobile-focal-x");
+            const mfyEl = document.getElementById("bnr-mobile-focal-y");
+            if (mfxEl) mfxEl.value = String(px);
+            if (mfyEl) mfyEl.value = String(py);
+          } else {
+            const fxEl = document.getElementById("bnr-focal-x");
+            const fyEl = document.getElementById("bnr-focal-y");
+            const mfxEl = document.getElementById("bnr-mobile-focal-x");
+            const mfyEl = document.getElementById("bnr-mobile-focal-y");
+            if (fxEl) fxEl.value = String(px);
+            if (fyEl) fyEl.value = String(py);
+            if (mfxEl) mfxEl.value = String(px);
+            if (mfyEl) mfyEl.value = String(py);
+          }
+          updateLiveBannerPreview();
+        });
+      });
+
+      // Interactive click/drag focal point picker on the Live Banner Preview frame
+      (function bindPreviewFocalPicker() {
+        const frame = document.getElementById("admin-banner-live-preview-frame");
+        if (!frame) return;
+        let isDraggingFocal = false;
+        const applyPointFromEvent = (e) => {
+          const rect = frame.getBoundingClientRect();
+          if (!rect.width || !rect.height) return;
+          const clientX = e.touches?.[0]?.clientX ?? e.clientX;
+          const clientY = e.touches?.[0]?.clientY ?? e.clientY;
+          const pctX = Math.max(0, Math.min(100, Math.round(((clientX - rect.left) / rect.width) * 100)));
+          const pctY = Math.max(0, Math.min(100, Math.round(((clientY - rect.top) / rect.height) * 100)));
+          if (adminPreviewMode === "mobile") {
+            const mfxEl = document.getElementById("bnr-mobile-focal-x");
+            const mfyEl = document.getElementById("bnr-mobile-focal-y");
+            if (mfxEl) mfxEl.value = String(pctX);
+            if (mfyEl) mfyEl.value = String(pctY);
+          } else {
+            const fxEl = document.getElementById("bnr-focal-x");
+            const fyEl = document.getElementById("bnr-focal-y");
+            if (fxEl) fxEl.value = String(pctX);
+            if (fyEl) fyEl.value = String(pctY);
+          }
+          updateLiveBannerPreview();
+        };
+        frame.addEventListener("mousedown", (e) => {
+          isDraggingFocal = true;
+          applyPointFromEvent(e);
+        });
+        window.addEventListener("mousemove", (e) => {
+          if (isDraggingFocal) applyPointFromEvent(e);
+        });
+        window.addEventListener("mouseup", () => {
+          isDraggingFocal = false;
+        });
+      })();
 
       document.getElementById("bnr-preview-mode-desktop")?.addEventListener("click", () => {
         adminPreviewMode = "desktop";
@@ -3131,6 +3350,11 @@
           text_align: "left",
           text_position: "bottom-left",
           overlay_theme: "dark",
+          image_fit: "editorial",
+          focal_x: 50,
+          focal_y: 6,
+          mobile_focal_x: 50,
+          mobile_focal_y: 6,
           enabled: true,
         });
       });
@@ -3159,6 +3383,11 @@
           text_align: document.getElementById("bnr-text-align").value,
           text_position: document.getElementById("bnr-text-position").value,
           overlay_theme: document.getElementById("bnr-overlay-theme").value,
+          image_fit: document.getElementById("bnr-image-fit")?.value || "editorial",
+          focal_x: Number(document.getElementById("bnr-focal-x")?.value ?? 50),
+          focal_y: Number(document.getElementById("bnr-focal-y")?.value ?? 6),
+          mobile_focal_x: Number(document.getElementById("bnr-mobile-focal-x")?.value ?? 50),
+          mobile_focal_y: Number(document.getElementById("bnr-mobile-focal-y")?.value ?? 6),
           enabled: document.getElementById("bnr-enabled").checked,
         };
         const durSec = parseFloat(document.getElementById("bnr-slide-duration-sec")?.value || "3.5") || 3.5;

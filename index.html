@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
   <link rel="stylesheet"
     href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@500;600;700&display=swap" />
-  <link rel="stylesheet" href="assets/styles.css?v=manrope-promo-20261117.3" />
+  <link rel="stylesheet" href="assets/styles.css?v=hero-crop-20261117.5" />
   <title>Matra Naari — Buy Women's Indian Kurtis, Anarkalis &amp; Kurta Sets Online | Woven with Meaning</title>
   <meta name="description"
     content="Official Matra Naari store (matranaari.com) — Woven with Meaning. Shop women's Indian kurtis online across India: straight cut kurtis, A-line, Anarkali kurtas, angrakhas, short kurtis, kaftans &amp; 2-piece co-ord sets in sizes XS to XXL." />
@@ -245,8 +245,9 @@
       <div class="mn-cinematic-stage" id="mn-cinematic-stage">
 
         <!-- Slide 1 (Immediate SSR Paint) -->
-        <article class="mn-cinematic-slide active mn-theme-dark" data-hero-slide="0" aria-hidden="false">
+        <article class="mn-cinematic-slide active mn-theme-dark mn-fit-editorial" data-hero-slide="0" data-image-fit="editorial" data-focal-x="50" data-focal-y="6" data-mobile-focal-x="50" data-mobile-focal-y="6" style="--desk-focal-x: 50%; --desk-focal-y: 6%; --mob-focal-x: 50%; --mob-focal-y: 6%;" aria-hidden="false">
           <div class="mn-cinematic-media">
+            <div class="mn-cinematic-backdrop" style="background-image: url('assets/hero.jpg');" aria-hidden="true"></div>
             <picture>
               <source media="(max-width: 767px)" srcset="assets/hero.jpg" />
               <img src="assets/hero.jpg" alt="Matra Naari Signature Kurti Campaign" fetchpriority="high" loading="eager" decoding="async" />
@@ -269,8 +270,9 @@
         </article>
 
         <!-- Slide 2 -->
-        <article class="mn-cinematic-slide mn-theme-dark" data-hero-slide="1" aria-hidden="true">
+        <article class="mn-cinematic-slide mn-theme-dark mn-fit-editorial" data-hero-slide="1" data-image-fit="editorial" data-focal-x="50" data-focal-y="6" data-mobile-focal-x="50" data-mobile-focal-y="6" style="--desk-focal-x: 50%; --desk-focal-y: 6%; --mob-focal-x: 50%; --mob-focal-y: 6%;" aria-hidden="true">
           <div class="mn-cinematic-media">
+            <div class="mn-cinematic-backdrop" style="background-image: url('assets/k-anarkali.jpg');" aria-hidden="true"></div>
             <picture>
               <source media="(max-width: 767px)" srcset="assets/k-anarkali.jpg" />
               <img src="assets/k-anarkali.jpg" alt="Matra Naari Festive Anarkali Campaign" loading="eager" decoding="async" />
@@ -293,16 +295,17 @@
         </article>
 
         <!-- Slide 3 -->
-        <article class="mn-cinematic-slide mn-theme-dark" data-hero-slide="2" aria-hidden="true">
+        <article class="mn-cinematic-slide mn-theme-dark mn-fit-editorial" data-hero-slide="2" data-image-fit="editorial" data-focal-x="50" data-focal-y="6" data-mobile-focal-x="50" data-mobile-focal-y="6" style="--desk-focal-x: 50%; --desk-focal-y: 6%; --mob-focal-x: 50%; --mob-focal-y: 6%;" aria-hidden="true">
           <div class="mn-cinematic-media">
+            <div class="mn-cinematic-backdrop" style="background-image: url('assets/k-coord.jpg');" aria-hidden="true"></div>
             <picture>
               <source media="(max-width: 767px)" srcset="assets/k-coord.jpg" />
               <img src="assets/k-coord.jpg" alt="Matra Naari Co-ord Sets and Kaftan Campaign" loading="lazy" decoding="async" />
             </picture>
           </div>
           <div class="mn-cinematic-scrim mn-cinematic-scrim-dark"></div>
-          <div class="mn-cinematic-overlay-wrap mn-pos-bottom-center">
-            <div class="mn-cinematic-copy mn-align-center">
+          <div class="mn-cinematic-overlay-wrap mn-pos-bottom-left">
+            <div class="mn-cinematic-copy mn-align-left">
               <span class="mn-banner-eyebrow">CONTEMPORARY ENSEMBLES</span>
               <h2 class="mn-banner-headline">Effortless Co-ords &amp; Resort Kaftans</h2>
               <p class="mn-banner-subtitle">Relaxed two-piece sets &amp; fluid kaftans</p>
@@ -565,6 +568,7 @@
       <section class="mn-section pt-0" data-mn-reveal data-campaign-id="camp_2">
         <div class="mn-container">
           <div class="mn-campaign-full-card">
+            <div class="mn-campaign-full-backdrop" style="background-image: url('assets/k-aline.jpg');" aria-hidden="true"></div>
             <picture>
               <source media="(max-width: 767px)" srcset="assets/k-aline.jpg" />
               <img src="assets/k-aline.jpg" alt="Matra Naari Everyday Luxury Campaign" loading="lazy" />
@@ -790,6 +794,13 @@
     let _heroSlideTimer = null;
     let _heroDurationMs = 3500;
 
+    function clampBannerFocal(val, fallback) {
+      if (val === null || val === undefined || val === '') return fallback;
+      const num = parseFloat(String(val).replace('%', ''));
+      if (!Number.isFinite(num)) return fallback;
+      return Math.max(0, Math.min(100, Math.round(num * 10) / 10));
+    }
+
     function buildHeroBannerSlidesHtml(banners) {
       return banners.map((b, idx) => {
         const deskImg = escapeHtml(b.desktop_image || b.image || 'assets/hero.jpg');
@@ -805,6 +816,13 @@
           ? b.text_position
           : 'bottom-left';
         const theme = ['dark', 'light', 'none'].includes(b.overlay_theme) ? b.overlay_theme : 'dark';
+        const rawFit = String(b.image_fit || b.desktop_fit || 'editorial').toLowerCase();
+        const fitMode = ['editorial', 'cover', 'contain'].includes(rawFit) ? rawFit : 'editorial';
+        const deskFx = clampBannerFocal(b.focal_x ?? b.desktop_focal_x, 50);
+        const deskFy = clampBannerFocal(b.focal_y ?? b.desktop_focal_y, 6);
+        const mobFx = clampBannerFocal(b.mobile_focal_x, deskFx);
+        const mobFy = clampBannerFocal(b.mobile_focal_y, deskFy);
+        const isRightText = pos.endsWith('right');
         const hasCopy = Boolean(eyebrow || headline || subtitle || (ctaText && ctaLink));
         const scrimClass = (!hasCopy || theme === 'none')
           ? 'mn-cinematic-scrim-none'
@@ -812,8 +830,9 @@
         const headingTag = idx === 0 ? 'h1' : 'h2';
 
         return `
-          <article class="mn-cinematic-slide ${idx === 0 ? 'active' : ''} mn-theme-${theme === 'light' ? 'light' : 'dark'}" data-hero-slide="${idx}" aria-hidden="${idx === 0 ? 'false' : 'true'}">
+          <article class="mn-cinematic-slide ${idx === 0 ? 'active' : ''} mn-theme-${theme === 'light' ? 'light' : 'dark'} mn-fit-${fitMode} ${isRightText ? 'mn-text-right-side' : ''}" data-hero-slide="${idx}" data-image-fit="${fitMode}" data-focal-x="${deskFx}" data-focal-y="${deskFy}" data-mobile-focal-x="${mobFx}" data-mobile-focal-y="${mobFy}" style="--desk-focal-x: ${deskFx}%; --desk-focal-y: ${deskFy}%; --mob-focal-x: ${mobFx}%; --mob-focal-y: ${mobFy}%;" aria-hidden="${idx === 0 ? 'false' : 'true'}">
             <div class="mn-cinematic-media">
+              <div class="mn-cinematic-backdrop" style="background-image: url('${deskImg}');" aria-hidden="true"></div>
               <picture>
                 <source media="(max-width: 767px)" srcset="${mobImg}" />
                 <img src="${deskImg}" alt="${altTxt}" ${idx === 0 ? 'fetchpriority="high" loading="eager"' : (idx === 1 ? 'loading="eager"' : 'loading="lazy"')} decoding="async" onerror="this.onerror=null;this.src='assets/hero.jpg';" />
@@ -869,6 +888,7 @@
             <section class="mn-section pt-0" data-mn-reveal data-campaign-id="${escapeHtml(c.id || '')}">
               <div class="mn-container">
                 <div class="mn-campaign-full-card">
+                  <div class="mn-campaign-full-backdrop" style="background-image: url('${deskImg}');" aria-hidden="true"></div>
                   <picture>
                     <source media="(max-width: 767px)" srcset="${mobImg}" />
                     <img src="${deskImg}" alt="${altTxt}" loading="lazy" onerror="this.onerror=null;this.src='assets/hero.jpg';" />
