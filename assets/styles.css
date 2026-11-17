@@ -4268,9 +4268,9 @@ label,
 }
 
 /* ==========================================================================
-   MATRA NAARI — MOBILE CHECKOUT RESPONSIVE FIX (320px+ VIEWPORTS)
-   Eliminates horizontal overflow across #checkout-main-grid, Delivery Address,
-   inputs, Google Maps / Leaflet container, badges, payment cards, and summary.
+   MATRA NAARI — CHECKOUT DESKTOP & MOBILE RESPONSIVE LAYOUT (320px-1440px+)
+   Two-column desktop checkout, single-column mobile checkout, safe map sizing,
+   and normal word-boundary wrapping (never 1-char-per-line vertical columns).
    ========================================================================== */
 #checkout-main-grid {
   width: 100%;
@@ -4287,9 +4287,6 @@ label,
 }
 
 #checkout-main-grid > *,
-#checkout-main-grid section,
-#checkout-main-grid form,
-#checkout-main-grid fieldset,
 #checkout-form,
 #checkout-form > *,
 #address-confirmation-card,
@@ -4307,7 +4304,6 @@ label,
 #checkout-form .grid {
   grid-template-columns: minmax(0, 1fr);
   min-width: 0;
-  max-width: 100%;
 }
 
 @media (min-width: 640px) {
@@ -4321,7 +4317,6 @@ label,
 
 #checkout-form .grid > * {
   min-width: 0;
-  max-width: 100%;
 }
 
 #checkout-main-grid input:not([type="radio"]):not([type="checkbox"]),
@@ -4336,11 +4331,11 @@ label,
 /* Google Maps & Leaflet Container Responsive Sizing */
 #delivery-map {
   position: relative;
-  width: 100% !important;
-  max-width: 100% !important;
-  min-width: 0 !important;
-  height: 230px;
-  overflow: hidden !important;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  height: 250px;
+  overflow: hidden;
   box-sizing: border-box;
   z-index: 10;
 }
@@ -4351,23 +4346,25 @@ label,
   }
 }
 
+#delivery-map img {
+  max-width: none !important;
+}
+
 #delivery-map .gm-style,
 #delivery-map .leaflet-container {
   width: 100% !important;
   max-width: 100% !important;
-  box-sizing: border-box;
 }
 
 #delivery-map .leaflet-control-attribution,
 #delivery-map .gm-style-cc {
   max-width: calc(100% - 10px) !important;
   white-space: normal !important;
-  overflow-wrap: anywhere !important;
   font-size: 9px !important;
   line-height: 1.2 !important;
 }
 
-/* Wrap long addresses, coordinates, labels, and status pills cleanly */
+/* Safe word-wrap only on long address/status readout lines (never shrink min-content to 1ch) */
 #map-selected-address-text,
 #map-geocode-status,
 #confirm-preview-recipient,
@@ -4376,65 +4373,36 @@ label,
 #pincode-verify-status,
 #address-confirm-feedback,
 #checkout-error-banner,
-#razorpay-unavailable-note,
-#address-search-helper-note,
-.saved-addr-chip,
-.saved-addr-chip span,
-#checkout-main-grid label,
-#checkout-main-grid p {
-  overflow-wrap: anywhere;
-  word-break: break-word;
+.saved-addr-chip {
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+  word-break: normal;
   max-width: 100%;
-}
-
-#map-selected-address-text {
-  white-space: normal !important;
-  overflow: visible !important;
-  text-overflow: clip !important;
-}
-
-#address-step-status-pill,
-#address-provider-badge,
-#razorpay-status-badge,
-#address-confirmed-badge {
-  white-space: normal;
-  overflow-wrap: anywhere;
-  word-break: break-word;
-  max-width: 100%;
-  display: inline-block;
-  line-height: 1.35;
 }
 
 .saved-addr-chip {
-  width: 100%;
-  max-width: 100%;
-  min-width: 0;
   white-space: normal;
 }
 
-@media (min-width: 640px) {
-  .saved-addr-chip {
-    width: auto;
-  }
-}
-
-/* Touch-friendly & viewport-safe buttons on small mobile screens (320px-639px) */
+/* Mobile-only adjustments (320px-639px) */
 @media (max-width: 639px) {
   .header-logout-btn {
     display: none !important;
   }
 
-  #use-current-location-btn,
-  #confirm-address-btn {
-    width: 100%;
-    max-width: 100%;
-    justify-content: center;
-    text-align: center;
+  #map-selected-address-text {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+  }
+
+  #address-step-status-pill,
+  #address-provider-badge,
+  #razorpay-status-badge,
+  #address-confirmed-badge {
     white-space: normal;
     line-height: 1.35;
-    min-height: 2.65rem;
-    padding-left: 0.75rem;
-    padding-right: 0.75rem;
+    max-width: 100%;
   }
 
   #place-order-btn {
@@ -4450,10 +4418,6 @@ label,
     min-height: 3.15rem;
     box-sizing: border-box;
   }
-
-  #place-order-text {
-    overflow-wrap: anywhere;
-    word-break: break-word;
-  }
 }
+
 

@@ -288,12 +288,13 @@ class DiscoveryAndWishlistTests(unittest.TestCase):
             self.assertEqual(resp.status_code, 200)
             html = resp.get_data(as_text=True)
 
-            # 1. Responsive grid and min-w-0 / minmax(0, 1fr) rules present
-            self.assertIn("grid-cols-1", html)
+            # 1. Responsive grid and min-w-0 / minmax(0, 1fr) rules present; no undefined sm:w-auto collapsing flex rows
+            self.assertIn("lg:grid-cols-[1fr_400px]", html)
             self.assertIn("minmax(0, 1fr)", html)
             self.assertIn("min-w-0", html)
             self.assertIn("resizeActiveDeliveryMap", html)
             self.assertIn("bindMapResizeObserver", html)
+            self.assertNotIn("sm:w-auto", html)
 
             # 2. All essential checkout controls present and intact
             for control_id in [
@@ -326,14 +327,17 @@ class DiscoveryAndWishlistTests(unittest.TestCase):
             ]:
                 self.assertIn(f'id="{control_id}"', html, f"Missing control #{control_id} in {route}")
 
-        # 3. Verify CSS rules in assets/styles.css enforce responsive checkout sizing
+        # 3. Verify CSS rules in assets/styles.css enforce responsive checkout sizing without 1-char-per-line overflow-wrap: anywhere on p/label
         css_resp = self.client.get("/assets/styles.css")
         self.assertEqual(css_resp.status_code, 200)
         css_text = css_resp.get_data(as_text=True)
         self.assertIn("#checkout-main-grid", css_text)
         self.assertIn("grid-template-columns: minmax(0, 1fr);", css_text)
         self.assertIn("#delivery-map .gm-style", css_text)
-        self.assertIn("overflow-wrap: anywhere", css_text)
+        self.assertIn("#delivery-map img", css_text)
+        self.assertIn("overflow-wrap: break-word", css_text)
+        self.assertNotIn("#checkout-main-grid p", css_text)
+        self.assertNotIn("#checkout-main-grid label", css_text)
 
         # 4. Verify address validation, saved addresses, and coupon APIs work for authenticated checkout customer
         token, _ = self._register_user("checkout_resp@matranaari.com")
