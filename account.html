@@ -100,13 +100,13 @@
         <p class="text-xs text-muted-foreground mt-1.5">Instant, secure verification with a one-time code — no password to remember.</p>
       </div>
 
-      <!-- Channel Selector: Email OTP vs Mobile OTP -->
-      <div class="grid grid-cols-2 gap-1.5 bg-background p-1 border border-border rounded-lg" role="tablist" aria-label="Verification Method">
-        <button type="button" id="page-channel-email-btn" class="py-2 px-3 text-xs font-semibold rounded-md bg-primary text-primary-foreground transition cursor-pointer">
-          Email OTP
+      <!-- Channel Selector: Continue with Mobile Number vs Continue with Email -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-1.5 bg-background p-1 border border-border rounded-lg" role="tablist" aria-label="Verification Method">
+        <button type="button" id="page-channel-email-btn" class="py-2.5 px-3 text-xs font-semibold rounded-md bg-primary text-primary-foreground transition cursor-pointer">
+          Continue with Email
         </button>
-        <button type="button" id="page-channel-phone-btn" class="py-2 px-3 text-xs font-semibold rounded-md text-muted-foreground hover:text-foreground transition cursor-pointer">
-          Mobile OTP
+        <button type="button" id="page-channel-phone-btn" class="py-2.5 px-3 text-xs font-semibold rounded-md text-muted-foreground hover:text-foreground transition cursor-pointer">
+          Continue with Mobile Number
         </button>
       </div>
 
@@ -934,23 +934,23 @@
         activeOtpChannel = ch === 'phone' ? 'phone' : 'email';
         reqErrEl.classList.add('hidden');
         if (activeOtpChannel === 'email') {
-          chEmailBtn.className = 'py-2 px-3 text-xs font-semibold rounded-md bg-primary text-primary-foreground transition cursor-pointer';
-          chPhoneBtn.className = 'py-2 px-3 text-xs font-semibold rounded-md text-muted-foreground hover:text-foreground transition cursor-pointer';
+          chEmailBtn.className = 'py-2.5 px-3 text-xs font-semibold rounded-md bg-primary text-primary-foreground transition cursor-pointer';
+          chPhoneBtn.className = 'py-2.5 px-3 text-xs font-semibold rounded-md text-muted-foreground hover:text-foreground transition cursor-pointer';
           emailGroup.classList.remove('hidden');
           phoneGroup.classList.add('hidden');
           sendOtpBtn.disabled = false;
           sendOtpBtn.textContent = 'Send 6-Digit Verification Code';
         } else {
-          chPhoneBtn.className = 'py-2 px-3 text-xs font-semibold rounded-md bg-primary text-primary-foreground transition cursor-pointer';
-          chEmailBtn.className = 'py-2 px-3 text-xs font-semibold rounded-md text-muted-foreground hover:text-foreground transition cursor-pointer';
+          chPhoneBtn.className = 'py-2.5 px-3 text-xs font-semibold rounded-md bg-primary text-primary-foreground transition cursor-pointer';
+          chEmailBtn.className = 'py-2.5 px-3 text-xs font-semibold rounded-md text-muted-foreground hover:text-foreground transition cursor-pointer';
           emailGroup.classList.add('hidden');
           phoneGroup.classList.remove('hidden');
           if (!smsOtpEnabledOnServer) {
             sendOtpBtn.disabled = true;
-            sendOtpBtn.textContent = 'SMS OTP Unavailable — Use Email OTP';
+            sendOtpBtn.textContent = 'SMS OTP Unavailable — Continue with Email';
           } else {
             sendOtpBtn.disabled = false;
-            sendOtpBtn.textContent = 'Send SMS Verification Code';
+            sendOtpBtn.textContent = 'Send 6-Digit SMS Code';
           }
         }
       }

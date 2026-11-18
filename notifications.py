@@ -1334,31 +1334,58 @@ def set_test_sms_transport(sms_fn=None):
 def get_sms_otp_config() -> dict:
     """
     Loads India-compatible SMS OTP configuration from environment variables.
-    IMPORTANT: Remains disabled by default until an approved SMS provider,
-    DLT Sender ID, and DLT Template ID are explicitly configured.
-    Never simulates OTP verification in production.
+    Supports:
+      - MSG91 V5 OTP API (`SMS_PROVIDER=msg91`, requires `SMS_API_KEY` + `SMS_DLT_TEMPLATE_ID`)
+      - Fast2SMS BulkV2 (`SMS_PROVIDER=fast2sms`, supports `SMS_ROUTE=dlt` with `SMS_DLT_TEMPLATE_ID` or `SMS_ROUTE=otp`)
+      - 2Factor.in Transactional OTP (`SMS_PROVIDER=twofactor`, requires `SMS_API_KEY` + optional `SMS_DLT_TEMPLATE_ID` template name)
+    IMPORTANT: Remains disabled by default until `SMS_OTP_ENABLED=true` and valid provider
+    credentials are explicitly configured. Never simulates OTP verification in production.
     """
     sms_enabled_raw = (os.environ.get("SMS_OTP_ENABLED") or "false").strip().lower()
+    sms_flag_enabled = sms_enabled_raw in ("1", "true", "yes", "on")
     sms_provider = (os.environ.get("SMS_PROVIDER") or "msg91").strip().lower()
+    sms_route = (os.environ.get("SMS_ROUTE") or "dlt").strip().lower()
     sms_api_key = (os.environ.get("SMS_API_KEY") or "").strip()
     sms_sender_id = (os.environ.get("SMS_SENDER_ID") or "MTRNRI").strip()
     sms_dlt_template_id = (os.environ.get("SMS_DLT_TEMPLATE_ID") or "").strip()
+    sms_dlt_entity_id = (os.environ.get("SMS_DLT_ENTITY_ID") or "").strip()
+
+    requires_dlt_template = not (
+        (sms_provider == "fast2sms" and sms_route == "otp")
+        or sms_provider == "twofactor"
+    )
+    has_template_Requirement = bool(sms_dlt_template_id) or not requires_dlt_template
+
+    missing_requirements = []
+    if not sms_flag_enabled:
+        missing_requirements.append("SMS_OTP_ENABLED=true")
+    if not sms_api_key:
+        missing_requirements.append("SMS_API_KEY")
+    if requires_dlt_template and not sms_dlt_template_id:
+        missing_requirements.append("SMS_DLT_TEMPLATE_ID")
 
     is_configured = bool(
         _TEST_SMS_TRANSPORT is not None
         or (
-            sms_enabled_raw in ("1", "true", "yes", "on")
-            and sms_api_key
-            and sms_dlt_template_id
+            sms_flag_enabled
+            and bool(sms_api_key)
+            and has_template_Requirement
+            and sms_provider in ("msg91", "fast2sms", "twofactor")
         )
     )
     return {
         "sms_otp_enabled": is_configured,
+        "sms_flag_enabled": sms_flag_enabled,
         "sms_provider": sms_provider,
+        "sms_route": sms_route,
         "sms_sender_id": sms_sender_id,
+        "sms_api_key_configured": bool(sms_api_key or _TEST_SMS_TRANSPORT is not None),
         "sms_dlt_template_configured": bool(sms_dlt_template_id or _TEST_SMS_TRANSPORT is not None),
+        "sms_dlt_entity_configured": bool(sms_dlt_entity_id),
+        "missing_requirements": [] if _TEST_SMS_TRANSPORT is not None else missing_requirements,
         "sms_api_key": sms_api_key,
         "sms_dlt_template_id": sms_dlt_template_id,
+        "sms_dlt_entity_id": sms_dlt_entity_id,
     }
 
 
@@ -1369,19 +1396,15 @@ def send_otp_email(
     expires_minutes: int = 5,
 ) -> dict:
     """
-    Sends a branded Quiet Luxury Matra Naari verification code email via Resend.
-    Never logs or returns the OTP value.
+    Sends a branded Quiet Luxury Matra Naari customer verification code email via Resend.
+    Never logs or returns the OTP value. Never used for Admin login (Admin is password-only).
     """
     cfg = get_notification_config()
     clean_email = str(to_email or "").strip().lower()
     if "@" not in clean_email or "." not in clean_email:
         return {"ok": False, "error": "Invalid recipient email address"}
 
-    if purpose == "admin_mfa_login":
-        subject = "Matra Naari Admin — Security Verification Code"
-        heading = "Admin Security Verification"
-        intro = "Use the one-time verification code below along with your second-factor MFA credential to sign in to the Matra Naari Store Manager."
-    elif purpose == "link_contact":
+    if purpose == "link_contact":
         subject = "Matra Naari — Verify Your Contact Details"
         heading = "Verify Contact Update"
         intro = "Enter the 6-digit verification code below to confirm and link this email address to your Matra Naari account."
@@ -1464,8 +1487,8 @@ def send_otp_sms(
     expires_minutes: int = 5,
 ) -> dict:
     """
-    Dispatches a 6-digit SMS OTP to a 10-digit Indian mobile number via an
-    India DLT-compliant SMS gateway (MSG91 / Fast2SMS) or isolated test transport.
+    Dispatches a 6-digit SMS OTP to a 10-digit Indian mobile number (+91) via an
+    India-compatible SMS gateway (MSG91 / Fast2SMS / 2Factor.in) or isolated test transport.
     Never sends or simulates SMS when SMS_OTP_ENABLED is false.
     """
     wa_id = normalize_indian_whatsapp_recipient(phone_str)
@@ -1530,20 +1553,30 @@ def send_otp_sms(
             return {"ok": False, "error": f"SMS gateway returned HTTP {resp.status_code}"}
 
         if provider == "fast2sms":
-            resp = requests.post(
-                "https://www.fast2sms.com/dev/bulkV2",
-                headers={
-                    "authorization": sms_cfg["sms_api_key"],
-                    "Content-Type": "application/json",
-                },
-                json={
+            route_mode = sms_cfg.get("sms_route") or ("dlt" if sms_cfg.get("sms_dlt_template_id") else "otp")
+            if route_mode == "otp" and not sms_cfg.get("sms_dlt_template_id"):
+                payload = {
+                    "route": "otp",
+                    "variables_values": str(otp_code),
+                    "flash": 0,
+                    "numbers": phone_10,
+                }
+            else:
+                payload = {
                     "route": "dlt",
                     "sender_id": sms_cfg["sms_sender_id"],
                     "message": sms_cfg["sms_dlt_template_id"],
                     "variables_values": f"{otp_code}|{expires_minutes} mins",
                     "flash": 0,
                     "numbers": phone_10,
+                }
+            resp = requests.post(
+                "https://www.fast2sms.com/dev/bulkV2",
+                headers={
+                    "authorization": sms_cfg["sms_api_key"],
+                    "Content-Type": "application/json",
                 },
+                json=payload,
                 timeout=10,
             )
             if resp.status_code in (200, 201, 202):
@@ -1552,6 +1585,21 @@ def send_otp_sms(
                     return {
                         "ok": True,
                         "provider_message_id": str(data.get("request_id") or "fast2sms-ok"),
+                        "error": "",
+                        "recipient_masked": mask_phone(phone_10),
+                    }
+            return {"ok": False, "error": f"SMS gateway returned HTTP {resp.status_code}"}
+
+        if provider == "twofactor":
+            tmpl_part = f"/{sms_cfg['sms_dlt_template_id']}" if sms_cfg.get("sms_dlt_template_id") else ""
+            url = f"https://2factor.in/API/V1/{sms_cfg['sms_api_key']}/SMS/+91{phone_10}/{otp_code}{tmpl_part}"
+            resp = requests.get(url, timeout=10)
+            if resp.status_code in (200, 201):
+                data = resp.json() if resp.content else {}
+                if str(data.get("Status", "")).lower() == "success":
+                    return {
+                        "ok": True,
+                        "provider_message_id": str(data.get("Details") or "2factor-ok"),
                         "error": "",
                         "recipient_masked": mask_phone(phone_10),
                     }

@@ -250,9 +250,14 @@ class PasswordlessOtpAndAdminMfaTests(unittest.TestCase):
         self.assertEqual(r_blocked.status_code, 429)
         self.assertTrue(r_blocked.get_json().get("rate_limited"))
 
-    def test_04_phone_otp_honesty_and_safe_account_linking(self):
-        """Phone OTP is unavailable until SMS provider is enabled; when enabled via transport, links safely without unverified merges."""
+    def test_04_phone_otp_honesty_new_and_existing_mobile_login_and_safe_linking(self):
+        """Phone OTP is unavailable until SMS provider is enabled; when enabled via transport, supports new/existing mobile OTP login and safe linking."""
         # Default production state: SMS provider not enabled -> 503
+        cfg_before = self.client.get("/api/auth/otp/config").get_json()
+        self.assertFalse(cfg_before["sms_otp_enabled"])
+        self.assertIn("SMS_OTP_ENABLED=true", cfg_before["sms_missing_requirements"])
+        self.assertIn("SMS_API_KEY", cfg_before["sms_missing_requirements"])
+
         p_req = self.client.post("/api/auth/otp/request", json={"channel": "phone", "destination": "9876543210"})
         self.assertEqual(p_req.status_code, 503)
         self.assertTrue(p_req.get_json().get("phone_otp_unavailable"))
@@ -264,7 +269,45 @@ class PasswordlessOtpAndAdminMfaTests(unittest.TestCase):
 
         notifications.set_test_sms_transport(_fake_sms)
 
-        # Log in Customer A via Email OTP and link verified mobile number 9811122233
+        # 1. New customer mobile OTP login (+91 9822233344)
+        mob_req_1 = self.client.post(
+            "/api/auth/otp/request",
+            json={"channel": "phone", "destination": "+91 98222 33344", "name": "Kavya Nair"},
+        )
+        self.assertEqual(mob_req_1.status_code, 200)
+        mob_code_1 = self.captured_sms[-1]["code"]
+        mob_ver_1 = self.client.post(
+            "/api/auth/otp/verify",
+            json={"channel": "phone", "destination": "9822233344", "otp": mob_code_1, "name": "Kavya Nair"},
+        ).get_json()
+        self.assertTrue(mob_ver_1["ok"])
+        self.assertTrue(mob_ver_1["is_new_user"])
+        self.assertEqual(mob_ver_1["user"]["phone"], "9822233344")
+        self.assertEqual(mob_ver_1["user"]["name"], "Kavya Nair")
+        new_mob_uid = mob_ver_1["user"]["id"]
+
+        # 2. Existing customer mobile OTP login (same mobile number 9822233344 -> preserves user_id)
+        conn = server.get_db()
+        c = conn.cursor()
+        c.execute(
+            "UPDATE auth_otp_challenges SET created_at = ? WHERE destination = ?",
+            ((datetime.now() - timedelta(seconds=65)).isoformat(), "9822233344"),
+        )
+        conn.commit()
+        conn.close()
+
+        mob_req_2 = self.client.post("/api/auth/otp/request", json={"channel": "phone", "destination": "9822233344"})
+        self.assertEqual(mob_req_2.status_code, 200)
+        mob_code_2 = self.captured_sms[-1]["code"]
+        mob_ver_2 = self.client.post(
+            "/api/auth/otp/verify",
+            json={"channel": "phone", "destination": "9822233344", "otp": mob_code_2},
+        ).get_json()
+        self.assertTrue(mob_ver_2["ok"])
+        self.assertFalse(mob_ver_2["is_new_user"])
+        self.assertEqual(mob_ver_2["user"]["id"], new_mob_uid)
+
+        # 3. Log in Customer A via Email OTP and link verified mobile number 9811122233
         self.client.post("/api/auth/otp/request", json={"channel": "email", "destination": "custA@matranaari.com"})
         ver_a = self.client.post(
             "/api/auth/otp/verify",
@@ -288,7 +331,7 @@ class PasswordlessOtpAndAdminMfaTests(unittest.TestCase):
         self.assertEqual(link_ver.status_code, 200)
         self.assertEqual(link_ver.get_json()["user"]["phone"], "9811122233")
 
-        # Customer B cannot link Customer A's already-verified mobile number (409 Conflict)
+        # 4. Customer B cannot link Customer A's already-verified mobile number (409 Conflict)
         self.client.post("/api/auth/otp/request", json={"channel": "email", "destination": "custB@matranaari.com"})
         ver_b = self.client.post(
             "/api/auth/otp/verify",
@@ -316,11 +359,15 @@ class PasswordlessOtpAndAdminMfaTests(unittest.TestCase):
         self.assertNotIn('type="password"', acc_html)
         self.assertIn("page-otp-request-form", acc_html)
         self.assertIn("page-otp-verify-form", acc_html)
+        self.assertIn("Continue with Email", acc_html)
+        self.assertIn("Continue with Mobile Number", acc_html)
 
         app_js = self.client.get("/assets/app.js").get_data(as_text=True)
         self.assertNotIn('type="password"', app_js)
         self.assertIn("auth-otp-request-form", app_js)
         self.assertIn("auth-otp-verify-form", app_js)
+        self.assertIn("Continue with Email", app_js)
+        self.assertIn("Continue with Mobile Number", app_js)
 
     def test_06_admin_password_only_login_otp_removed_and_rate_limiting(self):
         """Admin login uses PASSWORD-ONLY owner authentication; Admin OTP/MFA & staff signup are disabled."""

@@ -1302,12 +1302,12 @@ function injectGlobalStorefrontShell() {
         </div>
 
         <!-- Channel Selector -->
-        <div class="grid grid-cols-2 gap-1.5 bg-background p-1 border border-border rounded-lg mb-5">
-          <button type="button" id="modal-channel-email-btn" class="py-2 px-3 text-xs font-semibold rounded-md bg-primary text-primary-foreground transition cursor-pointer">
-            Email OTP
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-1.5 bg-background p-1 border border-border rounded-lg mb-5">
+          <button type="button" id="modal-channel-email-btn" class="py-2.5 px-3 text-xs font-semibold rounded-md bg-primary text-primary-foreground transition cursor-pointer">
+            Continue with Email
           </button>
-          <button type="button" id="modal-channel-phone-btn" class="py-2 px-3 text-xs font-semibold rounded-md text-muted-foreground hover:text-foreground transition cursor-pointer">
-            Mobile OTP
+          <button type="button" id="modal-channel-phone-btn" class="py-2.5 px-3 text-xs font-semibold rounded-md text-muted-foreground hover:text-foreground transition cursor-pointer">
+            Continue with Mobile Number
           </button>
         </div>
 
@@ -1999,19 +1999,47 @@ function attachGlobalShellEvents() {
   const modalPhoneBtn = document.getElementById('modal-channel-phone-btn');
   const modalEmailGroup = document.getElementById('modal-email-group');
   const modalPhoneGroup = document.getElementById('modal-phone-group');
+  const modalSmsNotice = document.getElementById('modal-sms-notice');
   const modalSendBtn = document.getElementById('modal-send-otp-btn');
   const modalReqForm = document.getElementById('auth-otp-request-form');
   const modalVerForm = document.getElementById('auth-otp-verify-form');
   const modalChangeBtn = document.getElementById('modal-otp-change-btn');
   const modalResendBtn = document.getElementById('modal-resend-otp-btn');
+  const modalCodeInp = document.getElementById('modal-otp-code-input');
+
+  fetch(`${API_BASE}/api/auth/otp/config`)
+    .then(r => r.json())
+    .then(cfg => {
+      if (cfg && cfg.ok) {
+        modalSmsEnabled = Boolean(cfg.sms_otp_enabled);
+        if (modalSmsNotice) {
+          modalSmsNotice.classList.toggle('hidden', modalSmsEnabled);
+        }
+        if (modalOtpChannel === 'phone') {
+          setModalOtpChannel('phone');
+        }
+      }
+    })
+    .catch(() => {});
+
+  if (modalCodeInp) {
+    modalCodeInp.addEventListener('paste', (e) => {
+      e.preventDefault();
+      const pasted = ((e.clipboardData || window.clipboardData).getData('text') || '').replace(/\D/g, '').slice(0, 6);
+      modalCodeInp.value = pasted;
+    });
+    modalCodeInp.addEventListener('input', () => {
+      modalCodeInp.value = (modalCodeInp.value || '').replace(/\D/g, '').slice(0, 6);
+    });
+  }
 
   function setModalOtpChannel(ch) {
     modalOtpChannel = ch === 'phone' ? 'phone' : 'email';
     const errBox = document.getElementById('login-error-msg');
     if (errBox) errBox.classList.add('hidden');
     if (modalOtpChannel === 'email') {
-      if (modalEmailBtn) modalEmailBtn.className = 'py-2 px-3 text-xs font-semibold rounded-md bg-primary text-primary-foreground transition cursor-pointer';
-      if (modalPhoneBtn) modalPhoneBtn.className = 'py-2 px-3 text-xs font-semibold rounded-md text-muted-foreground hover:text-foreground transition cursor-pointer';
+      if (modalEmailBtn) modalEmailBtn.className = 'py-2.5 px-3 text-xs font-semibold rounded-md bg-primary text-primary-foreground transition cursor-pointer';
+      if (modalPhoneBtn) modalPhoneBtn.className = 'py-2.5 px-3 text-xs font-semibold rounded-md text-muted-foreground hover:text-foreground transition cursor-pointer';
       if (modalEmailGroup) modalEmailGroup.classList.remove('hidden');
       if (modalPhoneGroup) modalPhoneGroup.classList.add('hidden');
       if (modalSendBtn) {
@@ -2019,13 +2047,13 @@ function attachGlobalShellEvents() {
         modalSendBtn.textContent = 'Send 6-Digit Verification Code';
       }
     } else {
-      if (modalPhoneBtn) modalPhoneBtn.className = 'py-2 px-3 text-xs font-semibold rounded-md bg-primary text-primary-foreground transition cursor-pointer';
-      if (modalEmailBtn) modalEmailBtn.className = 'py-2 px-3 text-xs font-semibold rounded-md text-muted-foreground hover:text-foreground transition cursor-pointer';
+      if (modalPhoneBtn) modalPhoneBtn.className = 'py-2.5 px-3 text-xs font-semibold rounded-md bg-primary text-primary-foreground transition cursor-pointer';
+      if (modalEmailBtn) modalEmailBtn.className = 'py-2.5 px-3 text-xs font-semibold rounded-md text-muted-foreground hover:text-foreground transition cursor-pointer';
       if (modalEmailGroup) modalEmailGroup.classList.add('hidden');
       if (modalPhoneGroup) modalPhoneGroup.classList.remove('hidden');
       if (modalSendBtn) {
         modalSendBtn.disabled = !modalSmsEnabled;
-        modalSendBtn.textContent = modalSmsEnabled ? 'Send SMS Verification Code' : 'SMS OTP Unavailable — Use Email OTP';
+        modalSendBtn.textContent = modalSmsEnabled ? 'Send 6-Digit SMS Code' : 'SMS OTP Unavailable — Continue with Email';
       }
     }
   }

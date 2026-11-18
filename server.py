@@ -3287,14 +3287,21 @@ def get_current_user():
     conn = get_db()
     c = conn.cursor()
     c.execute("""
-        SELECT u.id, u.name, u.email, u.phone
+        SELECT u.id, u.name, u.email, u.phone,
+               COALESCE(u.email_verified, 0) AS email_verified,
+               COALESCE(u.phone_verified, 0) AS phone_verified
         FROM users u
         JOIN user_sessions s ON u.id = s.user_id
         WHERE s.token = ? AND s.expires_at > ?
     """, (token, datetime.now().isoformat()))
     user = c.fetchone()
     conn.close()
-    return dict(user) if user else None
+    if not user:
+        return None
+    d = dict(user)
+    d["email_verified"] = bool(int(d.get("email_verified") or 0))
+    d["phone_verified"] = bool(int(d.get("phone_verified") or 0))
+    return d
 
 
 def user_owns_order(user, order_row):
@@ -3305,7 +3312,13 @@ def user_owns_order(user, order_row):
         return order_user_id == str(user.get("id") or "").strip()
     order_email = str(order_row.get("customer_email") or "").strip().lower()
     user_email = str(user.get("email") or "").strip().lower()
-    return bool(order_email and user_email and order_email == user_email)
+    if order_email and user_email and order_email == user_email:
+        return True
+    if user.get("phone_verified") and user.get("phone"):
+        order_phone = str(order_row.get("customer_phone") or "").strip()
+        if order_phone and order_phone == str(user.get("phone") or "").strip():
+            return True
+    return False
 
 
 def is_request_https():
@@ -4890,10 +4903,15 @@ def api_auth_otp_config():
         "ok": True,
         "email_otp_enabled": bool(notif_cfg.get("email_configured", True)),
         "sms_otp_enabled": bool(sms_cfg.get("sms_otp_enabled", False)),
+        "sms_provider": sms_cfg.get("sms_provider", "msg91"),
+        "sms_sender_id": sms_cfg.get("sms_sender_id", "MTRNRI"),
+        "sms_api_key_configured": bool(sms_cfg.get("sms_api_key_configured", False)),
+        "sms_dlt_template_configured": bool(sms_cfg.get("sms_dlt_template_configured", False)),
+        "sms_missing_requirements": sms_cfg.get("missing_requirements", []),
         "sms_status_message": (
-            "Enter your 10-digit Indian mobile number to receive an SMS verification code."
+            "Enter your 10-digit Indian mobile number (+91) to receive an instant 6-digit SMS verification code."
             if sms_cfg.get("sms_otp_enabled")
-            else "Mobile SMS OTP is currently unavailable until the DLT SMS provider is activated. Please sign in with your Email Address."
+            else "Mobile SMS verification is currently unavailable pending SMS gateway & TRAI DLT activation. Please select Continue with Email for instant sign-in."
         ),
         "otp_length": 6,
         "expiry_seconds": OTP_EXPIRY_SECONDS,
@@ -5114,10 +5132,14 @@ def api_auth_otp_verify():
         u_row = c.fetchone()
         if u_row:
             user_dict = dict(u_row)
+            updated_name = user_dict.get("name") or ""
+            if provided_name and len(provided_name) >= 2 and (not updated_name or updated_name.startswith("Client ")):
+                updated_name = provided_name
             c.execute(
-                "UPDATE users SET phone_verified = 1, passwordless_enabled = 1, last_login_at = ? WHERE id = ?",
-                (now_iso, user_dict["id"]),
+                "UPDATE users SET phone_verified = 1, passwordless_enabled = 1, last_login_at = ?, name = ? WHERE id = ?",
+                (now_iso, updated_name, user_dict["id"]),
             )
+            user_dict["name"] = updated_name
         else:
             is_new_user = True
             user_id = f"usr_{secrets.token_hex(6)}"
@@ -5139,6 +5161,16 @@ def api_auth_otp_verify():
                 "email": synth_email,
                 "phone": dest,
             }
+
+        # Safely link any pre-existing unlinked guest orders placed with this verified mobile number
+        c.execute(
+            """
+            UPDATE orders
+            SET user_id = ?
+            WHERE (user_id IS NULL OR user_id = '') AND customer_phone = ?
+            """,
+            (user_dict["id"], dest),
+        )
 
     token = secrets.token_hex(32)
     expires_iso = (now_dt + timedelta(days=30)).isoformat()
